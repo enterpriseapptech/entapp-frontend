@@ -81,6 +81,8 @@ export default function Home() {
         toggleLocationDropdown={toggleLocationDropdown}
         handleCategoryChange={handleCategoryChange}
         handleLocationChange={handleLocationChange}
+        heading="Simplify Your Event Planning with <br /> All-in-One Booking."
+        subheading="Book stunning venues and top-notch catering services effortlessly."
       />
       <Features />
       <FeaturedVenues />

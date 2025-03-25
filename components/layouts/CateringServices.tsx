@@ -24,12 +24,13 @@ export default function CateringServices() {
           {[1, 2, 3].map((i) => (
             <Card
               key={i}
-              imageSrc="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-1.2.1&auto=format&fit=crop&w=2091&q=80"
+              imageSrc="/eventCard.png"
               label="Featured"
               title="Delish Catering Co."
               location="9 west flamingo road, las vegas"
               price="$30 Per Person"
               rating={5}
+              name="catering Service"
             />
           ))}
         </div>

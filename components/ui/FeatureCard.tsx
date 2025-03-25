@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface FeatureCardProps {
   imageSrc: string;
@@ -12,10 +13,13 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ imageSrc, title, description,
   return (
     <div className="bg-white rounded-sm overflow-hidden shadow-md">
       <div className="relative">
-        <img
+        <Image
           src={imageSrc}
           alt={title}
+          width={20}
+          height={20}
           className="h-48 w-full object-cover"
+          unoptimized
         />
       </div>
       <div className="p-4">

@@ -23,12 +23,13 @@ export default function FeaturedVenues() {
           {[1, 2, 3].map((i) => (
             <Card
               key={i}
-              imageSrc="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=2091&q=80"
+              imageSrc="/eventCard.png"
               label="Featured"
               title="Ample Apartment At Last Floor"
               location="9 west flamingo road, las vegas"
               price="$350,000"
-              rating={5}
+              name="Event Hall"
+              // rating={5}
             />
           ))}
         </div>
