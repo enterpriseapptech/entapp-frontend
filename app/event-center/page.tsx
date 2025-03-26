@@ -6,6 +6,7 @@ import Card from "@/components/ui/card";
 import { X } from "lucide-react";
 import DualRangeSlider from "@/components/ui/DualRangeSlider";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function EventCenters() {
   const [isCategoryOpen, setIsCategoryOpen] = useState<boolean>(false);
@@ -530,15 +531,16 @@ export default function EventCenters() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEventCenters.length > 0 ? (
                 filteredEventCenters.map((center, index) => (
-                  <Card
-                    key={index}
-                    name={center.name}
-                    imageSrc={center.imageSrc}
-                    label={center.label}
-                    title={center.title}
-                    location={center.location}
-                    price={center.price}
-                  />
+                  <Link key={index} href={`/event-centers-details/${index + 1}`}>
+                    <Card
+                      name={center.name}
+                      imageSrc={center.imageSrc}
+                      label={center.label}
+                      title={center.title}
+                      location={center.location}
+                      price={center.price}
+                    />
+                  </Link>
                 ))
               ) : (
                 <p className="text-gray-600 col-span-full text-center">

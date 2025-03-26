@@ -14,7 +14,7 @@ export default function FeaturedVenues() {
               Showcasing top-rated event centers
             </p>
           </div>
-          <Button className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base cursor-pointer">
+          <Button className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base cursor-pointer md:mt-0 mt-4">
             View all posts
           </Button>
         </div>
