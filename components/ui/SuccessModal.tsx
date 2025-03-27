@@ -1,4 +1,5 @@
 // components/SuccessModal.tsx
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 // import Image from "next/image";
 
@@ -19,26 +20,11 @@ export default function SuccessModal({ isOpen, onClose, bookingDates }: SuccessM
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
         {/* Checkmark Icon */}
         <div className="flex justify-center mb-4">
-          <div className="bg-green-500 rounded-full p-2">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
+          <Image src="/suceessModalIcon.png" alt="suceessModalIcon" width={10} height={10} className="w-12 h-12" unoptimized/>
         </div>
 
         {/* Heading */}
