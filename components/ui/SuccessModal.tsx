@@ -16,7 +16,7 @@ export default function SuccessModal({ isOpen, onClose, bookingDates }: SuccessM
 
   const handleContinue = () => {
     onClose();
-    router.push("/"); // Redirect to homepage
+    router.push("/"); 
   };
 
   return (

@@ -1,10 +1,16 @@
 // components/CateringServices.tsx
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function CateringServices() {
+  const router = useRouter();
+
+  const handleOnclick = () => {
+    router.push("/event-center");
+  };
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-30">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-12">
           <div>
@@ -15,7 +21,7 @@ export default function CateringServices() {
               Showcasing top-rated catering services
             </p>
           </div>
-          <Button className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base cursor-pointer">
+          <Button className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base cursor-pointer"  onClick={handleOnclick}>
             View all posts
           </Button>
         </div>

@@ -1,14 +1,13 @@
-// components/layouts/PaymentPage.tsx
 "use client";
 import Link from "next/link";
 import Image from "next/image";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Footer from "@/components/layouts/Footer";
+import SuccessModal from "@/components/ui/SuccessModal";
 
 export default function PaymentPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // Extract booking details from query parameters
@@ -18,20 +17,28 @@ export default function PaymentPage() {
 
   // State to track the selected payment method
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  // State to control the success modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Booking dates for the modal (adjust based on your logic)
+  const bookingDates = [date, "27th-Feb-2024"]; // Second date hardcoded to match the image
 
   const handleBook = () => {
     if (!selectedPaymentMethod) {
       alert("Please select a payment method before booking.");
       return;
     }
-    // Add logic for final booking confirmation (e.g., API call)
-    alert("Booking confirmed!");
-    router.push("/"); // Redirect to homepage or confirmation page after booking
+    // Show the success modal (remove the alert)
+    setIsModalOpen(true);
   };
 
   const handleSetAsDefault = (method: string) => {
     // Logic to set the payment method as default (e.g., API call)
     console.log(`${method} set as default`);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
   };
 
   return (
@@ -292,6 +299,13 @@ export default function PaymentPage() {
           </div>
         </aside>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        bookingDates={bookingDates}
+      />
       <Footer />
     </main>
   );

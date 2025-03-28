@@ -51,7 +51,7 @@ export default function HeroWithNavbar({
 
   const navLinks = [
     { label: "Event Centers", href: "/event-center" },
-    { label: "Catering Services", href: "#" },
+    { label: "Catering Services", href: "/cateringServices" },
     { label: "Bookings", href: "#" },
     { label: "About Us", href: "#" },
   ];

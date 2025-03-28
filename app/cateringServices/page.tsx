@@ -1,9 +1,10 @@
+
 "use client";
 import { useState } from "react";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Features from "@/components/layouts/Features";
-import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import CateringServices from "@/components/layouts/CateringServices";
+import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import ElevateEvents from "@/components/layouts/ElevateEvents";
 import EventPlanning from "@/components/layouts/EventPlanning";
 import BookEvent from "@/components/layouts/BookEvent";
@@ -12,9 +13,13 @@ import EventGallery from "@/components/layouts/EventGallery";
 import PlanNextEvent from "@/components/layouts/PlanNextEvent";
 import Footer from "@/components/layouts/Footer";
 
-export default function Home() {
+export default function CateringService() {
   const [isCategoryOpen, setIsCategoryOpen] = useState<boolean>(false);
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);
+  const toggleCategoryDropdown = () => setIsCategoryOpen((prev) => !prev);
+  const toggleLocationDropdown = () => setIsLocationOpen((prev) => !prev);
+  const handleCategoryChange = () => setIsCategoryOpen(false);
+  const handleLocationChange = () => setIsLocationOpen(false);
   const [currentPage, setCurrentPage] = useState<number>(0);
 
   const testimonials = [
@@ -76,13 +81,9 @@ export default function Home() {
     setCurrentPage((prev) => (prev + 1) % totalPages);
   const handlePrevTestimonial = () =>
     setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
-  const toggleCategoryDropdown = () => setIsCategoryOpen((prev) => !prev);
-  const toggleLocationDropdown = () => setIsLocationOpen((prev) => !prev);
-  const handleCategoryChange = () => setIsCategoryOpen(false);
-  const handleLocationChange = () => setIsLocationOpen(false);
-
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
       <HeroWithNavbar
         isCategoryOpen={isCategoryOpen}
         isLocationOpen={isLocationOpen}
@@ -90,18 +91,19 @@ export default function Home() {
         toggleLocationDropdown={toggleLocationDropdown}
         handleCategoryChange={handleCategoryChange}
         handleLocationChange={handleLocationChange}
-        heading="Simplify Your Event Planning with <br /> All-in-One Booking."
-        subheading="Book stunning venues and top-notch catering services effortlessly."
+        heading="Complete Catering Solutions for <br /> Stress-Free Planning"
+        subheading="From appetizers to desserts, we handle it all with precision and care."
+        backgroundImage="url('/cateringHeroImage.png')"
       />
       <Features
-        heading="Your One-Stop Solution for Event Planning"
-        description="Discover and book the perfect event center with ease. Customize your experience by adding services and making secure payments all in one place."
-        imageSrc="/event.png"
+        heading="One Plate at a Time"
+        description="Find and book the ideal catering service with ease. Customize your menu and make secure payments all in one place."
+        imageSrc="/cateringImage.png"
       />
-      <FeaturedVenues  heading="Featured Event Centers"/>
-      <div className="bg-white">
+      <div className="bg-gray-100">
         <CateringServices />
       </div>
+      <FeaturedVenues heading="Featured Catering Services" />
       <ElevateEvents />
       <EventPlanning />
       <BookEvent />
