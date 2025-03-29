@@ -26,6 +26,7 @@ const Card: React.FC<CardProps> = ({ imageSrc, label, title, location, price, ra
           width={100}
           height={100}
           className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          unoptimized
         />
       </div>
       <div className="p-4">

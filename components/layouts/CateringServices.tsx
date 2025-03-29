@@ -7,7 +7,7 @@ export default function CateringServices() {
   const router = useRouter();
 
   const handleOnclick = () => {
-    router.push("/event-center");
+    router.push("/cateringServices/allPost");
   };
   return (
     <section className="py-20">
@@ -30,7 +30,7 @@ export default function CateringServices() {
           {[1, 2, 3].map((i) => (
             <Card
               key={i}
-              imageSrc="/eventCard.png"
+              imageSrc="/catering.png"
               label="Featured"
               title="Delish Catering Co."
               location="9 west flamingo road, las vegas"

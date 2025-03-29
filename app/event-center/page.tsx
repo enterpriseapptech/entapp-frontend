@@ -531,7 +531,7 @@ export default function EventCenters() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEventCenters.length > 0 ? (
                 filteredEventCenters.map((center, index) => (
-                  <Link key={index} href={`/event-centers-details/${index + 1}`}>
+                  <Link key={index} href={`event-center/${index + 1}`}>
                     <Card
                       name={center.name}
                       imageSrc={center.imageSrc}
