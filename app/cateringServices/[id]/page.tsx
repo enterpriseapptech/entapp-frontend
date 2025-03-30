@@ -4,8 +4,8 @@ import Link from "next/link";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
-import { Calendar, Wifi, Shield, User } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { Calendar, Wifi, Shield} from "lucide-react";
+import { useParams } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
@@ -27,7 +27,7 @@ interface CateringService {
 export default function CateringServiceDetails() {
   const params = useParams();
   const { id } = params;
-  const router = useRouter();
+  // const router = useRouter();
 
   const cateringServices: CateringService[] = [
     {
@@ -175,8 +175,8 @@ export default function CateringServiceDetails() {
   const cateringService = cateringServices.find((service) => service.id === id);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [numberOfGuests, setNumberOfGuests] = useState<string>("");
+  // const [selectedDate, setSelectedDate] = useState<string>("");
+  // const [numberOfGuests, setNumberOfGuests] = useState<string>("");
 
   const images = cateringService?.images || ["/catering.png"];
 
@@ -232,7 +232,9 @@ export default function CateringServiceDetails() {
   const handleNextReview = () =>
     setCurrentReviewPage((prev) => (prev + 1) % totalReviewPages);
   const handlePrevReview = () =>
-    setCurrentReviewPage((prev) => (prev - 1 + totalReviewPages) % totalReviewPages);
+    setCurrentReviewPage(
+      (prev) => (prev - 1 + totalReviewPages) % totalReviewPages
+    );
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -242,15 +244,17 @@ export default function CateringServiceDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const handleBook = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Navigate to PaymentPage with query parameters
-    router.push(
-      `/payment?date=${selectedDate || cateringService!.availability}&time=12:00 pm&totalCost=${
-        cateringService!.price
-      }&serviceTitle=${cateringService!.title}`
-    );
-  };
+  // const handleBook = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   // Navigate to PaymentPage with query parameters
+  //   router.push(
+  //     `/payment?date=${
+  //       selectedDate || cateringService!.availability
+  //     }&time=12:00 pm&totalCost=${cateringService!.price}&serviceTitle=${
+  //       cateringService!.title
+  //     }`
+  //   );
+  // };
 
   if (!cateringService) {
     return <div className="min-h-screen bg-gray-50 p-8">Service not found</div>;
@@ -462,7 +466,9 @@ export default function CateringServiceDetails() {
                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span className="text-gray-600">{cateringService.orderSize}</span>
+                <span className="text-gray-600">
+                  {cateringService.orderSize}
+                </span>
               </div>
             </div>
 
@@ -472,7 +478,9 @@ export default function CateringServiceDetails() {
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Description
               </h3>
-              <p className="text-gray-600 text-xs">{cateringService.description}</p>
+              <p className="text-gray-600 text-xs">
+                {cateringService.description}
+              </p>
               <button className="text-blue-600 text-xs mt-2">Read more</button>
             </div>
           </div>
@@ -480,109 +488,101 @@ export default function CateringServiceDetails() {
 
         {/* Right Section: Booking Form */}
         <aside className="lg:w-[350px] h-[45%] bg-white p-6 rounded-lg shadow-md sticky top-6">
-          <h2 className="text-md font-semibold text-gray-800 mb-4">Book Now</h2>
-          <form className="space-y-4" onSubmit={handleBook}>
-            {/* Duration */}
-            <div>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="accent-blue-600" />
-                <span className="text-gray-600 text-sm">More than one day</span>
-              </label>
-            </div>
+          {/* Text Information */}
+          <div className="mb-4">
+            <h2 className="text-md font-semibold text-gray-800">
+              Information
+            </h2>
+          </div>
 
-            {/* Date Picker */}
+          {/* Image and Title */}
+          <div className="flex items-center mb-4">
+            <Image
+              src={cateringService.images[0] || "/catering.png"}
+              alt={cateringService.title}
+              width={80}
+              height={80}
+              className="w-15 h-15 object-cover rounded-full mr-4"
+            />
+            <div className="flex flex-col">
+              <h3 className="text-md font-semibold text-gray-800">
+                {cateringService.title}
+              </h3>
+              <p className="text-sm text-gray-600">delish@entapp.com</p>
+            </div>   
+          </div>
+
+          {/* Send a Message Section */}
+          <h2 className="text-sm text-gray-600 mb-2">
+            Send a Message
+          </h2>
+          <form className="space-y-4">
             <div className="relative">
-              <div className="flex items-center border rounded-md px-3 py-2">
-                <Calendar className="w-4 h-4 text-gray-600 mr-2" />
-                <input
-                  type="date"
-                  className="w-full text-gray-600 text-sm focus:outline-none"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </div>
-              <button className="text-blue-600 text-sm mt-2 block w-full text-right">
-                Add another date
-              </button>
+              <textarea
+                placeholder="Enter a description..."
+                className="w-full text-gray-600 text-sm border border-gray-300 rounded-md p-3 focus:outline-none resize-none"
+                rows={4}
+              />
             </div>
 
-            {/* Number of Guests */}
-            <div className="relative">
-              <div className="flex items-center border rounded-md px-3 py-2">
-                <User className="w-4 h-4 text-gray-600 mr-2" />
-                <select
-                  className="w-full text-gray-600 text-sm focus:outline-none"
-                  value={numberOfGuests}
-                  onChange={(e) => setNumberOfGuests(e.target.value)}
-                >
-                  <option value="" disabled hidden>
-                    Number of guests
-                  </option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5+">5+</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Price and Book Button */}
+            {/* Request a Quote Button */}
             <button
               type="submit"
               className="w-full cursor-pointer bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold"
             >
-              Book {cateringService.price}
+              Request a Quote
             </button>
-            <hr className="mb-2" />
-            {/* Share Options */}
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-gray-400 text-sm">Share</span>
-              <div className="flex gap-3">
-                <Image
-                  src="/whatsapp.png"
-                  alt="WhatsApp"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/facebook.png"
-                  alt="Facebook"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/twitter.png"
-                  alt="Twitter"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/email.png"
-                  alt="Email"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/pinterest.png"
-                  alt="Pinterest"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-              </div>
-            </div>
-
-            {/* Note */}
-            <p className="text-xs text-gray-500 mt-4">
-              Note: Invoice amount will be displayed in NGN currency but can be
-              paid with Credit Cards in other currencies.
-            </p>
           </form>
+
+          <hr className="my-4" />
+
+          {/* Share Options (Unchanged) */}
+          <div className="flex justify-between items-center mt-4">
+            <span className="text-gray-400 text-sm">Share</span>
+            <div className="flex gap-3">
+              <Image
+                src="/whatsapp.png"
+                alt="WhatsApp"
+                width={20}
+                height={20}
+                className="w-6 h-6"
+              />
+              <Image
+                src="/facebook.png"
+                alt="Facebook"
+                width={20}
+                height={20}
+                className="w-6 h-6"
+              />
+              <Image
+                src="/twitter.png"
+                alt="Twitter"
+                width={20}
+                height={20}
+                className="w-6 h-6"
+              />
+              <Image
+                src="/email.png"
+                alt="Email"
+                width={20}
+                height={20}
+                className="w-6 h-6"
+              />
+              <Image
+                src="/pinterest.png"
+                alt="Pinterest"
+                width={20}
+                height={20}
+                className="w-6 h-6"
+              />
+            </div>
+          </div>
+
+          {/* Note (Unchanged) */}
+          <p className="text-xs text-gray-500 mt-4">
+            Note: Invoice amount will be displayed in NGN currency but can be
+            paid with Credit Cards in other currencies.
+          </p>
         </aside>
       </div>
       <hr className="mb-4 mt-4 mx-30" />
