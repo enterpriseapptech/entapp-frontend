@@ -19,7 +19,7 @@ interface EventCenter {
   price: string;
   eventType: string;
   capacity: number;
-  availability: string;
+  availability: string[];
   amenities: string[];
 }
 
@@ -40,7 +40,7 @@ export default function EventCenterDetails() {
       price: "₦500 per night",
       eventType: "Weddings",
       capacity: 900,
-      availability: "Sat 10 Feb 2024",
+      availability: ["Sat 10 Feb 2024", "Sun 11 Feb 2024", "Mon 12 Feb 2024"], // Updated to array for multiple dates
       amenities: ["WiFi", "Parking Space", "Security"],
     },
     {
@@ -54,7 +54,7 @@ export default function EventCenterDetails() {
       price: "₦300 per night",
       eventType: "Birthdays",
       capacity: 1000,
-      availability: "Sun 11 Feb 2024",
+      availability: ["Sun 11 Feb 2024", "Mon 12 Feb 2024"], // Updated to array for multiple dates
       amenities: ["WiFi", "Security"],
     },
   ];
@@ -62,7 +62,8 @@ export default function EventCenterDetails() {
   const eventCenter = eventCenters.find((center) => center.id === id);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDates, setSelectedDates] = useState<string[]>([]); // Array to store multiple selected dates
+  const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false); // State for "More than one day" checkbox
   const [numberOfGuests, setNumberOfGuests] = useState<string>("");
 
   const images = eventCenter?.images || ["/eventCard1.png"];
@@ -129,11 +130,35 @@ export default function EventCenterDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
+  const handleAddDate = () => {
+    // Add a new empty date slot to the selectedDates array
+    setSelectedDates([...selectedDates, ""]);
+  };
+
+  const handleDateChange = (index: number, date: string) => {
+    const updatedDates = [...selectedDates];
+    updatedDates[index] = date;
+    setSelectedDates(updatedDates);
+  };
+
+  const handleRemoveDate = (index: number) => {
+    const updatedDates = selectedDates.filter((_, i) => i !== index);
+    setSelectedDates(updatedDates);
+  };
+
   const handleBook = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedDates.length === 0 || selectedDates.some((date) => !date)) {
+      alert("Please select all dates.");
+      return;
+    }
+    if (!numberOfGuests) {
+      alert("Please select the number of guests.");
+      return;
+    }
     // Navigate to PaymentPage with query parameters
     router.push(
-      `/payment?date=${selectedDate || eventCenter!.availability}&time=12:00 pm&totalCost=${
+      `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
         eventCenter!.price
       }&eventTitle=${eventCenter!.title}`
     );
@@ -256,7 +281,7 @@ export default function EventCenterDetails() {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-600" />
                 <span className="text-gray-600 text-sm">
-                  {eventCenter.availability}
+                  {eventCenter.availability.join(", ")}
                 </span>
               </div>
             </div>
@@ -366,31 +391,105 @@ export default function EventCenterDetails() {
         </div>
 
         {/* Right Section: Booking Form */}
-        <aside className="lg:w-[350px] h-[45%] bg-white p-6 rounded-lg shadow-md sticky top-6">
+        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-md sticky top-6">
           <h2 className="text-md font-semibold text-gray-800 mb-4">Book Now</h2>
           <form className="space-y-4" onSubmit={handleBook}>
             {/* Duration */}
             <div>
               <label className="flex items-center gap-2">
-                <input type="checkbox" className="accent-blue-600" />
+                <input
+                  type="checkbox"
+                  className="accent-blue-600"
+                  checked={isMoreThanOneDay}
+                  onChange={(e) => {
+                    setIsMoreThanOneDay(e.target.checked);
+                    if (!e.target.checked) {
+                      // Reset to single date if unchecked
+                      setSelectedDates(selectedDates.slice(0, 1));
+                    }
+                  }}
+                />
                 <span className="text-gray-600 text-sm">More than one day</span>
               </label>
             </div>
 
-            {/* Date Picker */}
-            <div className="relative">
-              <div className="flex items-center border rounded-md px-3 py-2">
-                <Calendar className="w-4 h-4 text-gray-600 mr-2" />
-                <input
-                  type="date"
-                  className="w-full text-gray-600 text-sm focus:outline-none"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </div>
-              <button className="text-blue-600 text-sm mt-2 block w-full text-right">
-                Add another date
-              </button>
+            {/* Date Selection */}
+            <div className="space-y-3">
+              {selectedDates.map((date, index) => (
+                <div key={index} className="relative flex items-center gap-2">
+                  <div className="flex-1 flex items-center border rounded-md px-3 py-2">
+                    <Calendar className="w-4 h-4 text-gray-600 mr-2" />
+                    <select
+                      className="w-full text-gray-600 text-sm focus:outline-none"
+                      value={date}
+                      onChange={(e) => handleDateChange(index, e.target.value)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Select a date
+                      </option>
+                      {eventCenter.availability
+                        .filter((availDate) => !selectedDates.includes(availDate) || availDate === date) // Prevent selecting already chosen dates
+                        .map((availDate) => (
+                          <option key={availDate} value={availDate}>
+                            {availDate}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  {isMoreThanOneDay && selectedDates.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDate(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {selectedDates.length === 0 && (
+                <div className="flex items-center border rounded-md px-3 py-2">
+                  <Calendar className="w-4 h-4 text-gray-600 mr-2" />
+                  <select
+                    className="w-full text-gray-600 text-sm focus:outline-none"
+                    value=""
+                    onChange={(e) => setSelectedDates([e.target.value])}
+                    required
+                  >
+                    <option value="" disabled>
+                      Select a date
+                    </option>
+                    {eventCenter.availability.map((availDate) => (
+                      <option key={availDate} value={availDate}>
+                        {availDate}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {isMoreThanOneDay && (
+                <button
+                  type="button"
+                  onClick={handleAddDate}
+                  className="text-blue-600 text-sm block w-full text-right hover:underline"
+                >
+                  Add another date
+                </button>
+              )}
             </div>
 
             {/* Number of Guests */}
@@ -401,6 +500,7 @@ export default function EventCenterDetails() {
                   className="w-full text-gray-600 text-sm focus:outline-none"
                   value={numberOfGuests}
                   onChange={(e) => setNumberOfGuests(e.target.value)}
+                  required
                 >
                   <option value="" disabled hidden>
                     Number of guests
