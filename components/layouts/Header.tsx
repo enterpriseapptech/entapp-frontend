@@ -11,7 +11,7 @@ export default function Header({ setIsSidebarOpen }: HeaderProps) {
     <div>
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center md:px-6 px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
         {/* Left Section: Hamburger Menu + Welcome Message */}
-        <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center gap-3 w-full md:p-2">
           {/* Hamburger Menu (Mobile) */}
           <button
             className="md:hidden p-2 bg-gray-100 rounded-md cursor-pointer hover:bg-gray-200 transition-colors"

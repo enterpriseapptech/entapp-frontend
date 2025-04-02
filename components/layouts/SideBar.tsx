@@ -3,6 +3,7 @@
 import { BarChart3, X, Search, LifeBuoy, Settings } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import Link from "next/link"; // Import Link from Next.js
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,6 +12,13 @@ interface SidebarProps {
 
 const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
+
+  // Helper function to handle link clicks (for mobile sidebar toggle)
+  const handleLinkClick = () => {
+    if (isOpen) {
+      toggleSidebar(); // Close the sidebar on mobile after clicking a link
+    }
+  };
 
   return (
     <>
@@ -52,25 +60,27 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
         {/* Navigation */}
         <nav className="flex flex-col space-y-2">
-          <button
+          <Link
+            href="/admin"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/mainAdmin"
+              pathname === "/admin"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <BarChart3 className="w-5 h-5" />
             <span className="font-medium text-sm">Overview</span>
-          </button>
+          </Link>
 
-          <button
+          <Link
+            href="/admin/manage-event-center"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/manage-event-center"
+              pathname === "/admin/manage-event-center"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <Image
               width={10}
@@ -81,14 +91,16 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               unoptimized
             />
             <span className="font-medium text-sm">Manage Event Center</span>
-          </button>
-          <button
+          </Link>
+
+          <Link
+            href="/admin/manage-catering-services"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/manage-event-center"
+              pathname === "/admin/manage-catering-services"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <Image
               width={10}
@@ -98,16 +110,19 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               className="w-5 h-5"
               unoptimized
             />
-            <span className="font-medium text-sm whitespace-nowrap">Manage Catering Services</span>
-          </button>
+            <span className="font-medium text-sm whitespace-nowrap">
+              Manage Catering Services
+            </span>
+          </Link>
 
-          <button
+          <Link
+            href="/admin/manage-users"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/manage-users"
+              pathname === "/admin/manage-users"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <Image
               width={10}
@@ -118,15 +133,16 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               unoptimized
             />
             <span className="font-medium text-sm">Manage Users</span>
-          </button>
+          </Link>
 
-          <button
+          <Link
+            href="/admin/manage-booking"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/settings"
+              pathname === "/admin/manage-booking"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <Image
               width={10}
@@ -137,28 +153,30 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               unoptimized
             />
             <span className="font-medium text-sm">Manage Booking</span>
-          </button>
+          </Link>
         </nav>
 
         {/* Support, Settings, and Profile Section */}
         <div className="mt-auto md:pt-8">
           {/* Support Button */}
-          <button
+          <Link
+            href="/admin/support"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <LifeBuoy className="w-5 h-5" />
             <span className="font-medium text-sm">Support</span>
-          </button>
+          </Link>
 
           {/* Settings Button */}
-          <button
+          <Link
+            href="/admin/settings"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full`}
-            onClick={toggleSidebar}
+            onClick={handleLinkClick}
           >
             <Settings className="w-5 h-5" />
             <span className="font-medium text-sm">Settings</span>
-          </button>
+          </Link>
 
           {/* Horizontal Line */}
           <hr className="my-4 border-gray-200" />
@@ -166,7 +184,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           {/* Profile Section */}
           <div className="flex items-center gap-3 px-4 py-3">
             <Image
-              src="/profileImg.png" 
+              src="/profileImg.png"
               alt="Profile Picture"
               width={40}
               height={40}
@@ -178,7 +196,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <p className="text-xs text-gray-500">olivia@untitledui.com</p>
             </div>
             <Image
-              src="/sidebardown.png" 
+              src="/sidebardown.png"
               alt="sidebardown"
               width={40}
               height={40}

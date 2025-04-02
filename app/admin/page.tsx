@@ -1,342 +1,453 @@
-// pages/admin/dashboard.tsx
 "use client";
-
+import Image from "next/image";
+import { ChevronUp, ChevronDown, Edit2, Trash2 } from "lucide-react";
+import { BarChart, Bar, ResponsiveContainer } from "recharts";
+import SideBar from "@/components/layouts/SideBar";
 import { useState } from "react";
-import {
-  BarChart,
-  Building,
-  Users,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Bell,
-  Calendar,
-} from "lucide-react";
+import Header from "@/components/layouts/Header";
 
-interface Booking {
-  id: string;
-  customerName: string;
-  serviceType: string;
-  dateTime: string;
-  status: string;
-  amount: string;
-}
+export default function Dashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
-export default function AdminDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Sample data for the charts
+  const existingUsersData = [
+    { value: 3200 },
+    { value: 4100 },
+    { value: 3800 },
+    { value: 5653 },
+    { value: 4800 },
+    { value: 4100 },
+    { value: 3800 },
+  ];
 
-  // Sample data for the table
-  const bookings: Booking[] = [
+  const totalEventsData = [
+    { value: 1200 },
+    { value: 1300 },
+    { value: 1400 },
+    { value: 1600 },
+    { value: 1500 },
+    { value: 1400 },
+    { value: 1300 },
+  ];
+
+  const totalBookingsData = [
+    { value: 54200 },
+    { value: 53000 },
+    { value: 55000 },
+    { value: 52000 },
+    { value: 54000 },
+    { value: 51000 },
+    { value: 54200 },
+  ];
+
+  // Expanded recent bookings data to have more entries for pagination
+  const recentBookings = [
     {
       id: "BK-10234",
-      customerName: "Jannuel Doe",
-      serviceType: "Event Center",
-      dateTime: "Feb 15, 2025, 2:00 PM",
+      customer: "Jonnuel Doe",
+      service: "Event Center",
+      date: "Feb 2, 2025, 5:00 PM",
       status: "Confirmed",
       amount: "$10,000",
     },
     {
       id: "BK-10235",
-      customerName: "Jannuel Doe",
-      serviceType: "Event Center",
-      dateTime: "Feb 15, 2025, 2:00 PM",
+      customer: "Jane Smith",
+      service: "Event Center",
+      date: "Feb 3, 2025, 3:00 PM",
       status: "Confirmed",
-      amount: "$10,000",
+      amount: "$8,500",
     },
     {
       id: "BK-10236",
-      customerName: "Jannuel Doe",
-      serviceType: "Event Center",
-      dateTime: "Feb 15, 2025, 2:00 PM",
+      customer: "Robert Johnson",
+      service: "Event Center",
+      date: "Feb 4, 2025, 2:00 PM",
       status: "Confirmed",
-      amount: "$10,000",
+      amount: "$12,000",
     },
     {
       id: "BK-10237",
-      customerName: "Jannuel Doe",
-      serviceType: "Event Center",
-      dateTime: "Feb 15, 2025, 2:00 PM",
+      customer: "Emily Davis",
+      service: "Catering",
+      date: "Feb 5, 2025, 1:00 PM",
       status: "Confirmed",
-      amount: "$10,000",
+      amount: "$5,000",
     },
     {
       id: "BK-10238",
-      customerName: "Jannuel Doe",
-      serviceType: "Event Center",
-      dateTime: "Feb 15, 2025, 2:00 PM",
+      customer: "Michael Brown",
+      service: "Event Center",
+      date: "Feb 6, 2025, 4:00 PM",
       status: "Confirmed",
-      amount: "$10,000",
+      amount: "$15,000",
+    },
+    {
+      id: "BK-10239",
+      customer: "Sarah Wilson",
+      service: "Catering",
+      date: "Feb 7, 2025, 6:00 PM",
+      status: "Confirmed",
+      amount: "$7,500",
+    },
+    {
+      id: "BK-10240",
+      customer: "David Lee",
+      service: "Event Center",
+      date: "Feb 8, 2025, 2:00 PM",
+      status: "Confirmed",
+      amount: "$9,000",
+    },
+    {
+      id: "BK-10241",
+      customer: "Laura Adams",
+      service: "Catering",
+      date: "Feb 9, 2025, 3:00 PM",
+      status: "Confirmed",
+      amount: "$6,000",
+    },
+    {
+      id: "BK-10242",
+      customer: "Chris Evans",
+      service: "Event Center",
+      date: "Feb 10, 2025, 5:00 PM",
+      status: "Confirmed",
+      amount: "$11,000",
+    },
+    {
+      id: "BK-10243",
+      customer: "Anna Taylor",
+      service: "Catering",
+      date: "Feb 11, 2025, 1:00 PM",
+      status: "Confirmed",
+      amount: "$4,500",
     },
   ];
 
+  // Calculate total pages
+  const totalPages = Math.ceil(recentBookings.length / itemsPerPage);
+
+  // Get the bookings for the current page
+  const paginatedBookings = recentBookings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Generate page numbers with ellipsis
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      // If total pages are less than or equal to max visible pages, show all
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show the first page
+      pageNumbers.push(1);
+
+      // Calculate the start and end of the middle range
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      // Adjust the range to always show 3 pages in the middle (if possible)
+      if (endPage - startPage < 2) {
+        if (startPage === 2) {
+          endPage = startPage + 2;
+        } else {
+          startPage = endPage - 2;
+        }
+      }
+
+      // Add ellipsis after the first page if needed
+      if (startPage > 2) {
+        pageNumbers.push("...");
+      }
+
+      // Add the middle pages
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+
+      // Add ellipsis before the last page if needed
+      if (endPage < totalPages - 1) {
+        pageNumbers.push("...");
+      }
+
+      // Always show the last page
+      pageNumbers.push(totalPages);
+    }
+
+    return pageNumbers;
+  };
+
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div
-        className={`${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
-      >
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white font-bold">ET</span>
-            </div>
-            <span className="text-xl font-semibold text-gray-800">
-              ENTAPP TECH
-            </span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        <nav className="mt-4">
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-blue-600 bg-blue-50"
-          >
-            <BarChart className="w-5 h-5 mr-2" />
-            Overview
-          </a>
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100"
-          >
-            <Building className="w-5 h-5 mr-2" />
-            Manage Event Center
-          </a>
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100"
-          >
-            <Building className="w-5 h-5 mr-2" />
-            Manage Services
-          </a>
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100"
-          >
-            <Users className="w-5 h-5 mr-2" />
-            Manage Users
-          </a>
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100"
-          >
-            <Calendar className="w-5 h-5 mr-2" />
-            Manage Booking
-          </a>
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100"
-          >
-            <Settings className="w-5 h-5 mr-2" />
-            Settings
-          </a>
-          <a
-            href="#"
-            className="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100"
-          >
-            <LogOut className="w-5 h-5 mr-2" />
-            Logout
-          </a>
-        </nav>
-      </div>
+      <SideBar
+        isOpen={isSidebarOpen}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="md:ml-[280px]">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 bg-white shadow">
-          <div className="flex items-center">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 mr-4"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-800">
-              Welcome back, Jannuel
-            </h1>
-            <p className="text-sm text-gray-500 ml-2">
-              Track, manage, and monitor your centers and orders.
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="text-gray-500 hover:text-gray-700">
-              <Bell className="w-6 h-6" />
-            </button>
-            <button className="text-gray-500 hover:text-gray-700">
-              <Settings className="w-6 h-6" />
+        <Header setIsSidebarOpen={setIsSidebarOpen} />
+
+        {/* Dashboard Content */}
+        <main className="md:p-10 p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-xl font-bold text-gray-950">Dashboard</h1>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
+              <Image
+                width={10}
+                height={10}
+                alt="manageBooking"
+                src="/manageBooking.png"
+                className="w-5 h-5"
+                unoptimized
+              />
+              <span>Manage Bookings</span>
             </button>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-            Dashboard
-          </h2>
+          {/* Stats */}
+          <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-3">
+            {/* Existing Users Card */}
+            <div className="rounded-lg bg-white p-4 shadow-md">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-gray-400">Existing Users</p>
+                    <h3 className="text-2xl font-bold text-gray-800">5,653</h3>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <div className="flex items-center text-green-500">
+                      <ChevronUp className="h-5 w-5" />
+                      <span className="text-sm font-medium">40%</span>
+                    </div>
+                    <p className="text-xs text-gray-400">vs last month</p>
+                  </div>
+                  <div className="flex-1 h-[60px] min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={existingUsersData}>
+                        <Bar
+                          dataKey="value"
+                          fill="rgba(37, 99, 235, 0.2)"
+                          radius={[4, 4, 0, 0]}
+                          barSize={10}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          {/* Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total Users</p>
-                  <h3 className="text-2xl font-semibold text-gray-800">
-                    5,655
-                  </h3>
-                  <p className="text-sm text-green-500">+45% vs last month</p>
+            {/* Total Events Card */}
+            <div className="rounded-lg bg-white p-4 shadow-md">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-gray-400">Total Events</p>
+                    <h3 className="text-2xl font-bold text-gray-800">1,600</h3>
+                  </div>
                 </div>
-                <div className="w-16 h-16 bg-blue-100 rounded flex items-center justify-center">
-                  <Users className="w-8 h-8 text-blue-600" />
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <div className="flex items-center text-green-500">
+                      <ChevronUp className="h-5 w-5" />
+                      <span className="text-sm font-medium">15%</span>
+                    </div>
+                    <p className="text-xs text-gray-400">vs last month</p>
+                  </div>
+                  <div className="flex-1 h-[50px] min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={totalEventsData}>
+                        <Bar
+                          dataKey="value"
+                          fill="rgba(34, 197, 94, 0.2)"
+                          radius={[4, 4, 0, 0]}
+                          barSize={10}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
-              <div className="mt-4 h-12 bg-gray-100 rounded"></div> {/* Placeholder for chart */}
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total Bookings</p>
-                  <h3 className="text-2xl font-semibold text-gray-800">
-                    1,600
-                  </h3>
-                  <p className="text-sm text-green-500">+15% vs last month</p>
+
+            {/* Total Bookings Card */}
+            <div className="rounded-lg bg-white p-4 shadow-md">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-gray-400">Total Bookings</p>
+                    <h3 className="text-2xl font-bold text-gray-800">54,200</h3>
+                  </div>
                 </div>
-                <div className="w-16 h-16 bg-green-100 rounded flex items-center justify-center">
-                  <Building className="w-8 h-8 text-green-600" />
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <div className="flex items-center text-red-500">
+                      <ChevronDown className="h-5 w-5" />
+                      <span className="text-sm font-medium">10%</span>
+                    </div>
+                    <p className="text-xs text-gray-400">vs last month</p>
+                  </div>
+                  <div className="flex-1 h-[50px] min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={totalBookingsData}>
+                        <Bar
+                          dataKey="value"
+                          fill="rgba(234, 179, 8, 0.2)"
+                          radius={[4, 4, 0, 0]}
+                          barSize={10}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
-              <div className="mt-4 h-12 bg-gray-100 rounded"></div> {/* Placeholder for chart */}
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total Revenue</p>
-                  <h3 className="text-2xl font-semibold text-gray-800">
-                    $4,200
-                  </h3>
-                  <p className="text-sm text-red-500">-10% vs last month</p>
-                </div>
-                <div className="w-16 h-16 bg-orange-100 rounded flex items-center justify-center">
-                  <BarChart className="w-8 h-8 text-orange-600" />
-                </div>
-              </div>
-              <div className="mt-4 h-12 bg-gray-100 rounded"></div> {/* Placeholder for chart */}
             </div>
           </div>
 
-          {/* Recent Activities Table */}
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
-            <h3 className="text-lg font-semibold text-gray-800 p-4">
-              Recent Activities
-            </h3>
-            <p className="text-sm text-gray-500 p-4 pt-0">
-              List of recent events and bookings
-            </p>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Booking ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer Names
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date and Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {bookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.customerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.serviceType}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.dateTime}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          booking.status === "Confirmed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.amount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button className="text-gray-500 hover:text-gray-700">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                          />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Pagination */}
-            <div className="flex items-center justify-between p-4">
-              <button className="text-gray-500 hover:text-gray-700">
-                Previous
-              </button>
-              <div className="flex space-x-2">
-                {[1, 2, 3, 4, 5].map((page) => (
-                  <button
-                    key={page}
-                    className={`px-3 py-1 rounded ${
-                      page === 1
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+          {/* Recent Bookings */}
+          <div className="mt-8">
+            <div className="rounded-lg border bg-white shadow">
+              <div className="p-6">
+                <h2 className="text-md font-semibold text-gray-900">
+                  Recent Activities
+                </h2>
+                <p className="text-xs text-gray-500">
+                  List of recent event and catering bookings.
+                </p>
               </div>
-              <button className="text-gray-500 hover:text-gray-700">
-                Next
-              </button>
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto min-w-[800px]">
+                  <thead>
+                    <tr className="border-t">
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Booking ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Customer Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Service Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Date and Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedBookings.map((booking) => (
+                      <tr key={booking.id} className="border-t">
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.id}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.customer}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.service}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.date}
+                        </td>
+                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                            {booking.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.amount}
+                        </td>
+                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <button className="rounded-lg p-1 hover:bg-gray-100">
+                              <Edit2 className="h-4 w-4 text-gray-600" />
+                            </button>
+                            <button className="rounded-lg p-1 hover:bg-gray-100">
+                              <Trash2 className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                 
+                </table>
+              </div>
+              {/* Pagination moved outside overflow-x-auto and centered on mobile */}
+              <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Image
+                    src="/leftArrow.png"
+                    alt="Previous"
+                    width={10}
+                    height={10}
+                    className="w-4 h-4"
+                    unoptimized
+                  />
+                  <span>Previous</span>
+                </button>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {getPageNumbers().map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() =>
+                        typeof page === "number" && setCurrentPage(page)
+                      }
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        page === currentPage
+                          ? "bg-blue-600 text-white"
+                          : typeof page === "number"
+                          ? "text-gray-600 hover:bg-gray-100"
+                          : "text-gray-600 cursor-default"
+                      }`}
+                      disabled={typeof page !== "number"}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <span>Next</span>
+                  <Image
+                    src="/rightArrow.png"
+                    alt="Next"
+                    width={10}
+                    height={10}
+                    className="w-4 h-4"
+                    unoptimized
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </main>
