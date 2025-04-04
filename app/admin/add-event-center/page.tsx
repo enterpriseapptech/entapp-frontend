@@ -152,7 +152,6 @@ export default function AddEventCenter() {
       amenities: selectedAmenities,
     };
     console.log("Form Data:", updatedFormData);
-    // Here you can add logic to save the data (e.g., API call)
     // After submission, you can redirect back to the ManageEventCenter page
   };
 
