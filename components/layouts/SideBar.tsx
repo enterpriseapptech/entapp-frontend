@@ -76,7 +76,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <Link
             href="/admin/manage-event-center"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/admin/manage-event-center"
+              pathname === "/admin/manage-event-center" || pathname === "/admin/add-event-center"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
@@ -96,7 +96,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <Link
             href="/admin/manage-catering-services"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/admin/manage-catering-services"
+              pathname === "/admin/manage-catering-services" || pathname === "/admin/add-catering-services"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
