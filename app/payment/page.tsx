@@ -3,37 +3,43 @@ import Link from "next/link";
 import Image from "next/image";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Add useEffect
 import Footer from "@/components/layouts/Footer";
 import SuccessModal from "@/components/ui/SuccessModal";
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
+  // Use state to store query params, initialized with defaults
+  const [queryParams, setQueryParams] = useState({
+    date: "21 Mar, 2025",
+    time: "12:00 pm",
+    totalCost: "₦500,000",
+  });
 
-  // Extract booking details from query parameters
-  const date = searchParams.get("date") || "21 Mar, 2025";
-  const time = searchParams.get("time") || "12:00 pm";
-  const totalCost = searchParams.get("totalCost") || "₦500,000";
+  // Extract query params only on the client side
+  useEffect(() => {
+    if (searchParams) {
+      setQueryParams({
+        date: searchParams.get("date") || "21 Mar, 2025",
+        time: searchParams.get("time") || "12:00 pm",
+        totalCost: searchParams.get("totalCost") || "₦500,000",
+      });
+    }
+  }, [searchParams]);
 
-  // State to track the selected payment method
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
-  // State to control the success modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Booking dates for the modal (adjust based on your logic)
-  const bookingDates = [date, "27th-Feb-2024"]; // Second date hardcoded to match the image
+  const bookingDates = [queryParams.date, "27th-Feb-2024"];
 
   const handleBook = () => {
     if (!selectedPaymentMethod) {
       alert("Please select a payment method before booking.");
       return;
     }
-    // Show the success modal (remove the alert)
     setIsModalOpen(true);
   };
 
   const handleSetAsDefault = (method: string) => {
-    // Logic to set the payment method as default (e.g., API call)
     console.log(`${method} set as default`);
   };
 
@@ -43,7 +49,6 @@ export default function PaymentPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero Section */}
       <HeroWithNavbar
         isCategoryOpen={false}
         isLocationOpen={false}
@@ -57,11 +62,8 @@ export default function PaymentPage() {
         subheading=""
       />
 
-      {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-8">
-        {/* Left Section: Breadcrumb and Payment Method */}
         <div className="flex-1 bg-white p-8">
-          {/* Breadcrumb Navigation */}
           <nav className="text-gray-500 text-sm mb-4">
             <Link href="/" className="hover:underline">
               Home
@@ -77,7 +79,6 @@ export default function PaymentPage() {
             {">"} <span className="text-gray-800">Payment</span>
           </nav>
 
-          {/* Payment Method Section */}
           <Image
             src="/paymentLogo.png"
             alt="paymentLogo.png"
@@ -89,9 +90,7 @@ export default function PaymentPage() {
           <h2 className="text-md font-semibold text-gray-800 mb-2">Payment method</h2>
           <p className="text-gray-400 mb-4 text-sm">Update your payment details</p>
 
-          {/* Payment Options */}
           <div className="space-y-4">
-            {/* Visa */}
             <div
               className={`flex items-center justify-between p-4 rounded-lg shadow-sm border ${
                 selectedPaymentMethod === "visa" ? "bg-[#F2F6FC]" : "bg-white"
@@ -146,7 +145,6 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            {/* Mastercard */}
             <div
               className={`flex items-center justify-between p-4 rounded-lg shadow-sm border ${
                 selectedPaymentMethod === "mastercard" ? "bg-[#F2F6FC]" : "bg-white"
@@ -207,7 +205,6 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            {/* Apple Pay */}
             <div
               className={`flex items-center justify-between p-4 rounded-lg shadow-sm border ${
                 selectedPaymentMethod === "applepay" ? "bg-[#F2F6FC]" : "bg-white"
@@ -263,7 +260,6 @@ export default function PaymentPage() {
             </div>
           </div>
 
-          {/* Book Button */}
           <button
             onClick={handleBook}
             className="cursor-pointer w-full bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold mt-6"
@@ -272,7 +268,6 @@ export default function PaymentPage() {
           </button>
         </div>
 
-        {/* Right Section: Summary */}
         <aside className="lg:w-[300px] h-[45%] bg-white p-6 rounded-lg shadow-md md:mt-20">
           <Image
             src="/event.png"
@@ -285,22 +280,21 @@ export default function PaymentPage() {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Date of booking</span>
-              <span className="text-gray-800 font-semibold">{date}</span>
+              <span className="text-gray-800 font-semibold">{queryParams.date}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Booking time</span>
-              <span className="text-gray-800 font-semibold">{time}</span>
+              <span className="text-gray-800 font-semibold">{queryParams.time}</span>
             </div>
             <hr />
             <div className="flex justify-between mt-4">
               <span className="text-gray-800 font-semibold">Total Cost</span>
-              <span className="text-[#0047AB] text-sm">{totalCost}</span>
+              <span className="text-[#0047AB] text-sm">{queryParams.totalCost}</span>
             </div>
           </div>
         </aside>
       </div>
 
-      {/* Success Modal */}
       <SuccessModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
