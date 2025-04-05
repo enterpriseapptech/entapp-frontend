@@ -8,48 +8,44 @@ import Footer from "@/components/layouts/Footer";
 import SuccessModal from "@/components/ui/SuccessModal";
 
 export default function PaymentPage() {
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Ensure the component is mounted on the client before rendering
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const searchParams = useSearchParams();
 
-  // Extract booking details from query parameters only if mounted
-  const date = isMounted ? searchParams.get("date") || "21 Mar, 2025" : "21 Mar, 2025";
-  const time = isMounted ? searchParams.get("time") || "12:00 pm" : "12:00 pm";
-  const totalCost = isMounted ? searchParams.get("totalCost") || "₦500,000" : "₦500,000";
-
+  // Extract booking details from query parameters
+  const [date, setDate] = useState("21 Mar, 2025");
+  const [time, setTime] = useState("12:00 pm");
+  const [totalCost, setTotalCost] = useState("₦500,000");
+  
   // State to track the selected payment method
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   // State to control the success modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Booking dates for the modal (adjust based on your logic)
-  const bookingDates = [date, "27th-Feb-2024"];
-
+  const bookingDates = [date, "27th-Feb-2024"]; // Second date hardcoded to match the image
+  useEffect(() => {
+    if (searchParams) {
+      setDate(searchParams.get("date") || "21 Mar, 2025");
+      setTime(searchParams.get("time") || "12:00 pm");
+      setTotalCost(searchParams.get("totalCost") || "₦500,000");
+    }
+  }, [searchParams]);
   const handleBook = () => {
     if (!selectedPaymentMethod) {
       alert("Please select a payment method before booking.");
       return;
     }
+    // Show the success modal (remove the alert)
     setIsModalOpen(true);
   };
 
   const handleSetAsDefault = (method: string) => {
+    // Logic to set the payment method as default (e.g., API call)
     console.log(`${method} set as default`);
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
   };
-
-  // Show a loading state until the component is mounted
-  if (!isMounted) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <main className="min-h-screen bg-white">
