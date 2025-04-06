@@ -1,4 +1,3 @@
-// pages/EventCenters.tsx
 "use client";
 import { useState } from "react";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
