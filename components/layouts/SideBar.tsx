@@ -136,9 +136,9 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           </Link>
 
           <Link
-            href="/admin/manage-booking"
+            href="/admin/manage-bookings"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/admin/manage-booking"
+              pathname === "/admin/manage-bookings"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
