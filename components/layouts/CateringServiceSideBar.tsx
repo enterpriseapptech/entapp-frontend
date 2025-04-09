@@ -61,9 +61,9 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
         {/* Navigation */}
         <nav className="flex flex-col space-y-2">
           <Link
-            href="/cateringServiceAdmin"
+            href="/cateringServiceManagement/cateringServiceDashboard"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/cateringServiceAdmin"
+              pathname === "/cateringServiceManagement/cateringServiceDashboard"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
@@ -74,9 +74,9 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
           </Link>
 
           <Link
-            href="/admin/manage-event-center"
+            href="/cateringServiceManagement/manage-catering-services"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/admin/manage-event-center" || pathname === "/admin/add-event-center"
+              pathname === "/cateringServiceManagement/manage-catering-services"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
@@ -90,29 +90,7 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
               className="w-5 h-5"
               unoptimized
             />
-            <span className="font-medium text-sm">Manage Bookings</span>
-          </Link>
-
-          <Link
-            href="/admin/manage-catering-services"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/admin/manage-catering-services" || pathname === "/admin/add-catering-services"
-                ? "bg-[#F2F6FC] text-[#0047AB]"
-                : "text-[#081127] hover:bg-gray-100"
-            }`}
-            onClick={handleLinkClick}
-          >
-            <Image
-              width={10}
-              height={10}
-              alt="report"
-              src="/report.png"
-              className="w-5 h-5"
-              unoptimized
-            />
-            <span className="font-medium text-sm whitespace-nowrap">
-              Reporting
-            </span>
+            <span className="font-medium text-sm">Manage Catering Service</span>
           </Link>
         </nav>
 
@@ -130,7 +108,7 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
 
           {/* Settings Button */}
           <Link
-            href="/admin/settings"
+            href="/cateringServiceManagement/settings"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full`}
             onClick={handleLinkClick}
           >

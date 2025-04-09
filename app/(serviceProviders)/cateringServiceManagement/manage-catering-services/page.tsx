@@ -1,17 +1,17 @@
 "use client";
 import { Edit2, Trash2, ChevronRight, X } from "lucide-react";
-import SideBar from "@/components/layouts/SideBar";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // Added import for navigation
+import { useRouter } from "next/navigation"; 
+import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
 
 type FilterType = "location" | "status" | "ratings" | "dateAdded" | "availability";
 
 export default function ManageCateringServices() {
-  const router = useRouter(); // Added router instance
+  const router = useRouter(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -37,7 +37,7 @@ export default function ManageCateringServices() {
   // State for controlling the "More filters" dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
-  const [clickedFilter, setClickedFilter] = useState<string | null>(null); // For mobile click events
+  const [clickedFilter, setClickedFilter] = useState<string | null>(null); 
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   // Detect if the device is mobile based on window width
@@ -297,7 +297,7 @@ export default function ManageCateringServices() {
   // Handle navigation to the details page (added)
   const handleViewCateringService = (service: CateringService) => {
     router.push(
-      `/admin/catering-service-details?id=${encodeURIComponent(
+      `/cateringServiceManagement/catering-service-details?id=${encodeURIComponent(
         service.id
       )}&name=${encodeURIComponent(service.name)}&location=${encodeURIComponent(
         service.location
@@ -314,7 +314,7 @@ export default function ManageCateringServices() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <SideBar
+      <CateringServiceSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -342,7 +342,7 @@ export default function ManageCateringServices() {
                 />
                 <span>Import</span>
               </button>
-              <Link href="/admin/add-catering-services">
+              <Link href="/cateringServiceManagement/add-catering-services">
                 <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                   <Image
                     width={10}
