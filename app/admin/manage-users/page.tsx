@@ -301,7 +301,7 @@ export default function ManageUsers() {
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Manage Bookings
+              Manage Users
             </h1>
             <div className="flex gap-2">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
