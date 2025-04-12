@@ -1,15 +1,15 @@
 "use client";
-import { Edit2, Trash2, ChevronRight, X, Search } from "lucide-react";
-import SideBar from "@/components/layouts/SideBar";
+import { ChevronDown, X, Search } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 
-type FilterType = "location" | "status" | "ratings" | "eventType" | "bookingStatus" | "paymentStatus";
+type FilterType = "bookingType" | "venue" | "caterer" | "dateAndTime" | "status" | "paymentStatus";
 
-export default function ManageEventCenter() {
+export default function ManageBookings() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,18 +17,18 @@ export default function ManageEventCenter() {
 
   // State for managing filters
   const [filters, setFilters] = useState<{
-    location: string | null;
+    bookingType: string | null;
+    venue: string | null;
+    caterer: string | null;
+    dateAndTime: string | null;
     status: string | null;
-    ratings: number | null;
-    eventType: string | null;
-    bookingStatus: string | null;
     paymentStatus: string | null;
   }>({
-    location: null,
+    bookingType: null,
+    venue: null,
+    caterer: null,
+    dateAndTime: null,
     status: null,
-    ratings: null,
-    eventType: null,
-    bookingStatus: null,
     paymentStatus: null,
   });
 
@@ -38,7 +38,7 @@ export default function ManageEventCenter() {
   // State for controlling the "More filters" dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
-  const [clickedFilter, setClickedFilter] = useState<string | null>(null); // For mobile click events
+  const [clickedFilter, setClickedFilter] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   // Detect if the device is mobile based on window width
@@ -52,218 +52,111 @@ export default function ManageEventCenter() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Sample data for the event centers
-  const eventCenters = [
+  // Updated data to match the 7-column structure in the image
+  const bookings = [
     {
-      id: "BK-10234",
-      name: "Jon Doe",
-      location: "Skyline Venue",
-      date: "Feb 2, 2025, 5:00 PM",
-      status: "In Progress",
-      ratings: 0,
-      revenue: "$10,000",
+      bookingId: "BK-10234",
+      name: "Jonnel Doe",
       bookingType: "Event Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Wedding",
-      capacity: "200",
-      contactNumber: "+1234567890",
-      email: "jondoe@example.com",
-    },
-    {
-      id: "BK-10235",
-      name: "Jane Smith",
-      location: "Grand Pavilion",
-      date: "Feb 3, 2025, 5:00 PM",
-      status: "Confirmed",
-      ratings: 4,
-      revenue: "$12,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Corporate Event",
-      capacity: "150",
-      contactNumber: "+1987654321",
-      email: "janesmith@example.com",
-    },
-    {
-      id: "BK-10236",
-      name: "Alice Johnson",
-      location: "Ocean Breeze Hall",
-      date: "Feb 4, 2025, 6:00 PM",
+      venue: "Grand Ballroom",
+      caterer: "Taste Catering",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
       status: "Pending",
-      ratings: 3,
-      revenue: "$8,000",
-      bookingType: "Conference Room",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Seminar",
-      capacity: "100",
-      contactNumber: "+1122334455",
-      email: "alicej@example.com",
-    },
-    {
-      id: "BK-10237",
-      name: "Bob Brown",
-      location: "Sunset Venue",
-      date: "Feb 5, 2025, 7:00 PM",
-      status: "In Progress",
-      ratings: 5,
-      revenue: "$15,000",
-      bookingType: "Event Hall",
       paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Birthday Party",
-      capacity: "250",
-      contactNumber: "+1555666777",
-      email: "bobbrown@example.com",
     },
     {
-      id: "BK-10238",
-      name: "Clara Davis",
-      location: "Moonlight Hall",
-      date: "Feb 6, 2025, 4:00 PM",
+      bookingId: "BK-10234",
+      name: "Jonnel Doe",
+      bookingType: "Catering",
+      venue: "Skyline Venue",
+      caterer: "Taste Catering",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
       status: "Confirmed",
-      ratings: 2,
-      revenue: "$9,000",
-      bookingType: "Banquet Hall",
       paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Anniversary",
-      capacity: "180",
-      contactNumber: "+1444333222",
-      email: "claradavis@example.com",
     },
     {
-      id: "BK-10239",
-      name: "David Wilson",
-      location: "Starlight Venue",
-      date: "Feb 7, 2025, 8:00 PM",
-      status: "Pending",
-      ratings: 1,
-      revenue: "$7,500",
-      bookingType: "Event Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Wedding",
-      capacity: "220",
-      contactNumber: "+1666777888",
-      email: "davidwilson@example.com",
-    },
-    {
-      id: "BK-10240",
-      name: "Emma Taylor",
-      location: "Golden Hall",
-      date: "Feb 8, 2025, 3:00 PM",
+      bookingId: "BK-10234",
+      name: "Jonnel Doe",
+      bookingType: "Event Center",
+      venue: "Event Center",
+      caterer: "Taste Catering",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
       status: "In Progress",
-      ratings: 4,
-      revenue: "$11,000",
-      bookingType: "Conference Room",
       paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Workshop",
-      capacity: "120",
-      contactNumber: "+1777888999",
-      email: "emmataylor@example.com",
     },
     {
-      id: "BK-10241",
-      name: "Frank Harris",
-      location: "Silver Venue",
-      date: "Feb 9, 2025, 2:00 PM",
+      bookingId: "BK-10234",
+      name: "Jonnel Doe",
+      bookingType: "Event Center",
+      venue: "Event Center",
+      caterer: "Taste Catering",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      status: "Completed",
+      paymentStatus: "Pending",
+    },
+    {
+      bookingId: "BK-10234",
+      name: "Jonnel Doe",
+      bookingType: "Event Center",
+      venue: "Event Center",
+      caterer: "Taste Catering",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
       status: "Confirmed",
-      ratings: 3,
-      revenue: "$13,000",
-      bookingType: "Event Hall",
       paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Corporate Event",
-      capacity: "200",
-      contactNumber: "+1888999000",
-      email: "frankharris@example.com",
     },
     {
-      id: "BK-10242",
-      name: "Grace Lee",
-      location: "Crystal Pavilion",
-      date: "Feb 10, 2025, 6:00 PM",
-      status: "Pending",
-      ratings: 2,
-      revenue: "$6,000",
-      bookingType: "Banquet Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Engagement Party",
-      capacity: "160",
-      contactNumber: "+1999000111",
-      email: "gracelee@example.com",
-    },
-    {
-      id: "BK-10243",
-      name: "Henry Clark",
-      location: "Emerald Hall",
-      date: "Feb 11, 2025, 5:00 PM",
-      status: "In Progress",
-      ratings: 5,
-      revenue: "$14,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Wedding",
-      capacity: "240",
-      contactNumber: "+1222111333",
-      email: "henryclark@example.com",
+      bookingId: "BK-10234",
+      name: "Jonnel Doe",
+      bookingType: "Event Center",
+      venue: "Event Center",
+      caterer: "Taste Catering",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      status: "Cancelled",
+      paymentStatus: "Refunded",
     },
   ];
 
   // Extract unique values for each filter category
-  const uniqueLocations = [...new Set(eventCenters.map((center) => center.location))];
-  const uniqueStatuses = [...new Set(eventCenters.map((center) => center.status))];
-  const uniqueRatings = [...new Set(eventCenters.map((center) => center.ratings))].sort(
-    (a, b) => a - b
-  );
-  const uniqueEventTypes = [...new Set(eventCenters.map((center) => center.eventType))];
-  const uniqueBookingStatuses = [...new Set(eventCenters.map((center) => center.bookingStatus))];
-  const uniquePaymentStatuses = [...new Set(eventCenters.map((center) => center.paymentStatus))];
+  const uniqueBookingTypes = [...new Set(bookings.map((booking) => booking.bookingType))];
+  const uniqueVenues = [...new Set(bookings.map((booking) => booking.venue))];
+  const uniqueCaterers = [...new Set(bookings.map((booking) => booking.caterer))];
+  const uniqueDateAndTimes = [...new Set(bookings.map((booking) => booking.dateAndTime))].sort();
+  const uniqueStatuses = [...new Set(bookings.map((booking) => booking.status))];
+  const uniquePaymentStatuses = [...new Set(bookings.map((booking) => booking.paymentStatus))];
 
   // Apply filters to the data
-  const filteredEventCenters = eventCenters.filter((center) => {
+  const filteredBookings = bookings.filter((booking) => {
     return (
-      (!filters.location || center.location === filters.location) &&
-      (!filters.status || center.status === filters.status) &&
-      (filters.ratings === null || center.ratings === filters.ratings) &&
-      (!filters.eventType || center.eventType === filters.eventType) &&
-      (!filters.bookingStatus || center.bookingStatus === filters.bookingStatus) &&
-      (!filters.paymentStatus || center.paymentStatus === filters.paymentStatus)
+      (!filters.bookingType || booking.bookingType === filters.bookingType) &&
+      (!filters.venue || booking.venue === filters.venue) &&
+      (!filters.caterer || booking.caterer === filters.caterer) &&
+      (!filters.dateAndTime || booking.dateAndTime === filters.dateAndTime) &&
+      (!filters.status || booking.status === filters.status) &&
+      (!filters.paymentStatus || booking.paymentStatus === filters.paymentStatus)
     );
   });
 
   // Apply search to the filtered data
-  const searchedEventCenters = filteredEventCenters.filter((center) => {
+  const searchedBookings = filteredBookings.filter((booking) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      center.id.toLowerCase().includes(query) ||
-      center.name.toLowerCase().includes(query) ||
-      center.location.toLowerCase().includes(query) ||
-      center.date.toLowerCase().includes(query) ||
-      center.status.toLowerCase().includes(query) ||
-      center.revenue.toLowerCase().includes(query) ||
-      center.bookingType.toLowerCase().includes(query) ||
-      center.paymentStatus.toLowerCase().includes(query) ||
-      center.bookingStatus.toLowerCase().includes(query) ||
-      center.eventType.toLowerCase().includes(query) ||
-      center.capacity.toLowerCase().includes(query) ||
-      center.contactNumber.toLowerCase().includes(query) ||
-      center.email.toLowerCase().includes(query)
+      booking.bookingId.toLowerCase().includes(query) ||
+      booking.name.toLowerCase().includes(query) ||
+      booking.bookingType.toLowerCase().includes(query) ||
+      booking.venue.toLowerCase().includes(query) ||
+      booking.caterer.toLowerCase().includes(query) ||
+      booking.dateAndTime.toLowerCase().includes(query) ||
+      booking.status.toLowerCase().includes(query) ||
+      booking.paymentStatus.toLowerCase().includes(query)
     );
   });
 
   // Calculate total pages based on searched and filtered data
-  const totalPages = Math.ceil(searchedEventCenters.length / itemsPerPage);
+  const totalPages = Math.ceil(searchedBookings.length / itemsPerPage);
 
-  // Get the event centers for the current page
-  const paginatedEventCenters = searchedEventCenters.slice(
+  // Get the bookings for the current page
+  const paginatedBookings = searchedBookings.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -309,7 +202,7 @@ export default function ManageEventCenter() {
   };
 
   // Handle filter application
-  const applyFilter = (filterType: FilterType, value: string | number | null) => {
+  const applyFilter = (filterType: FilterType, value: string | null) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
@@ -340,53 +233,35 @@ export default function ManageEventCenter() {
   };
 
   // Handle navigation to the details page
-  type EventCenter = {
-    id: string;
+  type Booking = {
+    bookingId: string;
     name: string;
-    location: string;
-    date: string;
-    status: string;
-    ratings: number;
-    revenue: string;
     bookingType: string;
+    venue: string;
+    caterer: string;
+    dateAndTime: string;
+    status: string;
     paymentStatus: string;
-    bookingStatus: string;
-    eventType: string;
-    capacity: string;
-    contactNumber: string;
-    email: string;
   };
 
-  const handleViewEventCenter = (center: EventCenter) => {
+  const handleViewBooking = (booking: Booking) => {
     router.push(
-      `/admin/event-center-details?id=${encodeURIComponent(
-        center.id
-      )}&name=${encodeURIComponent(center.name)}&location=${encodeURIComponent(
-        center.location
-      )}&date=${encodeURIComponent(center.date)}&status=${encodeURIComponent(
-        center.status
-      )}&ratings=${center.ratings}&revenue=${encodeURIComponent(
-        center.revenue
-      )}&bookingType=${encodeURIComponent(
-        center.bookingType
-      )}&paymentStatus=${encodeURIComponent(
-        center.paymentStatus
-      )}&bookingStatus=${encodeURIComponent(
-        center.bookingStatus
-      )}&eventType=${encodeURIComponent(
-        center.eventType
-      )}&capacity=${encodeURIComponent(
-        center.capacity
-      )}&contactNumber=${encodeURIComponent(
-        center.contactNumber
-      )}&email=${encodeURIComponent(center.email)}`
+      `/admin/booking-details?bookingId=${encodeURIComponent(
+        booking.bookingId
+      )}&name=${encodeURIComponent(booking.name)}&bookingType=${encodeURIComponent(
+        booking.bookingType
+      )}&venue=${encodeURIComponent(booking.venue)}&caterer=${encodeURIComponent(
+        booking.caterer
+      )}&dateAndTime=${encodeURIComponent(booking.dateAndTime)}&status=${encodeURIComponent(
+        booking.status
+      )}&paymentStatus=${encodeURIComponent(booking.paymentStatus)}`
     );
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <SideBar
+      <EventServiceSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -396,11 +271,11 @@ export default function ManageEventCenter() {
         {/* Header */}
         <Header setIsSidebarOpen={setIsSidebarOpen} />
 
-        {/* Manage Event Center Content */}
+        {/* Manage Bookings Content */}
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Manage Event Center
+              Manage Bookings
             </h1>
             <div className="flex gap-2">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
@@ -414,7 +289,7 @@ export default function ManageEventCenter() {
                 />
                 <span>Import</span>
               </button>
-              <Link href="/admin/add-event-center">
+              <Link href="/admin/add-booking">
                 <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                   <Image
                     width={10}
@@ -430,7 +305,7 @@ export default function ManageEventCenter() {
             </div>
           </div>
 
-          {/* Event Centers Table */}
+          {/* Bookings Table */}
           <div className="rounded-lg border bg-white shadow">
             {/* Filters and Search */}
             <div className="p-6">
@@ -457,44 +332,181 @@ export default function ManageEventCenter() {
                         setIsFilterDropdownOpen(!isFilterDropdownOpen)
                       }
                     >
-                      <Image
-                        width={10}
-                        height={10}
-                        alt="filter"
-                        src="/filterIcon.png"
-                        className="w-4 h-4"
-                        unoptimized
-                      />
                       <span>More filters</span>
+                      <ChevronDown className="w-4 h-4" />
                     </button>
 
                     {isFilterDropdownOpen && (
                       <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <div className="py-1">
-                          {/* Location Filter */}
+                          {/* Booking Type Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("location")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("bookingType")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
                               className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("location")}
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("bookingType")
+                              }
                             >
-                              Location
-                              <ChevronRight className="w-4 h-4" />
+                              Booking Type
+                              <ChevronDown className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "location" : hoveredFilter === "location") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
-                                {uniqueLocations.map((location) => (
+                            {(isMobile
+                              ? clickedFilter === "bookingType"
+                              : hoveredFilter === "bookingType") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueBookingTypes.map((type) => (
                                   <button
-                                    key={location}
+                                    key={type}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter("location", location)
+                                      applyFilter("bookingType", type)
                                     }
                                   >
-                                    {location}
+                                    {type}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Venue Filter */}
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("venue")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("venue")
+                              }
+                            >
+                              Venue
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "venue"
+                              : hoveredFilter === "venue") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueVenues.map((venue) => (
+                                  <button
+                                    key={venue}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() => applyFilter("venue", venue)}
+                                  >
+                                    {venue}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Caterer Filter */}
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("caterer")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("caterer")
+                              }
+                            >
+                              Caterer
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "caterer"
+                              : hoveredFilter === "caterer") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueCaterers.map((caterer) => (
+                                  <button
+                                    key={caterer}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("caterer", caterer)
+                                    }
+                                  >
+                                    {caterer}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Date and Time Filter */}
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("dateAndTime")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("dateAndTime")
+                              }
+                            >
+                              Date and Time
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "dateAndTime"
+                              : hoveredFilter === "dateAndTime") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueDateAndTimes.map((date) => (
+                                  <button
+                                    key={date}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("dateAndTime", date)
+                                    }
+                                  >
+                                    {date}
                                   </button>
                                 ))}
                               </div>
@@ -504,18 +516,32 @@ export default function ManageEventCenter() {
                           {/* Status Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("status")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("status")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
                               className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("status")}
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("status")
+                              }
                             >
                               Status
-                              <ChevronRight className="w-4 h-4" />
+                              <ChevronDown className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "status" : hoveredFilter === "status") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "status"
+                              : hoveredFilter === "status") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueStatuses.map((status) => (
                                   <button
                                     key={status}
@@ -529,111 +555,35 @@ export default function ManageEventCenter() {
                             )}
                           </div>
 
-                          {/* Ratings Filter */}
-                          <div
-                            className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("ratings")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
-                          >
-                            <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("ratings")}
-                            >
-                              Ratings
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                            {(isMobile ? clickedFilter === "ratings" : hoveredFilter === "ratings") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
-                                {uniqueRatings.map((rating) => (
-                                  <button
-                                    key={rating}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("ratings", rating)
-                                    }
-                                  >
-                                    {rating} Star{rating !== 1 ? "s" : ""}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Event Type Filter */}
-                          <div
-                            className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("eventType")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
-                          >
-                            <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("eventType")}
-                            >
-                              Event Type
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                            {(isMobile ? clickedFilter === "eventType" : hoveredFilter === "eventType") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
-                                {uniqueEventTypes.map((eventType) => (
-                                  <button
-                                    key={eventType}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("eventType", eventType)
-                                    }
-                                  >
-                                    {eventType}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Booking Status Filter */}
-                          <div
-                            className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("bookingStatus")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
-                          >
-                            <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("bookingStatus")}
-                            >
-                              Booking Status
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                            {(isMobile ? clickedFilter === "bookingStatus" : hoveredFilter === "bookingStatus") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
-                                {uniqueBookingStatuses.map((bookingStatus) => (
-                                  <button
-                                    key={bookingStatus}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("bookingStatus", bookingStatus)
-                                    }
-                                  >
-                                    {bookingStatus}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
                           {/* Payment Status Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("paymentStatus")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("paymentStatus")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
                               className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("paymentStatus")}
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("paymentStatus")
+                              }
                             >
                               Payment Status
-                              <ChevronRight className="w-4 h-4" />
+                              <ChevronDown className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "paymentStatus" : hoveredFilter === "paymentStatus") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "paymentStatus"
+                              : hoveredFilter === "paymentStatus") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniquePaymentStatuses.map((paymentStatus) => (
                                   <button
                                     key={paymentStatus}
@@ -673,13 +623,16 @@ export default function ManageEventCenter() {
                 <thead>
                   <tr className="border-t">
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Event Center ID
+                      Booking ID
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Names
+                      Name
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Location
+                      Booking Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Venue / Caterer
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Date and Time
@@ -688,78 +641,65 @@ export default function ManageEventCenter() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Ratings
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Revenue
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Actions
+                      Payment Status
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedEventCenters.map((center, index) => (
+                  {paginatedBookings.map((booking, index) => (
                     <tr
                       key={index}
                       className="border-t hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleViewEventCenter(center)}
+                      onClick={() => handleViewBooking(booking)}
                     >
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.id}
+                        {booking.bookingId}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.name}
+                        {booking.name}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.location}
+                        {booking.bookingType}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.date}
+                        {booking.venue}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {booking.dateAndTime}
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            center.status === "In Progress"
-                              ? "bg-blue-50 text-blue-700"
-                              : center.status === "Confirmed"
+                            booking.status === "Pending"
+                              ? "bg-orange-50 text-orange-700"
+                              : booking.status === "Confirmed"
                               ? "bg-green-50 text-green-700"
+                              : booking.status === "In Progress"
+                              ? "bg-blue-50 text-blue-700"
+                              : booking.status === "Completed"
+                              ? "bg-purple-50 text-purple-700"
+                              : booking.status === "Cancelled"
+                              ? "bg-red-50 text-red-700"
                               : "bg-gray-50 text-gray-700"
                           }`}
                         >
-                          {center.status}
+                          {booking.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < center.ratings
-                                  ? "text-yellow-400"
-                                  : "text-gray-300"
-                              }`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.revenue}
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
-                            <Edit2 className="h-4 w-4 text-gray-600" />
-                          </button>
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
-                            <Trash2 className="h-4 w-4 text-gray-600" />
-                          </button>
-                        </div>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                            booking.paymentStatus === "Paid"
+                              ? "bg-green-50 text-green-700"
+                              : booking.paymentStatus === "Pending"
+                              ? "bg-orange-50 text-orange-700"
+                              : booking.paymentStatus === "Refunded"
+                              ? "bg-red-50 text-red-700"
+                              : "bg-gray-50 text-gray-700"
+                          }`}
+                        >
+                          {booking.paymentStatus}
+                        </span>
                       </td>
                     </tr>
                   ))}

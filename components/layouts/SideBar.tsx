@@ -114,7 +114,6 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               Manage Catering Services
             </span>
           </Link>
-
           <Link
             href="/admin/manage-users"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${

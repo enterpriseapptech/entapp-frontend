@@ -10,7 +10,7 @@ interface SidebarProps {
   toggleSidebar: () => void;
 }
 
-const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
+const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
 
   // Helper function to handle link clicks (for mobile sidebar toggle)
@@ -61,9 +61,9 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
         {/* Navigation */}
         <nav className="flex flex-col space-y-2">
           <Link
-            href="/cateringServiceManagement/cateringServiceDashboard"
+            href="/eventServiceManagement/eventServiceDashboard"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/cateringServiceManagement/cateringServiceDashboard"
+              pathname === "/eventServiceManagement/eventServiceDashboard"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
@@ -74,9 +74,9 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
           </Link>
 
           <Link
-            href="/cateringServiceManagement/manage-catering-services" 
+            href="/eventServiceManagement/manage-event-center"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/cateringServiceManagement/manage-catering-services" || pathname === "/cateringServiceManagement/add-catering-services"
+              pathname === "/eventServiceManagement/manage-event-center" || pathname === "/eventServiceManagement/add-event-center"
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
@@ -90,7 +90,26 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
               className="w-5 h-5"
               unoptimized
             />
-            <span className="font-medium text-sm">Manage Catering Service</span>
+            <span className="font-medium text-sm">Manage Event Center</span>
+          </Link>
+          <Link
+            href="/eventServiceManagement/manage-bookings"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              pathname === "/eventServiceManagement/manage-bookings"
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Image
+              width={10}
+              height={10}
+              alt="manageBooking"
+              src="/manageBooking.png"
+              className="w-5 h-5"
+              unoptimized
+            />
+            <span className="font-medium text-sm">Manage Booking</span>
           </Link>
         </nav>
 
@@ -108,7 +127,7 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
 
           {/* Settings Button */}
           <Link
-            href="/cateringServiceManagement/settings"
+            href="/eventServiceManagement/settings"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full`}
             onClick={handleLinkClick}
           >
@@ -156,4 +175,4 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
   );
 };
 
-export default CateringServiceSideBar;
+export default EventServiceSideBar;

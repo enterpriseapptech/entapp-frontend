@@ -1,62 +1,62 @@
-// pages/admin/add-catering-services.tsx
+// pages/add-event-center.tsx
 "use client";
 import { useState, ChangeEvent, FormEvent, DragEvent } from "react";
 import Link from "next/link";
 import Header from "@/components/layouts/Header";
-import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 
-// Define the FormData interface for catering services
+// Define the FormData interface
 interface FormData {
-  cateringServiceName: string;
+  eventCenterName: string;
   address: string;
   capacity: string;
   location: string;
   contactDetails: string[];
-  serviceTypes: string[];
-  specialties: string[];
+  eventTypes: string[];
+  amenities: string[];
   description: string;
-  pricePerEvent: number;
+  pricePerDay: number;
   availability: string[];
   images: File[];
 }
 
-export default function AddCateringServices() {
+export default function AddEventCenter() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // State to manage form inputs with typed FormData
   const [formData, setFormData] = useState<FormData>({
-    cateringServiceName: "",
+    eventCenterName: "",
     address: "",
     capacity: "",
     location: "",
     contactDetails: ["+1 (555) 000-0000"],
-    serviceTypes: [],
-    specialties: [],
+    eventTypes: [],
+    amenities: [],
     description: "",
-    pricePerEvent: 200,
+    pricePerDay: 200,
     availability: [],
     images: [],
   });
 
-  // State for service type checkboxes
-  const serviceTypesOptions: string[] = [
+  // State for event type checkboxes
+  const eventTypesOptions: string[] = [
     "Weddings",
-    "Corporate Events",
     "Parties",
-    "Buffets",
+    "Conferences",
+    "Lectures",
   ];
-  const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
 
-  // State for specialties input, selected specialties, and suggestions
-  const specialtiesOptions: string[] = [
-    "Italian Cuisine",
-    "Vegan Options",
-    "Desserts",
-    "BBQ",
-    "Beverages",
+  // State for amenities input, selected amenities, and suggestions
+  const amenitiesOptions: string[] = [
+    "WiFi",
+    "AC",
+    "Swimming Pool",
+    "Parking",
+    "Catering",
   ];
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
-  const [specialtyInput, setSpecialtyInput] = useState<string>("");
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [amenityInput, setAmenityInput] = useState<string>("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Handle input changes for form fields
@@ -67,52 +67,52 @@ export default function AddCateringServices() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle service type checkbox changes
-  const handleServiceTypeChange = (type: string) => {
-    setSelectedServiceTypes((prev) =>
+  // Handle event type checkbox changes
+  const handleEventTypeChange = (type: string) => {
+    setSelectedEventTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   };
 
-  // Handle specialties input change with autocomplete suggestion
-  const handleSpecialtyInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // Handle amenities input change with autocomplete suggestion
+  const handleAmenityInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSpecialtyInput(value);
+    setAmenityInput(value);
 
     // Filter suggestions based on input
-    const filteredSuggestions = specialtiesOptions.filter((option) =>
+    const filteredSuggestions = amenitiesOptions.filter((option) =>
       option.toLowerCase().startsWith(value.toLowerCase())
     );
     setSuggestions(value.length > 0 ? filteredSuggestions : []);
   };
 
-  // Handle Enter key to add specialty
-  const handleSpecialtyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && specialtyInput.trim() !== "") {
+  // Handle Enter key to add amenity
+  const handleAmenityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && amenityInput.trim() !== "") {
       e.preventDefault();
-      const matchedOption = specialtiesOptions.find((option) =>
-        option.toLowerCase().startsWith(specialtyInput.toLowerCase())
+      const matchedOption = amenitiesOptions.find((option) =>
+        option.toLowerCase().startsWith(amenityInput.toLowerCase())
       );
-      const newSpecialty = matchedOption || specialtyInput.trim();
-      if (!selectedSpecialties.includes(newSpecialty)) {
-        setSelectedSpecialties((prev) => [...prev, newSpecialty]);
+      const newAmenity = matchedOption || amenityInput.trim();
+      if (!selectedAmenities.includes(newAmenity)) {
+        setSelectedAmenities((prev) => [...prev, newAmenity]);
       }
-      setSpecialtyInput("");
+      setAmenityInput("");
       setSuggestions([]);
     }
   };
 
-  // Handle removing a specialty
-  const handleSpecialtyRemove = (specialty: string) => {
-    setSelectedSpecialties((prev) => prev.filter((a) => a !== specialty));
+  // Handle removing an amenity
+  const handleAmenityRemove = (amenity: string) => {
+    setSelectedAmenities((prev) => prev.filter((a) => a !== amenity));
   };
 
   // Handle clicking a suggestion
   const handleSuggestionClick = (suggestion: string) => {
-    if (!selectedSpecialties.includes(suggestion)) {
-      setSelectedSpecialties((prev) => [...prev, suggestion]);
+    if (!selectedAmenities.includes(suggestion)) {
+      setSelectedAmenities((prev) => [...prev, suggestion]);
     }
-    setSpecialtyInput("");
+    setAmenityInput("");
     setSuggestions([]);
   };
 
@@ -148,18 +148,17 @@ export default function AddCateringServices() {
     e.preventDefault();
     const updatedFormData: FormData = {
       ...formData,
-      serviceTypes: selectedServiceTypes,
-      specialties: selectedSpecialties,
+      eventTypes: selectedEventTypes,
+      amenities: selectedAmenities,
     };
     console.log("Form Data:", updatedFormData);
-    // Here you can add logic to save the data (e.g., API call)
-    // After submission, you can redirect back to the ManageCateringServices page
+    // After submission, you can redirect back to the ManageEventCenter page
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <CateringServiceSideBar
+      <EventServiceSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -169,15 +168,15 @@ export default function AddCateringServices() {
         {/* Header */}
         <Header setIsSidebarOpen={setIsSidebarOpen} />
 
-        {/* Add Catering Services Content */}
+        {/* Add Event Center Content */}
         <main className="md:p-10 p-4">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Add Catering Service
+              Add Event
             </h1>
             <div className="flex gap-2">
-              <Link href="/admin/manage-catering-services">
+              <Link href="/admin/manage-event-center">
                 <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
                   Cancel
                 </button>
@@ -198,14 +197,14 @@ export default function AddCateringServices() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="">
                     <label className="block text-xs text-gray-900 mb-1">
-                      Catering Service Name
+                      Event Center Name
                     </label>
                     <input
                       type="text"
-                      name="cateringServiceName"
-                      value={formData.cateringServiceName}
+                      name="eventCenterName"
+                      value={formData.eventCenterName}
                       onChange={handleInputChange}
-                      placeholder="Enter the catering service name"
+                      placeholder="enter the centers' name"
                       className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
                     />
                   </div>
@@ -218,7 +217,7 @@ export default function AddCateringServices() {
                       name="location"
                       value={formData.location}
                       onChange={handleInputChange}
-                      placeholder="Enter the service location"
+                      placeholder="enter the centers' location"
                       className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
                     />
                   </div>
@@ -231,7 +230,7 @@ export default function AddCateringServices() {
                       name="address"
                       value={formData.address}
                       onChange={handleInputChange}
-                      placeholder="Enter the service address"
+                      placeholder="enter the centers' address"
                       className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
                     />
                   </div>
@@ -253,14 +252,14 @@ export default function AddCateringServices() {
                   </div>
                   <div className="">
                     <label className="block text-xs text-gray-900 mb-1">
-                      Capacity (Guests)
+                      Capacity
                     </label>
                     <input
                       type="number"
                       name="capacity"
                       value={formData.capacity}
                       onChange={handleInputChange}
-                      placeholder="Enter the maximum guest capacity"
+                      placeholder="enter the centers' capacity"
                       className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
                     />
                   </div>
@@ -283,14 +282,14 @@ export default function AddCateringServices() {
                 </div>
               </div>
               <hr className="w-full mt-4" />
-              {/* Service Type */}
+              {/* Event Type */}
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
-                  Service Type
+                  Event Type
                 </h3>
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedServiceTypes.map((type) => (
+                    {selectedEventTypes.map((type) => (
                       <div
                         key={type}
                         className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
@@ -298,7 +297,7 @@ export default function AddCateringServices() {
                         <span>{type}</span>
                         <button
                           type="button"
-                          onClick={() => handleServiceTypeChange(type)}
+                          onClick={() => handleEventTypeChange(type)}
                           className="text-blue-800 hover:text-blue-600"
                         >
                           ✕
@@ -307,12 +306,12 @@ export default function AddCateringServices() {
                     ))}
                   </div>
                   <div className="flex flex-col gap-2 pt-2">
-                    {serviceTypesOptions.map((type) => (
+                    {eventTypesOptions.map((type) => (
                       <label key={type} className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={selectedServiceTypes.includes(type)}
-                          onChange={() => handleServiceTypeChange(type)}
+                          checked={selectedEventTypes.includes(type)}
+                          onChange={() => handleEventTypeChange(type)}
                           className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                         <span className="text-xs text-gray-600">{type}</span>
@@ -321,18 +320,18 @@ export default function AddCateringServices() {
                   </div>
                 </div>
               </div>
-              {/* Specialties */}
+              {/* Amenities */}
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
-                  Specialties
+                  Amenities
                 </h3>
                 <div className="relative mb-2">
                   <input
                     type="text"
-                    value={specialtyInput}
-                    onChange={handleSpecialtyInputChange}
-                    onKeyDown={handleSpecialtyKeyDown}
-                    placeholder="Enter specialties (e.g., Italian Cuisine, Vegan Options)"
+                    value={amenityInput}
+                    onChange={handleAmenityInputChange}
+                    onKeyDown={handleAmenityKeyDown}
+                    placeholder="Enter the centers' amenities (e.g., WiFi, AC)"
                     className="w-full text-gray-600 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
                   />
                   {/* Suggestions dropdown */}
@@ -352,15 +351,15 @@ export default function AddCateringServices() {
                 </div>
                 <div className="rounded-lg p-1">
                   <div className="flex flex-wrap gap-2">
-                    {selectedSpecialties.map((specialty) => (
+                    {selectedAmenities.map((amenity) => (
                       <div
-                        key={specialty}
+                        key={amenity}
                         className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
                       >
-                        <span>{specialty}</span>
+                        <span>{amenity}</span>
                         <button
                           type="button"
-                          onClick={() => handleSpecialtyRemove(specialty)}
+                          onClick={() => handleAmenityRemove(amenity)}
                           className="text-blue-800 hover:text-blue-600"
                         >
                           ✕
@@ -451,20 +450,20 @@ export default function AddCateringServices() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Select days"
+                      placeholder="select days"
                       className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
                     />
                   </div>
                   <div className="">
                     <label className="block text-xs text-gray-900 mb-1">
-                      Price per Event
+                      Price per day
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-900">$</span>
                       <input
                         type="number"
-                        name="pricePerEvent"
-                        value={formData.pricePerEvent}
+                        name="pricePerDay"
+                        value={formData.pricePerDay}
                         onChange={handleInputChange}
                         className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
                       />
@@ -475,7 +474,7 @@ export default function AddCateringServices() {
             </div>
           </form>
           <div className="flex justify-end gap-2 mt-4">
-            <Link href="/admin/manage-catering-services">
+            <Link href="/admin/manage-event-center">
               <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
                 Cancel
               </button>
