@@ -3,70 +3,139 @@
 import { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useCreateUserMutation } from "../../../redux/services/authApi";
+import { UserType } from "../../../redux/services/authApi";
+import Notification from "../../../components/ui/Notification";
+
+const schema = z
+  .object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    userType: z.enum([UserType.SERVICE_PROVIDER, UserType.CUSTOMER], {
+      errorMap: () => ({ message: "Please select a user type" }),
+    }),
+    password: z
+      .string()
+      .min(10, "Must be at least 10 characters")
+      .regex(/[A-Z]/, "Must contain at least 1 uppercase letter")
+      .regex(/[0-9]/, "Must contain at least 1 number")
+      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least 1 special character"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords must match",
+    path: ["confirmPassword"],
+  });
+
+type FormData = z.infer<typeof schema>;
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
-  const [showConfirmValidation, setShowConfirmValidation] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [createUser, { isLoading, error }] = useCreateUserMutation();
+  const router = useRouter();
 
-  const passwordValidation = {
-    minLength: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    number: /[0-9]/.test(password),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-  };
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitted },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+  });
 
-  const confirmPasswordValidation = {
-    matches: password === confirmPassword && password !== "",
-  };
+  const password = watch("password", "");
 
-  const isPasswordValid = Object.values(passwordValidation).every(Boolean) && confirmPasswordValidation.matches;
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setShowPasswordValidation(true);
-    setShowConfirmValidation(true);
-
-    if (!isPasswordValid) {
-      return;
+  const onSubmit = async (data: FormData) => {
+    try {
+      const response = await createUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        userType: data.userType,
+        password: data.password,
+      }).unwrap();
+      localStorage.setItem('userId', response.id);
+      if (!response.isEmailVerified) {
+        router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+      }
+    } catch {
+      setNotification({ message: 'Failed to create account. Please try again.', type: 'error' });
     }
-
-    // Proceed with form submission logic here
-    console.log("Form submitted successfully");
   };
+
+  const passwordValidation = (value: string) => ({
+    minLength: value.length >= 10,
+    uppercase: /[A-Z]/.test(value),
+    number: /[0-9]/.test(value),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(value),
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
       <div className="max-w-md w-full space-y-4">
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
             <Image width={100} height={100} src="/logoSignup.png" alt="logoSignup.png" />
           </div>
           <h2 className="mt-6 text-2xl font-bold text-gray-900">Create Your Account</h2>
-          <p className="mt-2 text-sm text-gray-600">Sign up to start banking with us.</p>
+          <p className="mt-2 text-sm text-gray-600">Sign up to start booking with us.</p>
         </div>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div className="mt-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Name*
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                First Name*
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="name"
-                  name="name"
+                  id="firstName"
+                  {...register("firstName")}
                   type="text"
-                  required
                   className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Enter your name"
+                  placeholder="Enter your first name"
                 />
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-500">{errors.firstName.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-2">
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                Last Name*
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="lastName"
+                  {...register("lastName")}
+                  type="text"
+                  className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Enter your last name"
+                />
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-500">{errors.lastName.message}</p>
+                )}
               </div>
             </div>
 
@@ -80,12 +149,34 @@ export default function SignupPage() {
                 </div>
                 <input
                   id="email"
-                  name="email"
+                  {...register("email")}
                   type="email"
-                  required
                   className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your email"
                 />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="userType" className="block text-sm font-medium text-gray-700">
+                User Type*
+              </label>
+              <div className="mt-1 relative">
+                <select
+                  id="userType"
+                  {...register("userType")}
+                  className="text-gray-500 appearance-none block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="" disabled>Select user type</option>
+                  <option value={UserType.SERVICE_PROVIDER}>Service Provider</option>
+                  <option value={UserType.CUSTOMER}>Customer</option>
+                </select>
+                {errors.userType && (
+                  <p className="mt-1 text-sm text-red-500">{errors.userType.message}</p>
+                )}
               </div>
             </div>
 
@@ -99,16 +190,10 @@ export default function SignupPage() {
                 </div>
                 <input
                   id="password"
-                  name="password"
+                  {...register("password")}
                   type={showPassword ? "text" : "password"}
-                  required
                   className="text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Type your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setShowPasswordValidation(true);
-                  }}
                 />
                 <button
                   type="button"
@@ -122,22 +207,22 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
-              {showPasswordValidation && (
+              {isSubmitted && (
                 <div className="mt-2 space-y-2">
-                  <div className={`flex items-center ${passwordValidation.minLength ? 'text-gray-600' : 'text-red-500'}`}>
-                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation.minLength ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
-                    <span className="text-sm">Must be at least 8 characters</span>
+                  <div className={`flex items-center ${passwordValidation(password).minLength ? 'text-gray-600' : 'text-red-500'}`}>
+                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation(password).minLength ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
+                    <span className="text-sm">Must be at least 10 characters</span>
                   </div>
-                  <div className={`flex items-center ${passwordValidation.uppercase ? 'text-gray-600' : 'text-red-500'}`}>
-                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation.uppercase ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
+                  <div className={`flex items-center ${passwordValidation(password).uppercase ? 'text-gray-600' : 'text-red-500'}`}>
+                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation(password).uppercase ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
                     <span className="text-sm">1 uppercase letter</span>
                   </div>
-                  <div className={`flex items-center ${passwordValidation.number ? 'text-gray-600' : 'text-red-500'}`}>
-                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation.number ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
+                  <div className={`flex items-center ${passwordValidation(password).number ? 'text-gray-600' : 'text-red-500'}`}>
+                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation(password).number ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
                     <span className="text-sm">1 or more number</span>
                   </div>
-                  <div className={`flex items-center ${passwordValidation.special ? 'text-gray-600' : 'text-red-500'}`}>
-                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation.special ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
+                  <div className={`flex items-center ${passwordValidation(password).special ? 'text-gray-600' : 'text-red-500'}`}>
+                    <div className={`w-4 h-4 border rounded-full mr-2 ${passwordValidation(password).special ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
                     <span className="text-sm">1 or more special character</span>
                   </div>
                 </div>
@@ -154,16 +239,10 @@ export default function SignupPage() {
                 </div>
                 <input
                   id="confirmPassword"
-                  name="confirmPassword"
+                  {...register("confirmPassword")}
                   type={showConfirmPassword ? "text" : "password"}
-                  required
                   className="text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Re-enter your password"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    setShowConfirmValidation(true);
-                  }}
                 />
                 <button
                   type="button"
@@ -177,23 +256,30 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
-              {showConfirmValidation && (
+              {isSubmitted && errors.confirmPassword && (
                 <div className="mt-2 space-y-2">
-                  <div className={`flex items-center ${confirmPasswordValidation.matches ? 'text-gray-600' : 'text-red-500'}`}>
-                    <div className={`w-4 h-4 border rounded-full mr-2 ${confirmPasswordValidation.matches ? 'bg-orange-500 border-orange-500' : 'border-red-500'}`} />
-                    <span className="text-sm">Passwords must match</span>
+                  <div className={`flex items-center ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`}>
+                    <div className={`w-4 h-4 border rounded-full mr-2 ${errors.confirmPassword ? 'border-red-500' : 'bg-orange-500 border-orange-500'}`} />
+                    <span className="text-sm">{errors.confirmPassword.message}</span>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
+          {error && !notification && (
+            <p className="text-sm text-red-500 text-center">
+              Failed to create account. Please try again.
+            </p>
+          )}
+
           <div>
             <button
               type="submit"
-              className="w-full py-2 px-20 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0047AB] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+              disabled={isLoading}
+              className={`w-full py-2 px-20 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0047AB] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Create account
+              {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
         </form>
