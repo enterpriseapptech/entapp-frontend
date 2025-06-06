@@ -8,7 +8,12 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useLoginMutation, useResendVerificationMutation, UserType, ServiceType } from "../../../redux/services/authApi";
+import {
+  useLoginMutation,
+  useResendVerificationMutation,
+  UserType,
+  ServiceType,
+} from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
 
 const schema = z.object({
@@ -21,10 +26,15 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [login, { isLoading: isLoggingIn, error: loginError }] = useLoginMutation();
-  const [resendVerification, { isLoading: isResending }] = useResendVerificationMutation();
+  const [login, { isLoading: isLoggingIn, error: loginError }] =
+    useLoginMutation();
+  const [resendVerification, { isLoading: isResending }] =
+    useResendVerificationMutation();
   const router = useRouter();
 
   const {
@@ -54,40 +64,43 @@ export default function LoginPage() {
       const { user } = response;
 
       if (!user.isEmailVerified) {
-        localStorage.setItem('userId', user.id);
+        localStorage.setItem("userId", user.id);
         await resendVerification({ id: user.id }).unwrap();
-        setNotification({ message: "Please verify your email. A new code has been sent.", type: "error" });
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        setNotification({
+          message: "Please verify your email. A new code has been sent.",
+          type: "error",
+        });
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
-        // Keep isNavigating true until navigation completes
         return;
       }
 
       // Store tokens if rememberMe is checked
       if (data.rememberMe) {
-        localStorage.setItem('access_token', response.access_token);
-        localStorage.setItem('refresh_token', response.refresh_token);
+        localStorage.setItem("access_token", response.access_token);
+        localStorage.setItem("refresh_token", response.refresh_token);
       }
 
       // Redirect based on userType
-      let targetRoute = '';
+      let targetRoute = "";
       switch (user.userType) {
         case UserType.CUSTOMER:
-          targetRoute = '/';
+          targetRoute = "/";
           break;
         case UserType.ADMIN:
-          targetRoute = '/admin';
+          targetRoute = "/admin";
           break;
         case UserType.STAFF:
-          targetRoute = '/staff';
+          targetRoute = "/staff";
           break;
         case UserType.SERVICE_PROVIDER:
-          if (user.serviceType === ServiceType.CATERING) {
-            targetRoute = '/cateringServiceManagement/cateringServiceDashboard';
-          } else if (user.serviceType === ServiceType.EVENTCENTERS) {
-            targetRoute = '/eventServiceManagement/eventServiceDashboard';
+          const serviceType = user.serviceProvider?.serviceType; 
+          if (serviceType === ServiceType.CATERING) {
+            targetRoute = "/cateringServiceManagement/cateringServiceDashboard";
+          } else if (serviceType === ServiceType.EVENTCENTERS) {
+            targetRoute = "/eventServiceManagement/eventServiceDashboard";
           } else {
-            targetRoute = '/cateringServiceManagement/cateringServiceDashboard';
+            targetRoute = "/eventServiceManagement/eventServiceDashboard";
           }
           break;
         default:
@@ -97,7 +110,7 @@ export default function LoginPage() {
       }
 
       router.push(targetRoute);
-      setTimeout(() => setIsNavigating(false), 1000);
+      setTimeout(() => setIsNavigating(false), 5000);
     } catch {
       setNotification({ message: "Invalid credentials", type: "error" });
       setIsNavigating(false);
@@ -118,15 +131,30 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-4">
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
-            <Image width={100} height={100} src="/logoSignup.png" alt="logoSignup.png" />
+            <Image
+              width={100}
+              height={100}
+              src="/logoSignup.png"
+              alt="logoSignup.png"
+            />
           </div>
-          <h2 className="mt-6 text-2xl font-bold text-gray-900">Login to Your Account</h2>
-          <p className="mt-2 text-sm text-gray-600">Welcome back! Please enter your details.</p>
+          <h2 className="mt-6 text-2xl font-bold text-gray-900">
+            Login to Your Account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Welcome back! Please enter your details.
+          </p>
         </div>
-        <form className="space-y-4 items-center justify-center flex flex-col" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="space-y-4 items-center justify-center flex flex-col"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <div className="space-y-4 w-full">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email*
               </label>
               <div className="mt-1 relative">
@@ -138,17 +166,24 @@ export default function LoginPage() {
                   {...register("email")}
                   type="email"
                   disabled={isFormDisabled}
-                  className={`text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   placeholder="Enter your email"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
-                )}
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password*
               </label>
               <div className="mt-1 relative">
@@ -160,7 +195,9 @@ export default function LoginPage() {
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
                   disabled={isFormDisabled}
-                  className={`text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   placeholder="Type your password"
                 />
                 <button
@@ -177,7 +214,9 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -188,14 +227,22 @@ export default function LoginPage() {
                   {...register("rememberMe")}
                   type="checkbox"
                   disabled={isFormDisabled}
-                  className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                    isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   Remember for 30 days
                 </label>
               </div>
               <div className="text-sm">
-                <Link href="/forgotpassword" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link
+                  href="/forgotpassword"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -203,14 +250,18 @@ export default function LoginPage() {
           </div>
 
           {loginError && !notification && (
-            <p className="text-sm text-red-500 text-center">Invalid credentials</p>
+            <p className="text-sm text-red-500 text-center">
+              Invalid credentials
+            </p>
           )}
 
           <div className="w-full">
             <button
               type="submit"
               disabled={isFormDisabled}
-              className={`w-full py-2 px-20 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0047AB] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer flex items-center justify-center ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full py-2 px-20 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0047AB] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer flex items-center justify-center ${
+                isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
               {isNavigating ? (
                 <>
@@ -218,7 +269,7 @@ export default function LoginPage() {
                   Signing In...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </button>
           </div>
@@ -226,7 +277,11 @@ export default function LoginPage() {
 
         <div className="mt-4 space-y-3">
           <button
-            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${
+              isFormDisabled
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
             disabled={isFormDisabled}
           >
             <img
@@ -237,7 +292,11 @@ export default function LoginPage() {
             Sign in with Google
           </button>
           <button
-            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${
+              isFormDisabled
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
             disabled={isFormDisabled}
           >
             <img
@@ -248,7 +307,11 @@ export default function LoginPage() {
             Sign in with Facebook
           </button>
           <button
-            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${
+              isFormDisabled
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
             disabled={isFormDisabled}
           >
             <img
@@ -262,7 +325,10 @@ export default function LoginPage() {
 
         <p className="mt-2 text-center text-sm text-gray-600">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+          <Link
+            href="/signup"
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
             Sign up
           </Link>
         </p>

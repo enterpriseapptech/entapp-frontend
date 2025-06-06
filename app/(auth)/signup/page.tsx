@@ -84,7 +84,7 @@ export default function SignupPage() {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitted },
+    formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -93,6 +93,7 @@ export default function SignupPage() {
   });
 
   const password = watch("password", "");
+  const confirmPassword = watch("confirmPassword", "");
   const userType = watch("userType");
 
   const onSubmit = async (data: FormData) => {
@@ -121,6 +122,7 @@ export default function SignupPage() {
       localStorage.setItem("userId", response.id);
       if (!response.isEmailVerified) {
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        setTimeout(() => {}, 1000);
       }
     } catch {
       setNotification({
@@ -183,12 +185,12 @@ export default function SignupPage() {
                   className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your first name"
                 />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.firstName.message}
-                  </p>
-                )}
               </div>
+              {errors.firstName && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.firstName.message}
+                </p>
+              )}
             </div>
 
             <div className="mt-2">
@@ -209,12 +211,12 @@ export default function SignupPage() {
                   className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your last name"
                 />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.lastName.message}
-                  </p>
-                )}
               </div>
+              {errors.lastName && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.lastName.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -235,12 +237,12 @@ export default function SignupPage() {
                   className="text-gray-500 appearance-none block w-full pl-10 py-2 pr-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your email"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.email.message}
-                  </p>
-                )}
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -321,7 +323,6 @@ export default function SignupPage() {
                         Event Centers
                       </option>
                       <option value={ServiceType.CATERING}>Catering</option>
-                      {/* <option value={ServiceType.ALL}>All</option> */}
                     </select>
                     {userType === UserType.SERVICE_PROVIDER &&
                       "serviceType" in errors && (
@@ -364,7 +365,7 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
-              {isSubmitted && (
+              {password && (
                 <div className="mt-2 space-y-2">
                   <div
                     className={`flex items-center ${
@@ -380,9 +381,7 @@ export default function SignupPage() {
                           : "border-red-500"
                       }`}
                     />
-                    <span className="text-sm">
-                      Must be at least 10 characters
-                    </span>
+                    <span className="text-sm">Must be at least 10 characters</span>
                   </div>
                   <div
                     className={`flex items-center ${
@@ -466,23 +465,11 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
-              {isSubmitted && errors.confirmPassword && (
+              {confirmPassword && errors.confirmPassword && (
                 <div className="mt-2 space-y-2">
-                  <div
-                    className={`flex items-center ${
-                      errors.confirmPassword ? "text-red-500" : "text-gray-600"
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 border rounded-full mr-2 ${
-                        errors.confirmPassword
-                          ? "border-red-500"
-                          : "bg-orange-500 border-orange-500"
-                      }`}
-                    />
-                    <span className="text-sm">
-                      {errors.confirmPassword.message}
-                    </span>
+                  <div className="flex items-center text-red-500">
+                    <div className="w-4 h-4 border rounded-full mr-2 border-red-500" />
+                    <span className="text-sm">{errors.confirmPassword.message}</span>
                   </div>
                 </div>
               )}
