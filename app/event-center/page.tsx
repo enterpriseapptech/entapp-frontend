@@ -6,135 +6,52 @@ import { X } from "lucide-react";
 import DualRangeSlider from "@/components/ui/DualRangeSlider";
 import Image from "next/image";
 import Link from "next/link";
+import { useGetEventCentersQuery } from "@/redux/services/eventsApi";
+import CardSkeleton from "@/components/ui/card-skeleton";
 
 export default function EventCenters() {
   const [isCategoryOpen, setIsCategoryOpen] = useState<boolean>(false);
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const totalPages = 10;
-
-  const toggleCategoryDropdown = () => setIsCategoryOpen((prev) => !prev);
-  const toggleLocationDropdown = () => setIsLocationOpen((prev) => !prev);
-  const handleCategoryChange = () => setIsCategoryOpen(false);
-  const handleLocationChange = () => setIsLocationOpen(false);
-  // const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
-
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [capacityRange, setCapacityRange] = useState<[number, number]>([
-    0, 20000,
-  ]);
+  const [capacityRange, setCapacityRange] = useState<[number, number]>([0, 20000]);
   const [location, setLocation] = useState<string>("Nigeria");
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Default values for filters
-  //   const defaultPriceRange: [number, number] = [0, 1000000];
   const defaultCapacityRange: [number, number] = [0, 20000];
   const defaultLocation = "Nigeria";
-  //   const defaultEventTypes: string[] = [];
 
-  const eventCenters = [
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Grand Palace Venue",
-      location: "Lagos, Nigeria",
-      price: "₦500,000",
-      eventType: "Weddings",
-      capacity: 2000,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Skyline Event Hall",
-      location: "Abuja, Nigeria",
-      price: "₦300,000",
-      eventType: "Birthdays",
-      capacity: 1000,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Corporate Hub",
-      location: "London, UK",
-      price: "₦800,000",
-      eventType: "Corporate Events",
-      capacity: 5000,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Summit Conference Center",
-      location: "New York, USA",
-      price: "₦600,000",
-      eventType: "Conferences",
-      capacity: 3000,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Elegant Gardens",
-      location: "Lagos, Nigeria",
-      price: "₦450,000",
-      eventType: "Weddings",
-      capacity: 1500,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Party Pavilion",
-      location: "Abuja, Nigeria",
-      price: "₦250,000",
-      eventType: "Birthdays",
-      capacity: 800,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Executive Lounge",
-      location: "London, UK",
-      price: "₦700,000",
-      eventType: "Corporate Events",
-      capacity: 4000,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Convention Center",
-      location: "New York, USA",
-      price: "₦550,000",
-      eventType: "Conferences",
-      capacity: 2500,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Royal Banquet Hall",
-      location: "Lagos, Nigeria",
-      price: "₦400,000",
-      eventType: "Weddings",
-      capacity: 1800,
-    },
-    {
-      name: "Event Hall",
-      imageSrc: "/eventCard.png",
-      label: "Featured",
-      title: "Celebration Arena",
-      location: "Abuja, Nigeria",
-      price: "₦200,000",
-      eventType: "Birthdays",
-      capacity: 600,
-    },
-  ];
+  // Pagination settings
+  const itemsPerPage = 10;
+  const offset = (currentPage - 1) * itemsPerPage;
+
+  // Fetch event centers
+  const { data, isLoading, error } = useGetEventCentersQuery({
+    limit: itemsPerPage,
+    offset,
+  });
+
+  const totalPages = data?.count ? Math.ceil(data.count / itemsPerPage) : 1;
+
+  const toggleCategoryDropdown = () => setIsCategoryOpen((prev) => !prev);
+  const toggleLocationDropdown = () => setIsLocationOpen((prev) => !prev);
+  const handleCategoryChange = () => setIsCategoryOpen(false);
+  const handleLocationChange = () => setIsLocationOpen(false);
+
+  // Map API data to the format expected by the Card component
+  const eventCenters = data?.data?.map((venue) => ({
+    id: venue.id,
+    name: "Event Hall",
+    imageSrc: venue.images[0] || "/placeholder-image.png",
+    label: "Featured",
+    title: venue.description.slice(0, 30) + "...",
+    location: `${venue.city}, ${venue.state}, ${venue.country}`,
+    price: `₦${venue.depositAmount.toLocaleString()}`,
+    eventType: venue.venueLayout, // Map venueLayout to eventType (adjust as needed)
+    capacity: venue.sittingCapacity,
+  })) ?? [];
 
   // Helper function to determine if a capacity value is within the selected range
   const isCapacitySelected = (value: number) => {
@@ -145,7 +62,6 @@ export default function EventCenters() {
   const toggleCapacity = (value: string) => {
     const numValue = parseInt(value);
     if (isCapacitySelected(numValue)) {
-      // If the value is currently selected, narrow the range to exclude it
       if (numValue === 1000) {
         setCapacityRange([Math.max(1001, capacityRange[0]), capacityRange[1]]);
       } else if (numValue === 5000) {
@@ -154,7 +70,6 @@ export default function EventCenters() {
         setCapacityRange([capacityRange[0], Math.min(9999, capacityRange[1])]);
       }
     } else {
-      // If the value is not selected, expand the range to include it
       setCapacityRange([
         Math.min(numValue, capacityRange[0]),
         Math.max(numValue, capacityRange[1]),
@@ -219,7 +134,8 @@ export default function EventCenters() {
       label: capacityLabel,
       onRemove: () => setCapacityRange(defaultCapacityRange),
     });
-  }
+  }; 
+
 
   // Add Location filter (only if not default)
   if (location !== defaultLocation) {
@@ -227,11 +143,29 @@ export default function EventCenters() {
       label: location,
       onRemove: () => setLocation(defaultLocation),
     });
-  }
+  };
 
   // Display text for the "Showing results" heading
   const displayEventTypes =
     selectedEventTypes.length > 0 ? selectedEventTypes.join(", ") : "All";
+
+  // Skeleton loader for 10 cards
+  const loadingSkeletons = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: itemsPerPage }).map((_, index) => (
+        <CardSkeleton key={index} />
+      ))}
+    </div>
+  );
+
+  // Error display
+  const errorDisplay = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <p className="text-red-600 text-center col-span-full">
+        Error loading event centers. Please try again later.
+      </p>
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -251,22 +185,12 @@ export default function EventCenters() {
 
       {/* Filters and Event Listings Section */}
       <div className="flex flex-col lg:flex-row">
-        {/* Mobile Sidebar Toggle Button */}
-        {/* <button
-          className="lg:hidden p-4 bg-blue-600 text-white flex items-center justify-between"
-          onClick={toggleSidebar}
-        >
-          <span>{isSidebarOpen ? "Close Filters" : "Open Filters"}</span>
-          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-        </button> */}
-
         {/* Filters Sidebar */}
         <aside
           className={`w-full lg:w-64 bg-white p-6 border-r border-gray-200 lg:sticky lg:top-0 lg:min-h-[calc(100vh-400px)] lg:overflow-y-auto transition-transform duration-300 ${
             isSidebarOpen ? "block" : "hidden"
           }`}
         >
-          {/* Filters Header with Close Icon Placeholder */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
             <button
@@ -353,7 +277,6 @@ export default function EventCenters() {
             </ul>
           </div>
 
-          {/* Horizontal Line */}
           <hr className="border-gray-200 mb-4" />
 
           {/* Price Range Filter */}
@@ -379,7 +302,6 @@ export default function EventCenters() {
             />
           </div>
 
-          {/* Horizontal Line */}
           <hr className="border-gray-200 mb-4" />
 
           {/* Capacity Filter */}
@@ -437,7 +359,6 @@ export default function EventCenters() {
             </div>
           </div>
 
-          {/* Horizontal Line */}
           <hr className="border-gray-200 mb-4" />
 
           {/* Location Filter */}
@@ -527,10 +448,14 @@ export default function EventCenters() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEventCenters.length > 0 ? (
-                filteredEventCenters.map((center, index) => (
-                  <Link key={index} href={`event-center/${index + 1}`}>
+            {isLoading ? (
+              loadingSkeletons
+            ) : error || !filteredEventCenters.length ? (
+              errorDisplay
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEventCenters.map((center) => (
+                  <Link key={center.id} href={`/event-center/${center.id}`}>
                     <Card
                       name={center.name}
                       imageSrc={center.imageSrc}
@@ -540,13 +465,9 @@ export default function EventCenters() {
                       price={center.price}
                     />
                   </Link>
-                ))
-              ) : (
-                <p className="text-gray-600 col-span-full text-center">
-                  No event centers match the selected filters.
-                </p>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 space-x-2 mx-auto md:p-8 p-2">
@@ -576,7 +497,7 @@ export default function EventCenters() {
               >
                 <Image
                   src="/rightArrow.png"
-                  alt="leftArrow"
+                  alt="rightArrow"
                   width={10}
                   height={10}
                   className="w-4 h-4"

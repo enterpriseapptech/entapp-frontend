@@ -3,11 +3,13 @@ import Link from "next/link";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
-import { Calendar, Wifi, Shield, User } from "lucide-react";
+import { Calendar, Wifi, Shield, User, BadgeCheck, FileText, Ban } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
+import CardSkeleton from "@/components/ui/card-skeleton";
+import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
 
 interface EventCenter {
   id: string;
@@ -21,52 +23,48 @@ interface EventCenter {
   capacity: number;
   availability: string[];
   amenities: string[];
+  termsOfUse: string;
+  cancellationPolicy: string;
+  streetAddress: string;
+  streetAddress2: string | null;
+  status: string;
 }
 
 export default function EventCenterDetails() {
   const params = useParams();
-  const { id } = params;
+  const { id } = params as { id: string };
   const router = useRouter();
 
-  const eventCenters: EventCenter[] = [
-    {
-      id: "1",
-      name: "Event Hall",
-      title: "Mezebu Event Centers",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/bookEvent.png", "/event.png", "/event.png"],
-      location: "Lagos, Nigeria",
-      price: "₦500 per night",
-      eventType: "Weddings",
-      capacity: 900,
-      availability: ["Sat 10 Feb 2024", "Sun 11 Feb 2024", "Mon 12 Feb 2024"], // Updated to array for multiple dates
-      amenities: ["WiFi", "Parking Space", "Security"],
-    },
-    {
-      id: "2",
-      name: "Event Hall",
-      title: "Skyline Event Hall",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/bookEvent.png", "/event.png", "/event.png"],
-      location: "Abuja, Nigeria",
-      price: "₦300 per night",
-      eventType: "Birthdays",
-      capacity: 1000,
-      availability: ["Sun 11 Feb 2024", "Mon 12 Feb 2024"], // Updated to array for multiple dates
-      amenities: ["WiFi", "Security"],
-    },
-  ];
+  const { data: eventCenterData, isLoading, error } = useGetEventCenterByIdQuery(id);
 
-  const eventCenter = eventCenters.find((center) => center.id === id);
+  // Map API data to component's EventCenter interface
+  const eventCenter: EventCenter | undefined = eventCenterData
+    ? {
+        id: eventCenterData.id,
+        name: "Event Hall",
+        title: eventCenterData.description,
+        description: eventCenterData.description,
+        images: eventCenterData.images.length ? eventCenterData.images : ["/placeholder-image.png"],
+        location: `${eventCenterData.city}, ${eventCenterData.state}, ${eventCenterData.country}`,
+        price: `₦${eventCenterData.depositAmount.toLocaleString()}`,
+        eventType: eventCenterData.venueLayout,
+        capacity: eventCenterData.sittingCapacity,
+        availability: [], // API doesn't provide availability; use empty array or fetch from another endpoint
+        amenities: eventCenterData.amenities,
+        termsOfUse: eventCenterData.termsOfUse,
+        cancellationPolicy: eventCenterData.cancellationPolicy,
+        streetAddress: eventCenterData.streetAddress,
+        streetAddress2: eventCenterData.streetAddress2,
+        status: eventCenterData.status,
+      }
+    : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]); // Array to store multiple selected dates
-  const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false); // State for "More than one day" checkbox
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false);
   const [numberOfGuests, setNumberOfGuests] = useState<string>("");
 
-  const images = eventCenter?.images || ["/eventCard1.png"];
+  const images = eventCenter?.images || ["/placeholder-image.png"];
 
   // State and logic for CustomerReviews pagination
   const [currentReviewPage, setCurrentReviewPage] = useState<number>(0);
@@ -131,7 +129,6 @@ export default function EventCenterDetails() {
   };
 
   const handleAddDate = () => {
-    // Add a new empty date slot to the selectedDates array
     setSelectedDates([...selectedDates, ""]);
   };
 
@@ -156,7 +153,6 @@ export default function EventCenterDetails() {
       alert("Please select the number of guests.");
       return;
     }
-    // Navigate to PaymentPage with query parameters
     router.push(
       `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
         eventCenter!.price
@@ -164,13 +160,59 @@ export default function EventCenterDetails() {
     );
   };
 
-  if (!eventCenter) {
-    return <div className="min-h-screen bg-gray-50 p-8">Event not found</div>;
+  // Loading state
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <HeroWithNavbar
+          isCategoryOpen={false}
+          isLocationOpen={false}
+          toggleCategoryDropdown={() => {}}
+          toggleLocationDropdown={() => {}}
+          handleCategoryChange={() => {}}
+          handleLocationChange={() => {}}
+          height="400px"
+          backgroundImage="url('/eventHeroImage.png')"
+          heading="Event Centers"
+          subheading=""
+        />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-8">
+          <div className="flex-1">
+            <CardSkeleton />
+          </div>
+          <div className="lg:w-[350px]">
+            <CardSkeleton />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state or event not found
+  if (error || !eventCenter) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <HeroWithNavbar
+          isCategoryOpen={false}
+          isLocationOpen={false}
+          toggleCategoryDropdown={() => {}}
+          toggleLocationDropdown={() => {}}
+          handleCategoryChange={() => {}}
+          handleLocationChange={() => {}}
+          height="400px"
+          backgroundImage="url('/eventHeroImage.png')"
+          heading="Event Centers"
+          subheading=""
+        />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center text-red-600">
+          Event not found or error loading data. Please try again later.
+        </div>
+      </main>
+    );
   }
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero Section */}
       <HeroWithNavbar
         isCategoryOpen={false}
         isLocationOpen={false}
@@ -184,29 +226,24 @@ export default function EventCenterDetails() {
         subheading=""
       />
 
-      {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-8">
-        {/* Left Section: Breadcrumb and Details */}
         <div className="flex-1 bg-[#F2F6FC] p-8">
-          {/* Breadcrumb Navigation */}
           <nav className="text-gray-500 text-sm mb-4">
             <Link href="/" className="hover:underline">
               Home
             </Link>{" "}
             {">"}{" "}
-            <Link href="/event-centers-details" className="hover:underline">
-              Link Two
+            <Link href="/event-centers" className="hover:underline">
+              Event Centers
             </Link>{" "}
             {">"} <span className="text-gray-800">{eventCenter.title}</span>
           </nav>
 
-          {/* Event Center Title */}
           <h1 className="md:text-4xl text-2xl font-bold text-gray-900 mb-4">
             {eventCenter.title}
           </h1>
           <p className="text-gray-600 mb-8">{eventCenter.description}</p>
 
-          {/* Image Gallery */}
           <div className="relative mb-8">
             <Image
               src={images[currentImageIndex]}
@@ -265,15 +302,12 @@ export default function EventCenterDetails() {
             </div>
           </div>
 
-          {/* Event Center Details */}
           <div className="space-y-4">
-            {/* Title */}
             <h2 className="text-xl font-semibold text-gray-800">
               {eventCenter.title}
             </h2>
             <p className="text-gray-600">{eventCenter.description}</p>
 
-            {/* Availability */}
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-2 pt-2">
                 Availability
@@ -281,12 +315,13 @@ export default function EventCenterDetails() {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-600" />
                 <span className="text-gray-600 text-sm">
-                  {eventCenter.availability.join(", ")}
+                  {eventCenter.availability.length > 0
+                    ? eventCenter.availability.join(", ")
+                    : "Contact for availability"}
                 </span>
               </div>
             </div>
 
-            {/* Location */}
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-1">
                 Location
@@ -313,12 +348,12 @@ export default function EventCenterDetails() {
                   />
                 </svg>
                 <span className="text-gray-600 text-sm">
-                  {eventCenter.location}
+                  {eventCenter.streetAddress}
+                  {eventCenter.streetAddress2 && `, ${eventCenter.streetAddress2}`}, {eventCenter.location}
                 </span>
               </div>
             </div>
 
-            {/* Amenities */}
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-1 mt-2">
                 Amenities
@@ -326,10 +361,10 @@ export default function EventCenterDetails() {
               <div className="flex gap-6">
                 {eventCenter.amenities.map((amenity, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    {amenity === "WiFi" && (
+                    {amenity === "WIFI" && (
                       <Wifi className="w-4 h-4 text-gray-600" />
                     )}
-                    {amenity === "Parking Space" && (
+                    {amenity === "PACKINGSPACE" && (
                       <svg
                         className="w-4 h-4 text-gray-600"
                         fill="none"
@@ -345,7 +380,7 @@ export default function EventCenterDetails() {
                         />
                       </svg>
                     )}
-                    {amenity === "Security" && (
+                    {amenity === "SECURITY" && (
                       <Shield className="w-4 h-4 text-gray-600" />
                     )}
                     <span className="text-gray-600 text-sm">{amenity}</span>
@@ -354,7 +389,6 @@ export default function EventCenterDetails() {
               </div>
             </div>
 
-            {/* Capacity */}
             <div className="pb-10">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
                 Capacity
@@ -377,8 +411,34 @@ export default function EventCenterDetails() {
                 <span className="text-gray-600">{eventCenter.capacity}</span>
               </div>
             </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Status
+              </h3>
+              <div className="flex items-center gap-2">
+                <BadgeCheck className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-600 text-sm">{eventCenter.status}</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Terms of Use
+              </h3>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-600 text-sm">{eventCenter.termsOfUse}</span>
+              </div>
+            </div>
 
-            {/* Description */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Cancellation Policy
+              </h3>
+              <div className="flex items-center gap-2">
+                <Ban className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-600 text-sm">{eventCenter.cancellationPolicy}</span>
+              </div>
+            </div>
             <div>
               <hr className="mb-2" />
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
@@ -390,11 +450,9 @@ export default function EventCenterDetails() {
           </div>
         </div>
 
-        {/* Right Section: Booking Form */}
         <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-md sticky top-6">
           <h2 className="text-md font-semibold text-gray-800 mb-4">Book Now</h2>
           <form className="space-y-4" onSubmit={handleBook}>
-            {/* Duration */}
             <div>
               <label className="flex items-center gap-2">
                 <input
@@ -404,7 +462,6 @@ export default function EventCenterDetails() {
                   onChange={(e) => {
                     setIsMoreThanOneDay(e.target.checked);
                     if (!e.target.checked) {
-                      // Reset to single date if unchecked
                       setSelectedDates(selectedDates.slice(0, 1));
                     }
                   }}
@@ -413,7 +470,6 @@ export default function EventCenterDetails() {
               </label>
             </div>
 
-            {/* Date Selection */}
             <div className="space-y-3">
               {selectedDates.map((date, index) => (
                 <div key={index} className="relative flex items-center gap-2">
@@ -429,7 +485,7 @@ export default function EventCenterDetails() {
                         Select a date
                       </option>
                       {eventCenter.availability
-                        .filter((availDate) => !selectedDates.includes(availDate) || availDate === date) // Prevent selecting already chosen dates
+                        .filter((availDate) => !selectedDates.includes(availDate) || availDate === date)
                         .map((availDate) => (
                           <option key={availDate} value={availDate}>
                             {availDate}
@@ -492,7 +548,6 @@ export default function EventCenterDetails() {
               )}
             </div>
 
-            {/* Number of Guests */}
             <div className="relative">
               <div className="flex items-center border rounded-md px-3 py-2">
                 <User className="w-4 h-4 text-gray-600 mr-2" />
@@ -514,7 +569,6 @@ export default function EventCenterDetails() {
               </div>
             </div>
 
-            {/* Price and Book Button */}
             <button
               type="submit"
               className="w-full cursor-pointer bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold"
@@ -522,7 +576,6 @@ export default function EventCenterDetails() {
               Book {eventCenter.price}
             </button>
             <hr className="mb-2" />
-            {/* Share Options */}
             <div className="flex justify-between items-center mt-4">
               <span className="text-gray-400 text-sm">Share</span>
               <div className="flex gap-3">
@@ -564,7 +617,6 @@ export default function EventCenterDetails() {
               </div>
             </div>
 
-            {/* Note */}
             <p className="text-xs text-gray-500 mt-4">
               Note: Invoice amount will be displayed in NGN currency but can be
               paid with Credit Cards in other currencies.
@@ -573,7 +625,6 @@ export default function EventCenterDetails() {
         </aside>
       </div>
       <hr className="mb-4 mt-4 mx-30" />
-      {/* Customer Reviews Section */}
       <CustomerReviews
         reviews={reviews}
         currentPage={currentReviewPage}
@@ -584,7 +635,7 @@ export default function EventCenterDetails() {
         setCurrentPage={setCurrentReviewPage}
       />
       <hr className="mb-4 mt-4 mx-30" />
-      <FeaturedVenues heading="Featured Event Centers"/>
+      <FeaturedVenues heading="Featured Event Centers" />
       <Footer />
     </main>
   );

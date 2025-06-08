@@ -10,11 +10,83 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   useLoginMutation,
+  useRefreshTokenMutation,
+  useGetUserByIdQuery,
   useResendVerificationMutation,
   UserType,
   ServiceType,
+  UserResponse,
 } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
+
+// Token storage with expiration
+const TOKEN_EXPIRY_DAYS = 7;
+const TOKEN_EXPIRY_MS = TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+
+const storeTokens = (
+  accessToken: string,
+  refreshToken: string,
+  userId: string,
+  rememberMe: boolean
+) => {
+  if (rememberMe) {
+    const expiry = Date.now() + TOKEN_EXPIRY_MS;
+    localStorage.setItem("access_token", accessToken);
+    localStorage.setItem("refresh_token", refreshToken);
+    localStorage.setItem("token_expiry", expiry.toString());
+    localStorage.setItem("user_id", userId);
+  } else {
+    // Session storage for non-persistent login
+    sessionStorage.setItem("access_token", accessToken);
+    sessionStorage.setItem("refresh_token", refreshToken);
+    sessionStorage.setItem("user_id", userId);
+  }
+};
+
+const clearTokens = () => {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("token_expiry");
+  localStorage.removeItem("user_id");
+  sessionStorage.removeItem("access_token");
+  sessionStorage.removeItem("refresh_token");
+  sessionStorage.removeItem("user_id");
+};
+
+const isTokenValid = () => {
+  const expiry = localStorage.getItem("token_expiry");
+  if (!expiry) return false;
+  return Date.now() < parseInt(expiry, 10);
+};
+
+// Reusable redirect logic based on user type
+const getRedirectRoute = (user: UserResponse): string => {
+  let targetRoute = "";
+  switch (user.userType) {
+    case UserType.CUSTOMER:
+      targetRoute = "/";
+      break;
+    case UserType.ADMIN:
+      targetRoute = "/admin";
+      break;
+    case UserType.STAFF:
+      targetRoute = "/staff";
+      break;
+    case UserType.SERVICE_PROVIDER:
+      const serviceType = user.serviceProvider?.serviceType;
+      if (serviceType === ServiceType.CATERING) {
+        targetRoute = "/cateringServiceManagement/cateringServiceDashboard";
+      } else if (serviceType === ServiceType.EVENTCENTERS) {
+        targetRoute = "/eventServiceManagement/eventServiceDashboard";
+      } else {
+        targetRoute = "/eventServiceManagement/eventServiceDashboard";
+      }
+      break;
+    default:
+      return "";
+  }
+  return targetRoute;
+};
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -31,8 +103,13 @@ export default function LoginPage() {
     type: "success" | "error";
   } | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [shouldFetchUser, setShouldFetchUser] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // New state for auth check
+
   const [login, { isLoading: isLoggingIn, error: loginError }] =
     useLoginMutation();
+  const [refreshToken, { isLoading: isRefreshing }] = useRefreshTokenMutation();
   const [resendVerification, { isLoading: isResending }] =
     useResendVerificationMutation();
   const router = useRouter();
@@ -46,8 +123,109 @@ export default function LoginPage() {
     defaultValues: { rememberMe: false },
   });
 
+  // Get user data only when shouldFetchUser is true and userId is available
+  const { data: user, error: userError } = useGetUserByIdQuery(currentUserId!, {
+    skip: !shouldFetchUser || !currentUserId,
+  });
+
+  // Check for existing tokens on mount
   useEffect(() => {
-    // Reset navigation state if login fails
+    const checkAuth = async () => {
+      setIsCheckingAuth(true);
+      const accessToken =
+        localStorage.getItem("access_token") ||
+        sessionStorage.getItem("access_token");
+      const refreshTokenValue =
+        localStorage.getItem("refresh_token") ||
+        sessionStorage.getItem("refresh_token");
+      const userId =
+        localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+
+      if (accessToken && refreshTokenValue && userId) {
+        const rememberMe = !!localStorage.getItem("access_token");
+        let newAccessToken = accessToken;
+
+        // Check if tokens in localStorage are expired
+        if (rememberMe && !isTokenValid()) {
+          try {
+            const response = await refreshToken({
+              refresh_token: refreshTokenValue,
+            }).unwrap();
+            newAccessToken = response.access_token;
+            const newRefreshToken = response.refresh_token;
+            storeTokens(newAccessToken, newRefreshToken, userId, true);
+          } catch {
+            clearTokens();
+            setNotification({
+              message: "Session expired. Please log in again.",
+              type: "error",
+            });
+            setIsCheckingAuth(false);
+            return;
+          }
+        }
+
+        // Update state to trigger user data fetch
+        setCurrentUserId(userId);
+        setShouldFetchUser(true);
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, [refreshToken]);
+
+  // Handle user data and redirect logic
+  useEffect(() => {
+    if (userError) {
+      clearTokens();
+      setNotification({
+        message: "Unable to authenticate. Please log in again.",
+        type: "error",
+      });
+      setShouldFetchUser(false);
+      setIsCheckingAuth(false);
+      return;
+    }
+
+    if (user) {
+      if (!user.isEmailVerified) {
+        localStorage.setItem("userId", user.id);
+        resendVerification({ id: user.id })
+          .unwrap()
+          .then(() => {
+            setNotification({
+              message: "Please verify your email. A new code has been sent.",
+              type: "error",
+            });
+            router.replace(`/verify-email?email=${encodeURIComponent(user.email)}`);
+          })
+          .catch(() => {
+            setNotification({
+              message: "Failed to resend verification email.",
+              type: "error",
+            });
+            setIsCheckingAuth(false);
+          });
+        return;
+      }
+
+      const targetRoute = getRedirectRoute(user);
+      if (targetRoute) {
+        // Use replace instead of push
+        router.replace(targetRoute); 
+      } else {
+        setNotification({ message: "Invalid user type", type: "error" });
+        clearTokens();
+        setIsCheckingAuth(false);
+      }
+      setShouldFetchUser(false);
+    }
+  }, [user, userError, resendVerification, router]);
+
+  // Reset navigation state if login fails
+  useEffect(() => {
     if (loginError && isNavigating) {
       setIsNavigating(false);
     }
@@ -61,7 +239,7 @@ export default function LoginPage() {
         password: data.password,
       }).unwrap();
 
-      const { user } = response;
+      const { user, access_token, refresh_token } = response;
 
       if (!user.isEmailVerified) {
         localStorage.setItem("userId", user.id);
@@ -71,53 +249,38 @@ export default function LoginPage() {
           type: "error",
         });
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
         return;
       }
 
-      // Store tokens if rememberMe is checked
-      if (data.rememberMe) {
-        localStorage.setItem("access_token", response.access_token);
-        localStorage.setItem("refresh_token", response.refresh_token);
-      }
+      // Store tokens and user ID based on rememberMe
+      storeTokens(access_token, refresh_token, user.id, data.rememberMe);
 
       // Redirect based on userType
-      let targetRoute = "";
-      switch (user.userType) {
-        case UserType.CUSTOMER:
-          targetRoute = "/";
-          break;
-        case UserType.ADMIN:
-          targetRoute = "/admin";
-          break;
-        case UserType.STAFF:
-          targetRoute = "/staff";
-          break;
-        case UserType.SERVICE_PROVIDER:
-          const serviceType = user.serviceProvider?.serviceType; 
-          if (serviceType === ServiceType.CATERING) {
-            targetRoute = "/cateringServiceManagement/cateringServiceDashboard";
-          } else if (serviceType === ServiceType.EVENTCENTERS) {
-            targetRoute = "/eventServiceManagement/eventServiceDashboard";
-          } else {
-            targetRoute = "/eventServiceManagement/eventServiceDashboard";
-          }
-          break;
-        default:
-          setNotification({ message: "Invalid user type", type: "error" });
-          setIsNavigating(false);
-          return;
+      const targetRoute = getRedirectRoute(user);
+      if (targetRoute) {
+        router.replace(targetRoute); // Use replace instead of push
+        setTimeout(() => setIsNavigating(false), 5000);
+      } else {
+        setNotification({ message: "Invalid user type", type: "error" });
+        setIsNavigating(false);
       }
-
-      router.push(targetRoute);
-      setTimeout(() => setIsNavigating(false), 5000);
     } catch {
       setNotification({ message: "Invalid credentials", type: "error" });
       setIsNavigating(false);
     }
   };
 
-  const isFormDisabled = isLoggingIn || isResending || isNavigating;
+  const isFormDisabled = isLoggingIn || isResending || isNavigating || isRefreshing;
+
+  // Show loading spinner while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -158,24 +321,20 @@ export default function LoginPage() {
                 Email*
               </label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                  <Mail className="w-4 h-4 text-gray-400" />
                 </div>
                 <input
                   id="email"
-                  {...register("email")}
                   type="email"
                   disabled={isFormDisabled}
-                  className={`text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`text-sm text-gray-500 block w-full pl-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
                   placeholder="Enter your email"
+                  {...register("email")}
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.email.message}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
               )}
             </div>
 
@@ -186,86 +345,71 @@ export default function LoginPage() {
               >
                 Password*
               </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+              <div className="relative mt-1">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                  <Lock className="w-4 h-4 text-gray-400" />
                 </div>
                 <input
                   id="password"
-                  {...register("password")}
                   type={showPassword ? "text" : "password"}
                   disabled={isFormDisabled}
-                  className={`text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`text-sm text-gray-500 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
                   placeholder="Type your password"
+                  {...register("password")}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 flex items-center pr-2"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isFormDisabled}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="w-4 h-4 text-gray-400" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="w-4 h-4 text-gray-400" />
                   )}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.password.message}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
               )}
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
-                  id="remember-me"
-                  {...register("rememberMe")}
+                  id="checkbox"
                   type="checkbox"
                   disabled={isFormDisabled}
-                  className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
-                    isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`w-4 h-4 border-gray-300 rounded-md text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
+                  {...register("rememberMe")}
                 />
                 <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-900"
+                  htmlFor="checkbox"
+                  className="block ml-2 text-sm font-medium text-gray-700"
                 >
-                  Remember for 30 days
+                  Remember me for 7 days
                 </label>
               </div>
-              <div className="text-sm">
-                <Link
-                  href="/forgotpassword"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot password?
-                </Link>
+              <div className="text-sm font-medium text-blue-600 hover:text-blue-400">
+                <Link href="/forgotpassword">Forgot password?</Link>
               </div>
             </div>
           </div>
 
           {loginError && !notification && (
-            <p className="text-sm text-red-500 text-center">
-              Invalid credentials
-            </p>
+            <p className="text-sm text-red-500 text-center">Invalid credentials</p>
           )}
 
           <div className="w-full">
             <button
               type="submit"
               disabled={isFormDisabled}
-              className={`w-full py-2 px-20 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0047AB] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer flex items-center justify-center ${
-                isFormDisabled ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
             >
-              {isNavigating ? (
+              {isNavigating || isRefreshing ? (
                 <>
-                  <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                  <Loader2 className="mr-2 animate-spin h-5 w-5" />
                   Signing In...
                 </>
               ) : (
@@ -277,53 +421,41 @@ export default function LoginPage() {
 
         <div className="mt-4 space-y-3">
           <button
-            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${
-              isFormDisabled
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            }`}
+            className={`w-full flex items-center justify-center p-3 border border-gray-300 rounded-md text-gray-600 font-medium hover:bg-gray-100 transition disabled:cursor-not-allowed disabled:opacity-50`}
             disabled={isFormDisabled}
           >
             <img
               src="https://www.google.com/favicon.ico"
               alt="Google"
-              className="w-5 h-5 mr-2"
+              className="mr-2 w-5 h-5"
             />
             Sign in with Google
           </button>
           <button
-            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${
-              isFormDisabled
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            }`}
+            className={`w-full flex items-center justify-center p-3 border border-gray-300 rounded-md text-gray-600 font-medium hover:bg-gray-100 transition disabled:cursor-not-allowed disabled:opacity-50`}
             disabled={isFormDisabled}
           >
             <img
               src="https://www.facebook.com/favicon.ico"
               alt="Facebook"
-              className="w-5 h-5 mr-2"
+              className="mr-2 w-5 h-5"
             />
             Sign in with Facebook
           </button>
           <button
-            className={`py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium ${
-              isFormDisabled
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            }`}
+            className={`w-full flex items-center justify-center p-3 border border-gray-300 rounded-md text-gray-600 font-medium hover:bg-gray-100 transition disabled:cursor-not-allowed disabled:opacity-50`}
             disabled={isFormDisabled}
           >
             <img
               src="https://www.apple.com/favicon.ico"
               alt="Apple"
-              className="w-5 h-5 mr-2"
+              className="mr-2 w-5 h-5"
             />
             Sign in with Apple
           </button>
         </div>
 
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-2 text-sm text-center text-gray-600">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"

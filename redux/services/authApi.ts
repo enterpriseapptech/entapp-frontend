@@ -101,9 +101,17 @@ export interface ChangePasswordRequest {
   token: string;
   password: string;
 }
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
+}
 export const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://13.51.235.45:8000" }),
+  baseQuery: fetchBaseQuery({ baseUrl: "http://13.48.46.117:8000" }),
   endpoints: (builder) => ({
     createUser: builder.mutation<UserResponse, CreateUserRequest>({
       query: (body) => ({
@@ -150,6 +158,19 @@ export const api = createApi({
         body,
       }),
     }),
+    refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenRequest>({
+      query: (body) => ({
+        url: "/users/refresh-login",
+        method: "POST",
+        body,
+      }),
+    }),
+    getUserById: builder.query<UserResponse, string>({
+      query: (id) => ({
+        url: `/users/${id}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -160,4 +181,6 @@ export const {
   useLoginMutation,
   useForgotPasswordMutation,
   useChangePasswordMutation,
+  useRefreshTokenMutation,
+  useGetUserByIdQuery,
 } = api;
