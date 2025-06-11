@@ -244,18 +244,6 @@ export default function CateringServiceDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  // const handleBook = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   // Navigate to PaymentPage with query parameters
-  //   router.push(
-  //     `/payment?date=${
-  //       selectedDate || cateringService!.availability
-  //     }&time=12:00 pm&totalCost=${cateringService!.price}&serviceTitle=${
-  //       cateringService!.title
-  //     }`
-  //   );
-  // };
-
   if (!cateringService) {
     return <div className="min-h-screen bg-gray-50 p-8">Service not found</div>;
   }

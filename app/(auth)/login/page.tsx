@@ -95,6 +95,13 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+interface CustomError {
+  status?: number;
+  data?: {
+    message?: string;
+    userId?: string;
+  };
+}
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -241,18 +248,6 @@ export default function LoginPage() {
 
       const { user, access_token, refresh_token } = response;
 
-      if (!user.isEmailVerified) {
-        localStorage.setItem("userId", user.id);
-        await resendVerification({ id: user.id }).unwrap();
-        setNotification({
-          message: "Please verify your email. A new code has been sent.",
-          type: "error",
-        });
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
-        return;
-      }
-
       // Store tokens and user ID based on rememberMe
       storeTokens(access_token, refresh_token, user.id, data.rememberMe);
 
@@ -265,9 +260,41 @@ export default function LoginPage() {
         setNotification({ message: "Invalid user type", type: "error" });
         setIsNavigating(false);
       }
-    } catch {
-      setNotification({ message: "Invalid credentials", type: "error" });
-      setIsNavigating(false);
+    } catch (error: unknown) {
+      const err = error as CustomError;
+      if (
+        err.status === 401 &&
+        err.data?.message === "Verification error!, kindly verifify your email before logging in."
+      ) {
+        const userId = localStorage.getItem("userId") || err.data?.userId; 
+        if (userId) {
+          localStorage.setItem("userId", userId);
+          try {
+            await resendVerification({ id: userId }).unwrap();
+            setNotification({
+              message: "Verification error!, kindly verify your email before logging in.",
+              type: "error",
+            });
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
+          } catch {
+            setNotification({
+              message: "Failed to resend verification email.",
+              type: "error",
+            });
+            setIsNavigating(false);
+          }
+        } else {
+          setNotification({
+            message: "User ID not found. Please sign up again.",
+            type: "error",
+          });
+          setIsNavigating(false);
+        }
+      } else {
+        setNotification({ message: "Invalid credentials", type: "error" });
+        setIsNavigating(false);
+      }
     }
   };
 

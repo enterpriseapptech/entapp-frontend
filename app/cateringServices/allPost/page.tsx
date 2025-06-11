@@ -1,19 +1,20 @@
-// pages/CateringServices.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Card from "@/components/ui/card";
 import { X } from "lucide-react";
 import DualRangeSlider from "@/components/ui/DualRangeSlider";
 import Image from "next/image";
 import Link from "next/link";
+import { useGetCateringsQuery } from "@/redux/services/cateringApi";
+import CardSkeleton from "@/components/ui/card-skeleton";
 
 export default function CateringServicesAllPost() {
   const [isCategoryOpen, setIsCategoryOpen] = useState<boolean>(false);
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const totalPages = 10;
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const itemsPerPage = 10;
 
   const toggleCategoryDropdown = () => setIsCategoryOpen((prev) => !prev);
   const toggleLocationDropdown = () => setIsLocationOpen((prev) => !prev);
@@ -21,130 +22,64 @@ export default function CateringServicesAllPost() {
   const handleLocationChange = () => setIsLocationOpen(false);
 
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [orderSizeRange, setOrderSizeRange] = useState<[number, number]>([0, 0]); // Initialize to [0, 0] so no range is selected by default
-  const [location, setLocation] = useState<string>("Nigeria");
-  const [selectedCuisineTypes, setSelectedCuisineTypes] = useState<string[]>([]);
-  const [selectedOrderSizes, setSelectedOrderSizes] = useState<string[]>([]); // Track selected order size ranges
+  const [orderSizeRange, setOrderSizeRange] = useState<[number, number]>([
+    0, 5000,
+  ]);
+  const [location, setLocation] = useState<string>("");
+  const [selectedCuisineTypes, setSelectedCuisineTypes] = useState<string[]>(
+    []
+  );
+  const [selectedOrderSizes, setSelectedOrderSizes] = useState<string[]>([]);
 
-  // Default values for filters
-  const defaultOrderSizeRange: [number, number] = [0, 5000]; // We'll use this in the reset logic
-  const defaultLocation = "Nigeria";
+  const defaultOrderSizeRange: [number, number] = [0, 5000];
+  const defaultLocation = "";
 
-  const cateringServices = [
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Taste of Africa",
-      location: "Lagos, Nigeria",
-      price: "₦500,000",
-      cuisineType: "African",
-      orderSize: 2000,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Italian Delight",
-      location: "Abuja, Nigeria",
-      price: "₦300,000",
-      cuisineType: "Italian",
-      orderSize: 1000,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Chinese Feast",
-      location: "London, UK",
-      price: "₦800,000",
-      cuisineType: "Chinese",
-      orderSize: 3000,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "French Gourmet",
-      location: "New York, USA",
-      price: "₦600,000",
-      cuisineType: "French",
-      orderSize: 1500,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "African Spice",
-      location: "Lagos, Nigeria",
-      price: "₦450,000",
-      cuisineType: "African",
-      orderSize: 800,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Italian Bistro",
-      location: "Abuja, Nigeria",
-      price: "₦250,000",
-      cuisineType: "Italian",
-      orderSize: 500,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Chinese Dragon",
-      location: "London, UK",
-      price: "₦700,000",
-      cuisineType: "Chinese",
-      orderSize: 4000,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "French Elegance",
-      location: "New York, USA",
-      price: "₦550,000",
-      cuisineType: "French",
-      orderSize: 2500,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Savory Africa",
-      location: "Lagos, Nigeria",
-      price: "₦400,000",
-      cuisineType: "African",
-      orderSize: 1800,
-    },
-    {
-      name: "Catering Service",
-      imageSrc: "/catering.png",
-      label: "Featured",
-      title: "Italian Charm",
-      location: "Abuja, Nigeria",
-      price: "₦200,000",
-      cuisineType: "Italian",
-      orderSize: 600,
-    },
-  ];
+  const { data, isLoading, error } = useGetCateringsQuery({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  });
 
-  // Helper function to toggle order size range
+  // Reset currentPage to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    selectedCuisineTypes,
+    orderSizeRange,
+    priceRange,
+    location,
+    selectedOrderSizes,
+  ]);
+
+  // Log API response and filters for debugging
+  useEffect(() => {
+    console.log("API Response:", data);
+    console.log("Filters:", {
+      selectedCuisineTypes,
+      orderSizeRange,
+      priceRange,
+      location,
+      selectedOrderSizes,
+    });
+    console.log("Filtered Services:", filteredCateringServices);
+  }, [
+    data,
+    selectedCuisineTypes,
+    orderSizeRange,
+    priceRange,
+    location,
+    selectedOrderSizes,
+  ]);
+
+  const totalPages = data?.count ? Math.ceil(data.count / itemsPerPage) : 1;
+
   const toggleOrderSize = (range: string) => {
     if (selectedOrderSizes.includes(range)) {
-      // If the range is already selected, remove it
       const updatedRanges = selectedOrderSizes.filter((r) => r !== range);
       setSelectedOrderSizes(updatedRanges);
 
       if (updatedRanges.length === 0) {
-        // If no ranges are selected, reset the range to [0, 0]
-        setOrderSizeRange([0, 0]);
+        setOrderSizeRange([0, 5000]);
       } else {
-        // Recalculate the range based on remaining selected ranges
         let newMin = Infinity;
         let newMax = -Infinity;
         updatedRanges.forEach((r) => {
@@ -165,11 +100,9 @@ export default function CateringServicesAllPost() {
         setOrderSizeRange([newMin, newMax]);
       }
     } else {
-      // If the range is not selected, add it
       const updatedRanges = [...selectedOrderSizes, range];
       setSelectedOrderSizes(updatedRanges);
 
-      // Update the range to include the new selection
       const currentMin = updatedRanges.reduce((min, r) => {
         if (r === "50-100") return Math.min(min, 50);
         if (r === "200-500") return Math.min(min, 200);
@@ -184,7 +117,6 @@ export default function CateringServicesAllPost() {
     }
   };
 
-  // Toggle cuisine type in the selectedCuisineTypes array
   const toggleCuisineType = (cuisineType: string) => {
     if (selectedCuisineTypes.includes(cuisineType)) {
       setSelectedCuisineTypes(
@@ -195,33 +127,51 @@ export default function CateringServicesAllPost() {
     }
   };
 
-  // Filter catering services based on selected cuisine types, order size, price, and location
-  const filteredCateringServices = cateringServices.filter((service) => {
-    const matchesCuisineType =
-      selectedCuisineTypes.length === 0 ||
-      selectedCuisineTypes.includes(service.cuisineType);
+  const filteredCateringServices = (data?.data ?? [])
+    .filter((service) => {
+      const matchesCuisineType =
+        selectedCuisineTypes.length === 0 ||
+        selectedCuisineTypes.some((type) =>
+          service.cuisine
+            .map((c: string) => c.toLowerCase())
+            .includes(type.toLowerCase())
+        );
 
-    // If no order size range is selected, match all services
-    const matchesOrderSize =
-      selectedOrderSizes.length === 0 ||
-      (service.orderSize >= orderSizeRange[0] &&
-        service.orderSize <= orderSizeRange[1]);
+      const matchesOrderSize =
+        selectedOrderSizes.length === 0 ||
+        (service.maxCapacity >= orderSizeRange[0] &&
+          service.maxCapacity <= orderSizeRange[1]);
 
-    const servicePrice = parseInt(service.price.replace(/[^0-9]/g, ""));
-    const matchesPrice =
-      servicePrice >= priceRange[0] && servicePrice <= priceRange[1];
-    const matchesLocation = service.location
-      .toLowerCase()
-      .includes(location.toLowerCase());
-    return (
-      matchesCuisineType && matchesOrderSize && matchesPrice && matchesLocation
-    );
-  });
+      const servicePrice = service.depositAmount;
+      const matchesPrice =
+        servicePrice >= priceRange[0] && servicePrice <= priceRange[1];
 
-  // Determine active filters for display as tags
+      const matchesLocation =
+        location === "" ||
+        service.country.toLowerCase().includes(location.toLowerCase()) ||
+        service.city.toLowerCase().includes(location.toLowerCase()) ||
+        service.state.toLowerCase().includes(location.toLowerCase());
+
+      return (
+        matchesCuisineType &&
+        matchesOrderSize &&
+        matchesPrice &&
+        matchesLocation
+      );
+    })
+    .map((service) => ({
+      id: service.id,
+      name: "Catering Service",
+      imageSrc: service.images[0] || "/catering.png",
+      label: "Featured",
+      title: service.tagLine,
+      location: `${service.city}, ${service.state}, ${service.country}`,
+      price: `₦${service.depositAmount.toLocaleString()}`,
+      cuisineType: service.cuisine[0] || "Unknown",
+      orderSize: service.maxCapacity,
+    }));
+
   const activeFilters = [];
-
-  // Add Cuisine Type filters
   selectedCuisineTypes.forEach((cuisineType) => {
     activeFilters.push({
       label: cuisineType,
@@ -232,7 +182,6 @@ export default function CateringServicesAllPost() {
     });
   });
 
-  // Add Order Size filter (only if a range is selected)
   if (selectedOrderSizes.length > 0) {
     const orderSizeLabel =
       orderSizeRange[0] === orderSizeRange[1]
@@ -242,12 +191,11 @@ export default function CateringServicesAllPost() {
       label: orderSizeLabel,
       onRemove: () => {
         setSelectedOrderSizes([]);
-        setOrderSizeRange([0, 0]);
+        setOrderSizeRange([0, 5000]);
       },
     });
   }
 
-  // Add Location filter (only if not default)
   if (location !== defaultLocation) {
     activeFilters.push({
       label: location,
@@ -255,13 +203,29 @@ export default function CateringServicesAllPost() {
     });
   }
 
-  // Display text for the "Showing results" heading
   const displayCuisineTypes =
     selectedCuisineTypes.length > 0 ? selectedCuisineTypes.join(", ") : "All";
 
+  const loadingSkeletons = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array(10)
+        .fill(0)
+        .map((_, index) => (
+          <CardSkeleton key={index} />
+        ))}
+    </div>
+  );
+
+  const errorDisplay = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <p className="text-red-600 text-center col-span-full">
+        Error loading catering services. Please try again later.
+      </p>
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
       <HeroWithNavbar
         isCategoryOpen={isCategoryOpen}
         isLocationOpen={isLocationOpen}
@@ -275,15 +239,12 @@ export default function CateringServicesAllPost() {
         subheading=""
       />
 
-      {/* Filters and Catering Listings Section */}
       <div className="flex flex-col lg:flex-row">
-        {/* Filters Sidebar */}
         <aside
           className={`w-full lg:w-64 bg-white p-6 border-r border-gray-200 lg:sticky lg:top-0 lg:min-h-[calc(100vh-400px)] lg:overflow-y-auto transition-transform duration-300 ${
             isSidebarOpen ? "block" : "hidden"
           }`}
         >
-          {/* Filters Header with Close Icon */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
             <button
@@ -301,7 +262,6 @@ export default function CateringServicesAllPost() {
           </div>
           <hr className="border-gray-200 mb-4" />
 
-          {/* Cuisine Type Filter */}
           <div className="mb-4">
             <h4 className="text-sm font-medium mb-2 text-gray-700">
               Cuisine Type
@@ -370,10 +330,8 @@ export default function CateringServicesAllPost() {
             </ul>
           </div>
 
-          {/* Horizontal Line */}
           <hr className="border-gray-200 mb-4" />
 
-          {/* Price Range Filter */}
           <div className="mb-4">
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-medium mb-2 text-gray-700">
@@ -396,10 +354,8 @@ export default function CateringServicesAllPost() {
             />
           </div>
 
-          {/* Horizontal Line */}
           <hr className="border-gray-200 mb-4" />
 
-          {/* Order Size Filter */}
           <div className="mb-4">
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-medium mb-2 text-gray-700">
@@ -409,7 +365,10 @@ export default function CateringServicesAllPost() {
                 className="text-gray-800 text-sm hover:underline"
                 onClick={() => {
                   setSelectedOrderSizes([]);
-                  setOrderSizeRange([defaultOrderSizeRange[0], defaultOrderSizeRange[0]]); // Reset to [0, 0]
+                  setOrderSizeRange([
+                    defaultOrderSizeRange[0],
+                    defaultOrderSizeRange[1],
+                  ]);
                 }}
               >
                 reset
@@ -457,10 +416,8 @@ export default function CateringServicesAllPost() {
             </div>
           </div>
 
-          {/* Horizontal Line */}
           <hr className="border-gray-200 mb-4" />
 
-          {/* Location Filter */}
           <div>
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-medium mb-2 text-gray-700">
@@ -468,7 +425,7 @@ export default function CateringServicesAllPost() {
               </h4>
               <button
                 className="text-gray-800 text-sm hover:underline"
-                onClick={() => setLocation("Nigeria")}
+                onClick={() => setLocation("")}
               >
                 reset
               </button>
@@ -478,6 +435,7 @@ export default function CateringServicesAllPost() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             >
+              <option value="">All Locations</option>
               <option value="Nigeria">Nigeria</option>
               <option value="USA">USA</option>
               <option value="UK">UK</option>
@@ -485,7 +443,6 @@ export default function CateringServicesAllPost() {
           </div>
         </aside>
 
-        {/* Catering Listings */}
         <main className="flex-1 py-6 bg-gray-50 overflow-x-auto p-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex justify-between items-center">
@@ -505,7 +462,6 @@ export default function CateringServicesAllPost() {
                   unoptimized
                 />
               </div>
-              {/* Filter Tags */}
               {activeFilters.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {activeFilters.map((filter, index) => (
@@ -547,28 +503,36 @@ export default function CateringServicesAllPost() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCateringServices.length > 0 ? (
-                filteredCateringServices.map((service, index) => (
-                  <Link key={index} href={`/cateringServices/${index + 1}`}>
-                    <Card
-                      name={service.name}
-                      imageSrc={service.imageSrc}
-                      label={service.label}
-                      title={service.title}
-                      location={service.location}
-                      price={service.price}
-                    />
-                  </Link>
-                ))
-              ) : (
-                <p className="text-gray-600 col-span-full text-center">
-                  No catering services match the selected filters.
-                </p>
-              )}
-            </div>
+            {isLoading ? (
+              loadingSkeletons
+            ) : error || !data?.data?.length ? (
+              errorDisplay
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredCateringServices.length > 0 ? (
+                  filteredCateringServices.map((service) => (
+                    <Link
+                      key={service.id}
+                      href={`/cateringServices/${service.id}`}
+                    >
+                      <Card
+                        name={service.name}
+                        imageSrc={service.imageSrc}
+                        label={service.label}
+                        title={service.title}
+                        location={service.location}
+                        price={service.price}
+                      />
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-gray-600 col-span-full text-center">
+                    No catering services match the selected filters.
+                  </p>
+                )}
+              </div>
+            )}
 
-            {/* Pagination */}
             <div className="flex justify-between items-center mt-6 space-x-2 mx-auto md:p-8 p-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
