@@ -4,21 +4,63 @@ import Header from "@/components/layouts/Header";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
-import { Plus, X } from "lucide-react"; // Added X for the close icon
+import { Plus, X } from "lucide-react";
+import { useGetEventCenterByIdQuery } from "../../../../redux/services/eventsApi";
+
+const LoadingSpinner = () => {
+  return (
+    <div className="fixed inset-0 bg-gray-50/80 flex items-center justify-center z-50">
+      <div className="flex flex-col items-center">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 border-4 border-t-[#0047AB] border-gray-200 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-4 text-sm font-medium text-gray-700">Loading Event Center Details...</p>
+      </div>
+    </div>
+  );
+};
 
 export default function EventCenterDetails() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const searchParams = useSearchParams();
 
-  // Retrieve data from query parameters
-  const id = searchParams.get("id") || "N/A";
-  const name = searchParams.get("name") || "N/A";
-  const location = searchParams.get("location") || "N/A";
-  const date = searchParams.get("date") || "N/A";
-  const bookingType = searchParams.get("bookingType") || "N/A";
-  const paymentStatus = searchParams.get("paymentStatus") || "N/A";
-  const bookingStatus = searchParams.get("bookingStatus") || "N/A";
+  // Retrieve event center ID from query parameters
+  const id = searchParams.get("id") || "";
+
+  // Fetch event center details
+  const { data: eventCenter, isLoading, error } = useGetEventCenterByIdQuery(id, {
+    skip: !id,
+  });
+
+  // Handle loading and error states
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error || !eventCenter) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">Error loading event center details. Please try again.</p>
+      </div>
+    );
+  }
+
+  // Format date for display
+  const formattedDate = new Date(eventCenter.createdAt).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
+
+  // Format amenities as comma-separated string
+  const formattedAmenities = eventCenter.amenities.join(", ");
+
+  // Format images as comma-separated URLs
+  const formattedImages = eventCenter.images.join(", ");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,57 +78,101 @@ export default function EventCenterDetails() {
         {/* Event Center Details Content */}
         <main className="md:p-10 p-4">
           <div>
-            <h1 className="md:text-xl text-md font-bold text-gray-950">{id}</h1>
+            <h1 className="md:text-xl text-md font-bold text-gray-950">{eventCenter.id}</h1>
           </div>
 
           {/* Details Card */}
           <div className="rounded-lg border bg-white shadow p-6 mt-6">
             <div className="flex justify-between">
-              <div className="">
+              <div>
                 <div className="flex md:flex-row flex-col md:items-center mb-4">
-                  <p className="text-sm text-gray-500 w-32">Booking ID</p>
-                  <p className="text-sm font-medium text-gray-900">{id}</p>
+                  <p className="text-sm text-gray-500 w-32">Event Center ID</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.id}</p>
                 </div>
                 <div className="flex md:flex-row flex-col md:items-center mb-4">
                   <p className="text-sm text-gray-500 w-32">Name</p>
-                  <p className="text-sm font-medium text-gray-900">{name}</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.description.split(" ")[0]} Center</p>
                 </div>
                 <div className="flex md:flex-row flex-col md:items-center mb-4">
-                  <p className="text-sm text-gray-500 w-32">Booking Type</p>
-                  <p className="text-sm font-medium text-gray-900">{bookingType}</p>
+                  <p className="text-sm text-gray-500 w-32">Description</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.description}</p>
                 </div>
                 <div className="flex md:flex-row flex-col md:items-center mb-4">
-                  <p className="text-sm text-gray-500 w-32">Venue/Caterer</p>
-                  <p className="text-sm font-medium text-gray-900">{location}</p>
+                  <p className="text-sm text-gray-500 w-32">Venue Layout</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.venueLayout}</p>
                 </div>
                 <div className="flex md:flex-row flex-col md:items-center mb-4">
-                  <p className="text-sm text-gray-500 w-32">Date & Time</p>
-                  <p className="text-sm font-medium text-gray-900">{date}</p>
+                  <p className="text-sm text-gray-500 w-32">Location</p>
+                  <p className="text-sm font-medium text-gray-900">{`${eventCenter.city}, ${eventCenter.state}`}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Street Address</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.streetAddress}{eventCenter.streetAddress2 ? `, ${eventCenter.streetAddress2}` : ""}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Postal Code</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.postal}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Country</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.country}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Created At</p>
+                  <p className="text-sm font-medium text-gray-900">{formattedDate}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Deposit Amount</p>
+                  <p className="text-sm font-medium text-gray-900">${eventCenter.depositAmount.toLocaleString()}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Pricing Per Slot</p>
+                  <p className="text-sm font-medium text-gray-900">${eventCenter.pricingPerSlot.toFixed(2)}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Sitting Capacity</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.sittingCapacity}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Amenities</p>
+                  <p className="text-sm font-medium text-gray-900">{formattedAmenities}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Images</p>
+                  <p className="text-sm font-medium text-gray-900">{formattedImages}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Terms of Use</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.termsOfUse}</p>
+                </div>
+                <div className="flex md:flex-row flex-col md:items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Cancellation Policy</p>
+                  <p className="text-sm font-medium text-gray-900">{eventCenter.cancellationPolicy}</p>
                 </div>
                 <div className="flex items-center mb-4">
                   <p className="text-sm text-gray-500 w-32">Payment Status</p>
                   <p
                     className={`text-sm font-medium ${
-                      paymentStatus === "Pending" ? "text-orange-700" : "text-gray-900"
+                      eventCenter.paymentRequired ? "text-orange-700" : "text-gray-900"
                     }`}
                   >
-                    {paymentStatus}
+                    {eventCenter.paymentRequired ? "Pending" : "Paid"}
                   </p>
                 </div>
-                <div className="flex items-center">
-                  <p className="text-sm text-gray-500 w-32">Booking Status</p>
+                <div className="flex items-center mb-4">
+                  <p className="text-sm text-gray-500 w-32">Status</p>
                   <p
                     className={`text-sm font-medium ${
-                      bookingStatus === "Pending" ? "text-orange-700" : "text-gray-900"
+                      eventCenter.status === "ACTIVE" ? "text-gray-900" : "text-orange-700"
                     }`}
                   >
-                    {bookingStatus}
+                    {eventCenter.status}
                   </p>
                 </div>
               </div>
               <div>
                 <button
-                  onClick={() => setIsModalOpen(true)} // Open modal on click
+                  onClick={() => setIsModalOpen(true)}
                   className="inline-flex items-center rounded-md border border-[#0047AB] px-3 py-1 text-sm font-medium text-[#0047AB] hover:bg-blue-50 focus:outline-none"
                 >
                   <Plus className="mr-1 h-4 w-4 text-[#0047AB]" />

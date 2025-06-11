@@ -254,7 +254,7 @@ export default function LoginPage() {
       // Redirect based on userType
       const targetRoute = getRedirectRoute(user);
       if (targetRoute) {
-        router.replace(targetRoute); // Use replace instead of push
+        router.replace(targetRoute); 
         setTimeout(() => setIsNavigating(false), 5000);
       } else {
         setNotification({ message: "Invalid user type", type: "error" });

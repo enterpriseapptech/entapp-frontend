@@ -43,7 +43,10 @@ export const eventsApi = createApi({
     baseUrl: "http://13.48.46.117:8000",
   }),
   endpoints: (builder) => ({
-    getEventCenters: builder.query<EventCentersResponse, { limit: number; offset: number }>({
+    getEventCenters: builder.query<
+      EventCentersResponse,
+      { limit: number; offset: number }
+    >({
       query: ({ limit, offset }) => ({
         url: `/event-centers?limit=${limit}&offset=${offset}`,
         method: "GET",
@@ -55,7 +58,24 @@ export const eventsApi = createApi({
         method: "GET",
       }),
     }),
+    getEventCentersByServiceProvider: builder.query<
+      EventCentersResponse,
+      {
+        serviceProviderId: string;
+        limit: number;
+        offset: number;
+      }
+    >({
+      query: ({ serviceProviderId, limit, offset }) => ({
+        url: `/event-centers?serviceProvider=${serviceProviderId}&limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useGetEventCentersQuery, useGetEventCenterByIdQuery } = eventsApi;
+export const {
+  useGetEventCentersQuery,
+  useGetEventCenterByIdQuery,
+  useGetEventCentersByServiceProviderQuery,
+} = eventsApi;
