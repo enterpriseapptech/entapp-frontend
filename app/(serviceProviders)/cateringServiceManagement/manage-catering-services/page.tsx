@@ -1,17 +1,45 @@
 "use client";
-import { Edit2, Trash2, ChevronRight, X } from "lucide-react";
+import { Edit2, Trash2, ChevronRight, X, Search } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
 import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import { useGetCateringsByServiceProviderQuery } from "../../../../redux/services/cateringApi";
+import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 
 type FilterType = "location" | "status" | "ratings" | "dateAdded" | "availability";
 
+interface CateringService {
+  id: string;
+  name: string;
+  location: string;
+  date: string;
+  status: string;
+  ratings: number;
+  revenue: string;
+  dateAdded: string;
+  availability: string;
+}
+
+const LoadingSpinner = () => {
+  return (
+    <div className="fixed inset-0 bg-gray-50/80 flex items-center justify-center z-50">
+      <div className="flex flex-col items-center">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 border-4 border-t-[#0047AB] border-gray-200 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-4 text-sm font-medium text-gray-700">
+          Loading Catering Services...
+        </p>
+      </div>
+    </div>
+  );
+};
+
 export default function ManageCateringServices() {
-  const router = useRouter(); 
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -37,13 +65,50 @@ export default function ManageCateringServices() {
   // State for controlling the "More filters" dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
-  const [clickedFilter, setClickedFilter] = useState<string | null>(null); 
+  const [clickedFilter, setClickedFilter] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Retrieve user ID from storage
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  }, []);
+
+  // Fetch user data to get serviceProviderId
+  const {
+    data: user,
+    isLoading: isUserLoading,
+    error: userError,
+  } = useGetUserByIdQuery(userId!, {
+    skip: !userId,
+  });
+
+  // Fetch catering services for the service provider
+  const serviceProviderId = user?.serviceProvider?.id;
+  const {
+    data: cateringServicesData,
+    isLoading: isCateringServicesLoading,
+    error: cateringServicesError,
+  } = useGetCateringsByServiceProviderQuery(
+    {
+      serviceProviderId: serviceProviderId!,
+      limit: 100,
+      offset: 0,
+    },
+    {
+      skip: !serviceProviderId,
+    }
+  );
 
   // Detect if the device is mobile based on window width
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768); // Tailwind's `md` breakpoint
+      setIsMobile(window.innerWidth < 768);
     };
 
     handleResize();
@@ -51,119 +116,26 @@ export default function ManageCateringServices() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Sample data for catering services
-  const cateringServices = [
-    {
-      id: "CAT-1001",
-      name: "Delightful Bites",
-      location: "Nigeria",
-      date: "Apr 10, 2025, 12:00 PM",
-      status: "Active",
-      ratings: 5,
-      revenue: "$5,000",
-      dateAdded: "2025-04-01",
-      availability: "Available",
-    },
-    {
-      id: "CAT-1002",
-      name: "Savory Catering",
-      location: "USA",
-      date: "Apr 11, 2025, 1:00 PM",
-      status: "Confirmed",
-      ratings: 4,
-      revenue: "$7,000",
-      dateAdded: "2025-04-02",
-      availability: "Booked",
-    },
-    {
-      id: "CAT-1003",
-      name: "Tasty Treats",
-      location: "UK",
-      date: "Apr 12, 2025, 2:00 PM",
-      status: "Pending",
-      ratings: 3,
-      revenue: "$4,500",
-      dateAdded: "2025-04-03",
-      availability: "Available",
-    },
-    {
-      id: "CAT-1004",
-      name: "Gourmet Eats",
-      location: "Nigeria",
-      date: "Apr 13, 2025, 3:00 PM",
-      status: "Active",
-      ratings: 2,
-      revenue: "$6,000",
-      dateAdded: "2025-04-04",
-      availability: "Booked",
-    },
-    {
-      id: "CAT-1005",
-      name: "Flavor Fusion",
-      location: "USA",
-      date: "Apr 14, 2025, 4:00 PM",
-      status: "Confirmed",
-      ratings: 5,
-      revenue: "$8,000",
-      dateAdded: "2025-04-05",
-      availability: "Available",
-    },
-    {
-      id: "CAT-1006",
-      name: "CaterJoy",
-      location: "UK",
-      date: "Apr 15, 2025, 5:00 PM",
-      status: "Pending",
-      ratings: 1,
-      revenue: "$3,500",
-      dateAdded: "2025-04-06",
-      availability: "Booked",
-    },
-    {
-      id: "CAT-1007",
-      name: "FeastMasters",
-      location: "Nigeria",
-      date: "Apr 16, 2025, 6:00 PM",
-      status: "Active",
-      ratings: 4,
-      revenue: "$5,500",
-      dateAdded: "2025-04-07",
-      availability: "Available",
-    },
-    {
-      id: "CAT-1008",
-      name: "Epicurean Delights",
-      location: "USA",
-      date: "Apr 17, 2025, 7:00 PM",
-      status: "Confirmed",
-      ratings: 3,
-      revenue: "$6,500",
-      dateAdded: "2025-04-08",
-      availability: "Booked",
-    },
-    {
-      id: "CAT-1009",
-      name: "Cuisine Crafters",
-      location: "UK",
-      date: "Apr 18, 2025, 8:00 PM",
-      status: "Pending",
-      ratings: 2,
-      revenue: "$4,000",
-      dateAdded: "2025-04-09",
-      availability: "Available",
-    },
-    {
-      id: "CAT-1010",
-      name: "Bite Bliss",
-      location: "Nigeria",
-      date: "Apr 19, 2025, 9:00 PM",
-      status: "Active",
-      ratings: 5,
-      revenue: "$7,500",
-      dateAdded: "2025-04-10",
-      availability: "Booked",
-    },
-  ];
+  // Map API data to table format
+  const cateringServices: CateringService[] =
+    cateringServicesData?.data?.map((service) => ({
+      id: service.id,
+      name: service.tagLine || "Catering Service",
+      location: `${service.city}, ${service.state}`,
+      date: new Date(service.createdAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      }),
+      status: service.status,
+      ratings: 0, // Placeholder: API doesn't provide ratings
+      revenue: `$${service.depositAmount.toLocaleString()}`,
+      dateAdded: new Date(service.createdAt).toISOString().split("T")[0],
+      availability: service.status === "ACTIVE" ? "Available" : "Booked",
+    })) || [];
 
   // Extract unique values for each filter category
   const uniqueLocations = [...new Set(cateringServices.map((service) => service.location))];
@@ -281,20 +253,7 @@ export default function ManageCateringServices() {
     setClickedFilter((prev) => (prev === filter ? null : filter));
   };
 
-  // Define the CateringService type (added)
-  type CateringService = {
-    id: string;
-    name: string;
-    location: string;
-    date: string;
-    status: string;
-    ratings: number;
-    revenue: string;
-    dateAdded: string;
-    availability: string;
-  };
-
-  // Handle navigation to the details page (added)
+  // Handle navigation to the details page
   const handleViewCateringService = (service: CateringService) => {
     router.push(
       `/cateringServiceManagement/catering-service-details?id=${encodeURIComponent(
@@ -310,6 +269,75 @@ export default function ManageCateringServices() {
       )}&availability=${encodeURIComponent(service.availability)}`
     );
   };
+
+  // Show loading state
+  if (isUserLoading || isCateringServicesLoading || !userId) {
+    return <LoadingSpinner />;
+  }
+
+  // Handle errors
+  if (userError || cateringServicesError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">
+          Error loading catering services. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  // Handle empty data state
+  if (!cateringServicesData?.data?.length) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <CateringServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="md:text-xl text-md font-bold text-gray-950">
+                Manage Catering Services
+              </h1>
+              <div className="flex gap-2">
+                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
+                  <Image
+                    width={10}
+                    height={10}
+                    alt="import"
+                    src="/import.png"
+                    className="w-5 h-5"
+                    unoptimized
+                  />
+                  <span>Import</span>
+                </button>
+                <Link href="/cateringServiceManagement/add-catering-services">
+                  <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
+                    <Image
+                      width={10}
+                      height={10}
+                      alt="add"
+                      src="/add.png"
+                      className="w-4 h-4"
+                      unoptimized
+                    />
+                    <span>Add</span>
+                  </button>
+                </Link>
+              </div>
+            </div>
+            <div className="rounded-lg border bg-white shadow p-6 text-center">
+              <p className="text-gray-600 text-sm">
+                No catering services found. Click Add to create a new catering service.
+              </p>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -607,8 +635,8 @@ export default function ManageCateringServices() {
                   {paginatedCateringServices.map((service, index) => (
                     <tr
                       key={index}
-                      className="border-t hover:bg-gray-50 cursor-pointer" // Added hover and cursor styles
-                      onClick={() => handleViewCateringService(service)} // Added onClick handler
+                      className="border-t hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleViewCateringService(service)}
                     >
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {service.id}
@@ -625,7 +653,7 @@ export default function ManageCateringServices() {
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            service.status === "Active"
+                            service.status === "ACTIVE"
                               ? "bg-green-50 text-green-700"
                               : service.status === "Confirmed"
                               ? "bg-blue-50 text-blue-700"

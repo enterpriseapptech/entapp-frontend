@@ -35,6 +35,7 @@ export interface Catering {
   updatedBy: string | null;
   deletedAt: string | null;
   deletedBy: string | null;
+  paymentRequired?: boolean;
 }
 
 export interface CateringResponse {
@@ -45,7 +46,7 @@ export interface CateringResponse {
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://13.48.46.117:8000",
+    baseUrl: "http://16.171.133.99:8000",
   }),
   endpoints: (builder) => ({
     getCaterings: builder.query<CateringResponse, { limit: number; offset: number }>({
@@ -60,7 +61,20 @@ export const cateringApi = createApi({
         method: "GET",
       }),
     }),
+    getCateringsByServiceProvider: builder.query<
+      CateringResponse,
+      { serviceProviderId: string; limit: number; offset: number }
+    >({
+      query: ({ serviceProviderId, limit, offset }) => ({
+        url: `/catering?serviceProvider=${serviceProviderId}&limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useGetCateringsQuery, useGetCateringByIdQuery } = cateringApi;
+export const {
+  useGetCateringsQuery,
+  useGetCateringByIdQuery,
+  useGetCateringsByServiceProviderQuery,
+} = cateringApi;

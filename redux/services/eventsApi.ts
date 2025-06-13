@@ -40,7 +40,7 @@ export interface EventCentersResponse {
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://13.48.46.117:8000",
+    baseUrl: "http://16.171.133.99:8000",
   }),
   endpoints: (builder) => ({
     getEventCenters: builder.query<
