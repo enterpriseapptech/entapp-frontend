@@ -1,13 +1,13 @@
 "use client";
+
 import { Edit2, Trash2, ChevronRight, X, Search } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
-import { useGetEventCentersByServiceProviderQuery } from "../../../../redux/services/eventsApi";
-import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
+import SideBar from "@/components/layouts/SideBar";
+import { useGetEventCentersQuery } from "../../../redux/services/eventsApi";
 
 type FilterType =
   | "location"
@@ -18,7 +18,7 @@ type FilterType =
   | "paymentStatus";
 
 interface EventCenterTableData {
-  id: string;
+  id?: string;
   name: string;
   location: string;
   date: string;
@@ -49,20 +49,21 @@ const LoadingSpinner = () => {
   );
 };
 
-export default function ManageEventCenter() {
+export default function GetAllEvents() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-
+//   const [isOpen, setIsOpen] = useState(false);
+  
   // State for managing filters
   const [filters, setFilters] = useState<{
-    location: string | null;
-    status: string | null;
-    ratings: number | null;
-    eventType: string | null;
-    bookingStatus: string | null;
-    paymentStatus: string | null;
+    location?: string | null;
+    status?: string | null;
+    ratings?: number | null;
+    eventType?: string | null;
+    bookingStatus?: string | null;
+    paymentStatus?: string | null;
   }>({
     location: null,
     status: null,
@@ -81,42 +82,15 @@ export default function ManageEventCenter() {
   const [clickedFilter, setClickedFilter] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
-  // Retrieve user ID from storage
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedUserId =
-      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
-    if (storedUserId) {
-      setUserId(storedUserId);
-    }
-  }, []);
-
-  // Fetch user data to get serviceProviderId
-  const {
-    data: user,
-    isLoading: isUserLoading,
-    error: userError,
-  } = useGetUserByIdQuery(userId!, {
-    skip: !userId,
-  });
-
-  // Fetch event centers for the service provider
-  const serviceProviderId = user?.serviceProvider?.id;
+  // Fetch event centers using the provided API
   const {
     data: eventCentersData,
     isLoading: isEventCentersLoading,
     error: eventCentersError,
-  } = useGetEventCentersByServiceProviderQuery(
-    {
-      serviceProviderId: serviceProviderId!,
-      limit: 100,
-      offset: 0,
-    },
-    {
-      skip: !serviceProviderId,
-    }
-  );
+  } = useGetEventCentersQuery({
+    limit: 100,
+    offset: 0,
+  });
 
   // Detect if the device is mobile based on window width
   useEffect(() => {
@@ -133,41 +107,39 @@ export default function ManageEventCenter() {
   const eventCenters: EventCenterTableData[] =
     eventCentersData?.data?.map((center) => ({
       id: center.id,
-      name: center.description.split(" ")[0] + " Center",
-      location: `${center.city}`,
-      date: new Date(center.createdAt).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      }),
-      status: center.status,
-      ratings: 0,
-      revenue: `$${center.depositAmount.toLocaleString()}`,
-      bookingType: center.venueLayout,
+      name: center.description?.split(" ")[0] + " Event" || "Unnamed Event",
+      location: center.city || "Unknown",
+      date: center.createdAt
+        ? new Date(center.createdAt).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
+          })
+        : "N/A",
+      status: center.status || "Unknown",
+      ratings: 0, // Placeholder, adjust if API provides ratings
+      revenue: center.depositAmount
+        ? `$${center.depositAmount.toLocaleString()}`
+        : "$0",
+      bookingType: center.venueLayout || "N/A",
       paymentStatus: center.paymentRequired ? "Pending" : "Paid",
       bookingStatus: center.status === "ACTIVE" ? "Confirmed" : "Pending",
       eventType: "Event",
-      capacity: center.sittingCapacity.toString(),
-      contactNumber: "+1234567890",
+      capacity: center.sittingCapacity?.toString() || "N/A",
+      contactNumber: "+1234567890", 
       email: "contact@example.com",
     })) || [];
 
   // Extract unique values for each filter category
-  const uniqueLocations = [
-    ...new Set(eventCenters.map((center) => center.location)),
-  ];
-  const uniqueStatuses = [
-    ...new Set(eventCenters.map((center) => center.status)),
-  ];
-  const uniqueRatings = [
-    ...new Set(eventCenters.map((center) => center.ratings)),
-  ].sort((a, b) => a - b);
-  const uniqueEventTypes = [
-    ...new Set(eventCenters.map((center) => center.eventType)),
-  ];
+  const uniqueLocations = [...new Set(eventCenters.map((center) => center.location))];
+  const uniqueStatuses = [...new Set(eventCenters.map((center) => center.status))];
+  const uniqueRatings = [...new Set(eventCenters.map((center) => center.ratings))].sort(
+    (a, b) => a - b
+  );
+  const uniqueEventTypes = [...new Set(eventCenters.map((center) => center.eventType))];
   const uniqueBookingStatuses = [
     ...new Set(eventCenters.map((center) => center.bookingStatus)),
   ];
@@ -182,8 +154,7 @@ export default function ManageEventCenter() {
       (!filters.status || center.status === filters.status) &&
       (filters.ratings === null || center.ratings === filters.ratings) &&
       (!filters.eventType || center.eventType === filters.eventType) &&
-      (!filters.bookingStatus ||
-        center.bookingStatus === filters.bookingStatus) &&
+      (!filters.bookingStatus || center.bookingStatus === filters.bookingStatus) &&
       (!filters.paymentStatus || center.paymentStatus === filters.paymentStatus)
     );
   });
@@ -193,7 +164,7 @@ export default function ManageEventCenter() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      center.id.toLowerCase().includes(query) ||
+      (center.id?.toString().toLowerCase().includes(query) || false) ||
       center.name.toLowerCase().includes(query) ||
       center.location.toLowerCase().includes(query) ||
       center.date.toLowerCase().includes(query) ||
@@ -219,8 +190,8 @@ export default function ManageEventCenter() {
   );
 
   // Generate page numbers with ellipsis
-  const getPageNumbers = () => {
-    const pageNumbers = [];
+  const getPageNumbers = (): (number | string)[] => {
+    const pageNumbers: (number | string)[] = [];
     const maxVisiblePages = 5;
 
     if (totalPages <= maxVisiblePages) {
@@ -259,10 +230,7 @@ export default function ManageEventCenter() {
   };
 
   // Handle filter application
-  const applyFilter = (
-    filterType: FilterType,
-    value: string | number | null
-  ) => {
+  const applyFilter = (filterType: FilterType, value: string | number | null) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
@@ -293,10 +261,10 @@ export default function ManageEventCenter() {
   };
 
   // Handle navigation to the details page
-  const handleViewEventCenter = (center: EventCenterTableData) => {
+  const handleViewEvent = (center: EventCenterTableData) => {
     router.push(
-      `/eventServiceManagement/event-center-details?id=${encodeURIComponent(
-        center.id
+      `/admin/event-details?id=${encodeURIComponent(
+        center.id?.toString() || ""
       )}&name=${encodeURIComponent(center.name)}&location=${encodeURIComponent(
         center.location
       )}&date=${encodeURIComponent(center.date)}&status=${encodeURIComponent(
@@ -320,17 +288,15 @@ export default function ManageEventCenter() {
   };
 
   // Show loading state
-  if (isUserLoading || isEventCentersLoading || !userId) {
+  if (isEventCentersLoading) {
     return <LoadingSpinner />;
   }
 
   // Handle errors
-  if (userError || eventCentersError) {
+  if (eventCentersError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-red-500">
-          Error loading event centers. Please try again.
-        </p>
+        <p className="text-red-500">Error loading events. Please try again.</p>
       </div>
     );
   }
@@ -339,7 +305,7 @@ export default function ManageEventCenter() {
   if (!eventCentersData?.data?.length) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <SideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -348,7 +314,7 @@ export default function ManageEventCenter() {
           <main className="md:p-10 p-4">
             <div className="flex justify-between items-center mb-6">
               <h1 className="md:text-xl text-md font-bold text-gray-950">
-                Manage Event Center
+                Get All Events
               </h1>
               <div className="flex gap-2">
                 <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
@@ -362,7 +328,7 @@ export default function ManageEventCenter() {
                   />
                   <span>Import</span>
                 </button>
-                <Link href="/eventServiceManagement/add-event-center">
+                <Link href="/admin/add-event">
                   <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                     <Image
                       width={10}
@@ -379,8 +345,7 @@ export default function ManageEventCenter() {
             </div>
             <div className="rounded-lg border bg-white shadow p-6 text-center">
               <p className="text-gray-600 text-sm">
-                No event centers found. Click Add; to create a new event
-                center.
+                No events found. Click Add&quot; to create a new event.
               </p>
             </div>
           </main>
@@ -392,7 +357,7 @@ export default function ManageEventCenter() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <EventServiceSideBar
+      <SideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -402,11 +367,11 @@ export default function ManageEventCenter() {
         {/* Header */}
         <Header setIsSidebarOpen={setIsSidebarOpen} />
 
-        {/* Manage Event Center Content */}
+        {/* Get All Events Content */}
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Manage Event Center
+              Get All Events
             </h1>
             <div className="flex gap-2">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
@@ -420,7 +385,7 @@ export default function ManageEventCenter() {
                 />
                 <span>Import</span>
               </button>
-              <Link href="/eventServiceManagement/add-event-center">
+              {/* <Link href="/admin/add-event">
                 <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                   <Image
                     width={10}
@@ -432,11 +397,11 @@ export default function ManageEventCenter() {
                   />
                   <span>Add</span>
                 </button>
-              </Link>
+              </Link> */}
             </div>
           </div>
 
-          {/* Event Centers Table */}
+          {/* Events Table */}
           <div className="rounded-lg border bg-white shadow">
             {/* Filters and Search */}
             <div className="p-6">
@@ -555,9 +520,7 @@ export default function ManageEventCenter() {
                                   <button
                                     key={status}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("status", status)
-                                    }
+                                    onClick={() => applyFilter("status", status)}
                                   >
                                     {status}
                                   </button>
@@ -599,9 +562,7 @@ export default function ManageEventCenter() {
                                   <button
                                     key={rating}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("ratings", rating)
-                                    }
+                                    onClick={() => applyFilter("ratings", rating)}
                                   >
                                     {rating} Star{rating !== 1 ? "s" : ""}
                                   </button>
@@ -688,10 +649,7 @@ export default function ManageEventCenter() {
                                     key={bookingStatus}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter(
-                                        "bookingStatus",
-                                        bookingStatus
-                                      )
+                                      applyFilter("bookingStatus", bookingStatus)
                                     }
                                   >
                                     {bookingStatus}
@@ -735,10 +693,7 @@ export default function ManageEventCenter() {
                                     key={paymentStatus}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter(
-                                        "paymentStatus",
-                                        paymentStatus
-                                      )
+                                      applyFilter("paymentStatus", paymentStatus)
                                     }
                                   >
                                     {paymentStatus}
@@ -772,7 +727,7 @@ export default function ManageEventCenter() {
                 <thead>
                   <tr className="border-t">
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Event Center ID
+                      Event ID
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Names
@@ -802,10 +757,10 @@ export default function ManageEventCenter() {
                     <tr
                       key={index}
                       className="border-t hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleViewEventCenter(center)}
+                      onClick={() => handleViewEvent(center)}
                     >
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.id}
+                        {center.id || "N/A"}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {center.name}

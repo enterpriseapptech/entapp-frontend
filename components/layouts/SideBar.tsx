@@ -3,7 +3,7 @@
 import { BarChart3, X, Search, LifeBuoy, Settings } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import Link from "next/link"; // Import Link from Next.js
+import Link from "next/link";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   // Helper function to handle link clicks (for mobile sidebar toggle)
   const handleLinkClick = () => {
     if (isOpen) {
-      toggleSidebar(); // Close the sidebar on mobile after clicking a link
+      toggleSidebar(); 
     }
   };
 
@@ -71,6 +71,26 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           >
             <BarChart3 className="w-5 h-5" />
             <span className="font-medium text-sm">Overview</span>
+          </Link>
+
+          <Link
+            href="/admin/get-all-events"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              pathname === "/admin/get-all-events"
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Image
+              width={10}
+              height={10}
+              alt="getAllEventsIcon"
+              src="/mangeEventCenterIcon.png"
+              className="w-5 h-5"
+              unoptimized
+            />
+            <span className="font-medium text-sm">Get All Events</span>
           </Link>
 
           <Link

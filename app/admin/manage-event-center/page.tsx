@@ -1,13 +1,53 @@
 "use client";
 import { Edit2, Trash2, ChevronRight, X, Search } from "lucide-react";
-import SideBar from "@/components/layouts/SideBar";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import SideBar from "@/components/layouts/SideBar";
+import { useGetEventCentersByServiceProviderQuery } from "../../../redux/services/eventsApi";
+import { useGetUserByIdQuery } from "../../../redux/services/authApi";
 
-type FilterType = "location" | "status" | "ratings" | "eventType" | "bookingStatus" | "paymentStatus";
+type FilterType =
+  | "location"
+  | "status"
+  | "ratings"
+  | "eventType"
+  | "bookingStatus"
+  | "paymentStatus";
+
+interface EventCenterTableData {
+  id: string;
+  name: string;
+  location: string;
+  date: string;
+  status: string;
+  ratings: number;
+  revenue: string;
+  bookingType: string;
+  paymentStatus: string;
+  bookingStatus: string;
+  eventType: string;
+  capacity: string;
+  contactNumber: string;
+  email: string;
+}
+
+const LoadingSpinner = () => {
+  return (
+    <div className="fixed inset-0 bg-gray-50/80 flex items-center justify-center z-50">
+      <div className="flex flex-col items-center">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 border-4 border-t-[#0047AB] border-gray-200 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-4 text-sm font-medium text-gray-700">
+          Loading Event Centers...
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default function ManageEventCenter() {
   const router = useRouter();
@@ -38,13 +78,67 @@ export default function ManageEventCenter() {
   // State for controlling the "More filters" dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
-  const [clickedFilter, setClickedFilter] = useState<string | null>(null); // For mobile click events
+  const [clickedFilter, setClickedFilter] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
+  // Retrieve user ID from storage
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  }, []);
+
+  // Fetch user data to get serviceProviderId
+  const {
+    data: user,
+    isLoading: isUserLoading,
+    error: userError,
+  } = useGetUserByIdQuery(userId!, {
+    skip: !userId,
+  });
+  useEffect(() => {
+  if (user) {
+    console.log("Full User Object:", JSON.stringify(user, null, 2));
+  }
+}, [user]);
+  // Log user data when it becomes available
+  useEffect(() => {
+    if (user) {
+      console.log("User Data:", user);
+    }
+  }, [user]);
+  // Fetch event centers for the service provider
+  const serviceProviderId = 
+  user?.userType === "ADMIN" 
+    ? user.id 
+    : user?.serviceProvider?.id || '';
+  const {
+    data: eventCentersData,
+    isLoading: isEventCentersLoading,
+    error: eventCentersError,
+  } = useGetEventCentersByServiceProviderQuery(
+    {
+      serviceProviderId: serviceProviderId!,
+      limit: 100,
+      offset: 0,
+    },
+    {
+      skip: !serviceProviderId,
+    }
+  );
+  useEffect(() => {
+    if (eventCentersData?.data) {
+      console.log("Event Centers Data:", eventCentersData.data);
+    }
+  }, [eventCentersData]);
   // Detect if the device is mobile based on window width
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768); // Tailwind's `md` breakpoint
+      setIsMobile(window.innerWidth < 768);
     };
 
     handleResize();
@@ -52,179 +146,51 @@ export default function ManageEventCenter() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Sample data for the event centers
-  const eventCenters = [
-    {
-      id: "BK-10234",
-      name: "Jon Doe",
-      location: "Skyline Venue",
-      date: "Feb 2, 2025, 5:00 PM",
-      status: "In Progress",
+  // Map API data to table format
+  const eventCenters: EventCenterTableData[] =
+    eventCentersData?.data?.map((center) => ({
+      id: center.id,
+      name: center.description.split(" ")[0] + " Center",
+      location: `${center.city}`,
+      date: new Date(center.createdAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      }),
+      status: center.status,
       ratings: 0,
-      revenue: "$10,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Wedding",
-      capacity: "200",
+      revenue: `$${center.depositAmount.toLocaleString()}`,
+      bookingType: center.venueLayout,
+      paymentStatus: center.paymentRequired ? "Pending" : "Paid",
+      bookingStatus: center.status === "ACTIVE" ? "Confirmed" : "Pending",
+      eventType: "Event",
+      capacity: center.sittingCapacity.toString(),
       contactNumber: "+1234567890",
-      email: "jondoe@example.com",
-    },
-    {
-      id: "BK-10235",
-      name: "Jane Smith",
-      location: "Grand Pavilion",
-      date: "Feb 3, 2025, 5:00 PM",
-      status: "Confirmed",
-      ratings: 4,
-      revenue: "$12,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Corporate Event",
-      capacity: "150",
-      contactNumber: "+1987654321",
-      email: "janesmith@example.com",
-    },
-    {
-      id: "BK-10236",
-      name: "Alice Johnson",
-      location: "Ocean Breeze Hall",
-      date: "Feb 4, 2025, 6:00 PM",
-      status: "Pending",
-      ratings: 3,
-      revenue: "$8,000",
-      bookingType: "Conference Room",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Seminar",
-      capacity: "100",
-      contactNumber: "+1122334455",
-      email: "alicej@example.com",
-    },
-    {
-      id: "BK-10237",
-      name: "Bob Brown",
-      location: "Sunset Venue",
-      date: "Feb 5, 2025, 7:00 PM",
-      status: "In Progress",
-      ratings: 5,
-      revenue: "$15,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Birthday Party",
-      capacity: "250",
-      contactNumber: "+1555666777",
-      email: "bobbrown@example.com",
-    },
-    {
-      id: "BK-10238",
-      name: "Clara Davis",
-      location: "Moonlight Hall",
-      date: "Feb 6, 2025, 4:00 PM",
-      status: "Confirmed",
-      ratings: 2,
-      revenue: "$9,000",
-      bookingType: "Banquet Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Anniversary",
-      capacity: "180",
-      contactNumber: "+1444333222",
-      email: "claradavis@example.com",
-    },
-    {
-      id: "BK-10239",
-      name: "David Wilson",
-      location: "Starlight Venue",
-      date: "Feb 7, 2025, 8:00 PM",
-      status: "Pending",
-      ratings: 1,
-      revenue: "$7,500",
-      bookingType: "Event Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Wedding",
-      capacity: "220",
-      contactNumber: "+1666777888",
-      email: "davidwilson@example.com",
-    },
-    {
-      id: "BK-10240",
-      name: "Emma Taylor",
-      location: "Golden Hall",
-      date: "Feb 8, 2025, 3:00 PM",
-      status: "In Progress",
-      ratings: 4,
-      revenue: "$11,000",
-      bookingType: "Conference Room",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Workshop",
-      capacity: "120",
-      contactNumber: "+1777888999",
-      email: "emmataylor@example.com",
-    },
-    {
-      id: "BK-10241",
-      name: "Frank Harris",
-      location: "Silver Venue",
-      date: "Feb 9, 2025, 2:00 PM",
-      status: "Confirmed",
-      ratings: 3,
-      revenue: "$13,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Corporate Event",
-      capacity: "200",
-      contactNumber: "+1888999000",
-      email: "frankharris@example.com",
-    },
-    {
-      id: "BK-10242",
-      name: "Grace Lee",
-      location: "Crystal Pavilion",
-      date: "Feb 10, 2025, 6:00 PM",
-      status: "Pending",
-      ratings: 2,
-      revenue: "$6,000",
-      bookingType: "Banquet Hall",
-      paymentStatus: "Pending",
-      bookingStatus: "Pending",
-      eventType: "Engagement Party",
-      capacity: "160",
-      contactNumber: "+1999000111",
-      email: "gracelee@example.com",
-    },
-    {
-      id: "BK-10243",
-      name: "Henry Clark",
-      location: "Emerald Hall",
-      date: "Feb 11, 2025, 5:00 PM",
-      status: "In Progress",
-      ratings: 5,
-      revenue: "$14,000",
-      bookingType: "Event Hall",
-      paymentStatus: "Paid",
-      bookingStatus: "Confirmed",
-      eventType: "Wedding",
-      capacity: "240",
-      contactNumber: "+1222111333",
-      email: "henryclark@example.com",
-    },
-  ];
+      email: "contact@example.com",
+    })) || [];
 
   // Extract unique values for each filter category
-  const uniqueLocations = [...new Set(eventCenters.map((center) => center.location))];
-  const uniqueStatuses = [...new Set(eventCenters.map((center) => center.status))];
-  const uniqueRatings = [...new Set(eventCenters.map((center) => center.ratings))].sort(
-    (a, b) => a - b
-  );
-  const uniqueEventTypes = [...new Set(eventCenters.map((center) => center.eventType))];
-  const uniqueBookingStatuses = [...new Set(eventCenters.map((center) => center.bookingStatus))];
-  const uniquePaymentStatuses = [...new Set(eventCenters.map((center) => center.paymentStatus))];
+  const uniqueLocations = [
+    ...new Set(eventCenters.map((center) => center.location)),
+  ];
+  const uniqueStatuses = [
+    ...new Set(eventCenters.map((center) => center.status)),
+  ];
+  const uniqueRatings = [
+    ...new Set(eventCenters.map((center) => center.ratings)),
+  ].sort((a, b) => a - b);
+  const uniqueEventTypes = [
+    ...new Set(eventCenters.map((center) => center.eventType)),
+  ];
+  const uniqueBookingStatuses = [
+    ...new Set(eventCenters.map((center) => center.bookingStatus)),
+  ];
+  const uniquePaymentStatuses = [
+    ...new Set(eventCenters.map((center) => center.paymentStatus)),
+  ];
 
   // Apply filters to the data
   const filteredEventCenters = eventCenters.filter((center) => {
@@ -233,7 +199,8 @@ export default function ManageEventCenter() {
       (!filters.status || center.status === filters.status) &&
       (filters.ratings === null || center.ratings === filters.ratings) &&
       (!filters.eventType || center.eventType === filters.eventType) &&
-      (!filters.bookingStatus || center.bookingStatus === filters.bookingStatus) &&
+      (!filters.bookingStatus ||
+        center.bookingStatus === filters.bookingStatus) &&
       (!filters.paymentStatus || center.paymentStatus === filters.paymentStatus)
     );
   });
@@ -309,7 +276,10 @@ export default function ManageEventCenter() {
   };
 
   // Handle filter application
-  const applyFilter = (filterType: FilterType, value: string | number | null) => {
+  const applyFilter = (
+    filterType: FilterType,
+    value: string | number | null
+  ) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
@@ -340,26 +310,9 @@ export default function ManageEventCenter() {
   };
 
   // Handle navigation to the details page
-  type EventCenter = {
-    id: string;
-    name: string;
-    location: string;
-    date: string;
-    status: string;
-    ratings: number;
-    revenue: string;
-    bookingType: string;
-    paymentStatus: string;
-    bookingStatus: string;
-    eventType: string;
-    capacity: string;
-    contactNumber: string;
-    email: string;
-  };
-
-  const handleViewEventCenter = (center: EventCenter) => {
+  const handleViewEventCenter = (center: EventCenterTableData) => {
     router.push(
-      `/admin/event-center-details?id=${encodeURIComponent(
+      `/eventServiceManagement/event-center-details?id=${encodeURIComponent(
         center.id
       )}&name=${encodeURIComponent(center.name)}&location=${encodeURIComponent(
         center.location
@@ -382,6 +335,76 @@ export default function ManageEventCenter() {
       )}&email=${encodeURIComponent(center.email)}`
     );
   };
+
+  // Show loading state
+  if (isUserLoading || isEventCentersLoading || !userId) {
+    return <LoadingSpinner />;
+  }
+
+  // Handle errors
+  if (userError || eventCentersError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">
+          Error loading event centers. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  // Handle empty data state
+  if (!eventCentersData?.data?.length) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <SideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="md:text-xl text-md font-bold text-gray-950">
+                Manage Event Center
+              </h1>
+              <div className="flex gap-2">
+                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
+                  <Image
+                    width={10}
+                    height={10}
+                    alt="import"
+                    src="/import.png"
+                    className="w-5 h-5"
+                    unoptimized
+                  />
+                  <span>Import</span>
+                </button>
+                <Link href="/eventServiceManagement/add-event-center">
+                  <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
+                    <Image
+                      width={10}
+                      height={10}
+                      alt="add"
+                      src="/add.png"
+                      className="w-4 h-4"
+                      unoptimized
+                    />
+                    <span>Add</span>
+                  </button>
+                </Link>
+              </div>
+            </div>
+            <div className="rounded-lg border bg-white shadow p-6 text-center">
+              <p className="text-gray-600 text-sm">
+                No event centers found. Click Add; to create a new event
+                center.
+              </p>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -414,7 +437,7 @@ export default function ManageEventCenter() {
                 />
                 <span>Import</span>
               </button>
-              <Link href="/admin/add-event-center">
+              <Link href="/eventServiceManagement/add-event-center">
                 <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                   <Image
                     width={10}
@@ -440,7 +463,7 @@ export default function ManageEventCenter() {
                     value ? (
                       <button
                         key={key}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium cursor-pointer"
                         onClick={() => removeFilter(key as FilterType)}
                       >
                         <span>
@@ -450,22 +473,23 @@ export default function ManageEventCenter() {
                       </button>
                     ) : null
                   )}
+
                   <div className="relative">
                     <button
-                      className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium cursor-pointer"
                       onClick={() =>
                         setIsFilterDropdownOpen(!isFilterDropdownOpen)
                       }
                     >
                       <Image
+                        src="/filterIcon.png"
+                        alt="Filter Icon"
                         width={10}
                         height={10}
-                        alt="filter"
-                        src="/filterIcon.png"
                         className="w-4 h-4"
                         unoptimized
                       />
-                      <span>More filters</span>
+                      <span>More Filters</span>
                     </button>
 
                     {isFilterDropdownOpen && (
@@ -474,18 +498,32 @@ export default function ManageEventCenter() {
                           {/* Location Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("location")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("location")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("location")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("location")
+                              }
                             >
                               Location
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "location" : hoveredFilter === "location") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "location"
+                              : hoveredFilter === "location") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueLocations.map((location) => (
                                   <button
                                     key={location}
@@ -504,23 +542,39 @@ export default function ManageEventCenter() {
                           {/* Status Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("status")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("status")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("status")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("status")
+                              }
                             >
                               Status
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "status" : hoveredFilter === "status") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "status"
+                              : hoveredFilter === "status") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueStatuses.map((status) => (
                                   <button
                                     key={status}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() => applyFilter("status", status)}
+                                    onClick={() =>
+                                      applyFilter("status", status)
+                                    }
                                   >
                                     {status}
                                   </button>
@@ -532,18 +586,32 @@ export default function ManageEventCenter() {
                           {/* Ratings Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("ratings")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("ratings")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("ratings")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("ratings")
+                              }
                             >
                               Ratings
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "ratings" : hoveredFilter === "ratings") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "ratings"
+                              : hoveredFilter === "ratings") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueRatings.map((rating) => (
                                   <button
                                     key={rating}
@@ -562,18 +630,32 @@ export default function ManageEventCenter() {
                           {/* Event Type Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("eventType")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("eventType")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("eventType")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("eventType")
+                              }
                             >
                               Event Type
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "eventType" : hoveredFilter === "eventType") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "eventType"
+                              : hoveredFilter === "eventType") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueEventTypes.map((eventType) => (
                                   <button
                                     key={eventType}
@@ -592,24 +674,41 @@ export default function ManageEventCenter() {
                           {/* Booking Status Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("bookingStatus")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("bookingStatus")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("bookingStatus")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("bookingStatus")
+                              }
                             >
                               Booking Status
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "bookingStatus" : hoveredFilter === "bookingStatus") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "bookingStatus"
+                              : hoveredFilter === "bookingStatus") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueBookingStatuses.map((bookingStatus) => (
                                   <button
                                     key={bookingStatus}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter("bookingStatus", bookingStatus)
+                                      applyFilter(
+                                        "bookingStatus",
+                                        bookingStatus
+                                      )
                                     }
                                   >
                                     {bookingStatus}
@@ -622,24 +721,41 @@ export default function ManageEventCenter() {
                           {/* Payment Status Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("paymentStatus")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("paymentStatus")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("paymentStatus")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("paymentStatus")
+                              }
                             >
                               Payment Status
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "paymentStatus" : hoveredFilter === "paymentStatus") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "paymentStatus"
+                              : hoveredFilter === "paymentStatus") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniquePaymentStatuses.map((paymentStatus) => (
                                   <button
                                     key={paymentStatus}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter("paymentStatus", paymentStatus)
+                                      applyFilter(
+                                        "paymentStatus",
+                                        paymentStatus
+                                      )
                                     }
                                   >
                                     {paymentStatus}

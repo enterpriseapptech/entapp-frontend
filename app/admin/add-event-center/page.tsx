@@ -1,291 +1,396 @@
-// pages/add-event-center.tsx
 "use client";
-import { useState, ChangeEvent, FormEvent, DragEvent } from "react";
-import Link from "next/link";
-import SideBar from "@/components/layouts/SideBar";
-import Header from "@/components/layouts/Header";
 
-// Define the FormData interface
-interface FormData {
-  eventCenterName: string;
-  address: string;
-  capacity: string;
-  location: string;
-  contactDetails: string[];
-  eventTypes: string[];
-  amenities: string[];
-  description: string;
-  pricePerDay: number;
-  availability: string[];
-  images: File[];
-}
+import { useState, FormEvent, ChangeEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import Header from "@/components/layouts/Header";
+import SideBar from "@/components/layouts/SideBar";
+import { useCreateEventCenterMutation } from "../../../redux/services/eventsApi";
+import Notification from "../../../components/ui/Notification";
+
+const eventTypesOptions = ["Wedding", "Conference", "Birthday", "Party"];
+const amenitiesOptions = [
+  "WIFI",
+  "SECURITY",
+  "PARKINGSPACE",
+  "PROJECTOR",
+  "SOUND_SYSTEM",
+];
+
+const schema = z.object({
+  serviceProviderId: z.string().uuid("Invalid service provider ID"),
+  name: z.string().min(1, "Event center name is required"),
+  eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
+  depositAmount: z.number().min(0, "Deposit amount must be non-negative"),
+  totalAmount: z.number().min(0, "Total amount must be non-negative"),
+  description: z.string().min(1, "Description is required"),
+  pricingPerSlot: z.number().min(0, "Pricing per slot must be non-negative"),
+  sittingCapacity: z.number().min(1, "Sitting capacity must be at least 1"),
+  venueLayout: z.string().min(1, "Venue layout is required"),
+  amenities: z.array(z.string()).min(1, "At least one amenity is required"),
+  termsOfUse: z.string().min(1, "Terms of use are required"),
+  cancellationPolicy: z.string().min(1, "Cancellation policy is required"),
+  streetAddress: z.string().min(1, "Street address is required"),
+  streetAddress2: z.string().nullable(),
+  city: z.string().min(1, "City is required"),
+  location: z.string().uuid("Invalid location ID"),
+  contact: z.string().min(1, "Contact number is required"),
+  postal: z.string().min(1, "Postal code is required"),
+  status: z.enum(["ACTIVE", "INACTIVE"], {
+    errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
+  }),
+});
+
+type FormData = z.infer<typeof schema>;
 
 export default function AddEventCenter() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [images, setImages] = useState<File[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const router = useRouter();
 
-  // State to manage form inputs with typed FormData
-  const [formData, setFormData] = useState<FormData>({
-    eventCenterName: "",
-    address: "",
-    capacity: "",
-    location: "",
-    contactDetails: ["+1 (555) 000-0000"],
-    eventTypes: [],
-    amenities: [],
-    description: "",
-    pricePerDay: 200,
-    availability: [],
-    images: [],
+  const [createEventCenter, { isLoading }] = useCreateEventCenterMutation();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      serviceProviderId: "",
+      name: "",
+      eventTypes: [],
+      depositAmount: 0,
+      totalAmount: 0,
+      description: "",
+      pricingPerSlot: 0,
+      sittingCapacity: 0,
+      venueLayout: "",
+      amenities: [],
+      termsOfUse: "",
+      cancellationPolicy: "",
+      streetAddress: "",
+      streetAddress2: null,
+      city: "",
+      location: "",
+      contact: "",
+      postal: "",
+      status: "ACTIVE",
+    },
   });
 
-  // State for event type checkboxes
-  const eventTypesOptions: string[] = [
-    "Weddings",
-    "Parties",
-    "Conferences",
-    "Lectures",
-  ];
-  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
+  const selectedEventTypes = watch("eventTypes");
+  const selectedAmenities = watch("amenities");
 
-  // State for amenities input, selected amenities, and suggestions
-  const amenitiesOptions: string[] = [
-    "WiFi",
-    "AC",
-    "Swimming Pool",
-    "Parking",
-    "Catering",
-  ];
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [amenityInput, setAmenityInput] = useState<string>("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-
-  // Handle input changes for form fields
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle event type checkbox changes
   const handleEventTypeChange = (type: string) => {
-    setSelectedEventTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    const currentTypes = selectedEventTypes;
+    setValue(
+      "eventTypes",
+      currentTypes.includes(type)
+        ? currentTypes.filter((t) => t !== type)
+        : [...currentTypes, type]
     );
   };
 
-  // Handle amenities input change with autocomplete suggestion
-  const handleAmenityInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setAmenityInput(value);
-
-    // Filter suggestions based on input
-    const filteredSuggestions = amenitiesOptions.filter((option) =>
-      option.toLowerCase().startsWith(value.toLowerCase())
+  const handleAmenityChange = (amenity: string) => {
+    const currentAmenities = selectedAmenities;
+    setValue(
+      "amenities",
+      currentAmenities.includes(amenity)
+        ? currentAmenities.filter((a) => a !== amenity)
+        : [...currentAmenities, amenity]
     );
-    setSuggestions(value.length > 0 ? filteredSuggestions : []);
   };
 
-  // Handle Enter key to add amenity
-  const handleAmenityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && amenityInput.trim() !== "") {
-      e.preventDefault();
-      const matchedOption = amenitiesOptions.find((option) =>
-        option.toLowerCase().startsWith(amenityInput.toLowerCase())
-      );
-      const newAmenity = matchedOption || amenityInput.trim();
-      if (!selectedAmenities.includes(newAmenity)) {
-        setSelectedAmenities((prev) => [...prev, newAmenity]);
-      }
-      setAmenityInput("");
-      setSuggestions([]);
-    }
-  };
-
-  // Handle removing an amenity
-  const handleAmenityRemove = (amenity: string) => {
-    setSelectedAmenities((prev) => prev.filter((a) => a !== amenity));
-  };
-
-  // Handle clicking a suggestion
-  const handleSuggestionClick = (suggestion: string) => {
-    if (!selectedAmenities.includes(suggestion)) {
-      setSelectedAmenities((prev) => [...prev, suggestion]);
-    }
-    setAmenityInput("");
-    setSuggestions([]);
-  };
-
-  // Handle file input change (via "Add File" button)
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...filesArray],
-      }));
+      setImages((prev) => [...prev, ...filesArray]);
     }
   };
 
-  // Handle drag and drop events
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: FormEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (e.dataTransfer.files) {
+    if (e.dataTransfer?.files) {
       const filesArray = Array.from(e.dataTransfer.files);
-      setFormData((prev) => ({
-        ...prev,
-        images: [...(prev.images as File[]), ...filesArray],
-      }));
+      setImages((prev) => [...prev, ...filesArray]);
     }
   };
 
-  // Handle form submission
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const updatedFormData: FormData = {
-      ...formData,
-      eventTypes: selectedEventTypes,
-      amenities: selectedAmenities,
-    };
-    console.log("Form Data:", updatedFormData);
-    // After submission, you can redirect back to the ManageEventCenter page
+  const handleImageRemove = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      // In a real app, images would be uploaded to a storage service (e.g., S3)
+      // and their URLs would be included in the request
+      const imageUrls = images.map((file) => URL.createObjectURL(file));
+
+      const requestData = {
+        ...data,
+        images: imageUrls,
+      };
+
+      await createEventCenter(requestData).unwrap();
+      setSuccess("Event center created successfully!");
+      setTimeout(() => {
+        router.push("/admin/manage-event-center");
+      }, 2000);
+    } catch (err) {
+      setError("Failed to create event center. Please try again.");
+      console.error(err);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
       <SideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
-
-      {/* Main Content */}
       <div className="md:ml-[280px]">
-        {/* Header */}
         <Header setIsSidebarOpen={setIsSidebarOpen} />
-
-        {/* Add Event Center Content */}
         <main className="md:p-10 p-4">
-          {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Add Event
+              Add Event Center
             </h1>
             <div className="flex gap-2">
-              <Link href="/admin/manage-event-center">
+              <Link href="/eventServiceManagement/eventServiceDashboard">
                 <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
                   Cancel
                 </button>
               </Link>
-              <button className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700">
-                Publish
+              <button
+                type="submit"
+                form="eventCenterForm"
+                disabled={isLoading}
+                className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isLoading ? "Publishing..." : "Publish"}
               </button>
             </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
+          <form id="eventCenterForm" onSubmit={handleSubmit(onSubmit)}>
             <div className="bg-white p-8">
-              <div>
-                <h3 className="text-md font-semibold text-gray-900 mb-4">
-                  Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Event Center Name
-                    </label>
-                    <input
-                      type="text"
-                      name="eventCenterName"
-                      value={formData.eventCenterName}
-                      onChange={handleInputChange}
-                      placeholder="enter the centers' name"
-                      className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                    />
-                  </div>
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      placeholder="enter the centers' location"
-                      className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                    />
-                  </div>
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      placeholder="enter the centers' address"
-                      className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                    />
-                  </div>
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Contact Detail
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <select className="p-2 border border-gray-200 rounded-lg">
-                        <option>US</option>
-                      </select>
-                      <input
-                        type="text"
-                        value="+1 (555) 000-0000"
-                        readOnly
-                        className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Capacity
-                    </label>
-                    <input
-                      type="number"
-                      name="capacity"
-                      value={formData.capacity}
-                      onChange={handleInputChange}
-                      placeholder="enter the centers' capacity"
-                      className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                    />
-                  </div>
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Contact Detail
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <select className="p-2 border border-gray-200 rounded-lg">
-                        <option>US</option>
-                      </select>
-                      <input
-                        type="text"
-                        value="+1 (555) 000-0000"
-                        readOnly
-                        className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                      />
-                    </div>
-                  </div>
+              <h3 className="text-md font-semibold text-gray-900 mb-4">
+                Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Service Provider ID
+                  </label>
+                  <input
+                    {...register("serviceProviderId")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter service provider ID"
+                  />
+                  {errors.serviceProviderId && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.serviceProviderId.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Name
+                  </label>
+                  <input
+                    {...register("name")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter event center name"
+                  />
+                  {errors.name && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Street Address
+                  </label>
+                  <input
+                    {...register("streetAddress")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter street address"
+                  />
+                  {errors.streetAddress && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.streetAddress.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Street Address 2
+                  </label>
+                  <input
+                    {...register("streetAddress2")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter additional address (optional)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    City
+                  </label>
+                  <input
+                    {...register("city")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter city"
+                  />
+                  {errors.city && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.city.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Location ID
+                  </label>
+                  <input
+                    {...register("location")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter location ID"
+                  />
+                  {errors.location && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.location.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Postal Code
+                  </label>
+                  <input
+                    {...register("postal")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter postal code"
+                  />
+                  {errors.postal && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.postal.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Contact Number
+                  </label>
+                  <input
+                    {...register("contact")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter contact number"
+                  />
+                  {errors.contact && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.contact.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Sitting Capacity
+                  </label>
+                  <input
+                    type="number"
+                    {...register("sittingCapacity", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter sitting capacity"
+                  />
+                  {errors.sittingCapacity && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.sittingCapacity.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Venue Layout
+                  </label>
+                  <input
+                    {...register("venueLayout")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter venue layout"
+                  />
+                  {errors.venueLayout && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.venueLayout.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Deposit Amount
+                  </label>
+                  <input
+                    type="number"
+                    {...register("depositAmount", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter deposit amount"
+                  />
+                  {errors.depositAmount && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.depositAmount.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Total Amount
+                  </label>
+                  <input
+                    type="number"
+                    {...register("totalAmount", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter total amount"
+                  />
+                  {errors.totalAmount && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.totalAmount.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Pricing Per Slot
+                  </label>
+                  <input
+                    type="number"
+                    {...register("pricingPerSlot", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter pricing per slot"
+                  />
+                  {errors.pricingPerSlot && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.pricingPerSlot.message}
+                    </p>
+                  )}
                 </div>
               </div>
+
               <hr className="w-full mt-4" />
-              {/* Event Type */}
+
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
-                  Event Type
+                  Event Types
                 </h3>
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -318,39 +423,20 @@ export default function AddEventCenter() {
                       </label>
                     ))}
                   </div>
+                  {errors.eventTypes && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.eventTypes.message}
+                    </p>
+                  )}
                 </div>
               </div>
-              {/* Amenities */}
+
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
                   Amenities
                 </h3>
-                <div className="relative mb-2">
-                  <input
-                    type="text"
-                    value={amenityInput}
-                    onChange={handleAmenityInputChange}
-                    onKeyDown={handleAmenityKeyDown}
-                    placeholder="Enter the centers' amenities (e.g., WiFi, AC)"
-                    className="w-full text-gray-600 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                  {/* Suggestions dropdown */}
-                  {suggestions.length > 0 && (
-                    <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 max-h-40 overflow-y-auto">
-                      {suggestions.map((suggestion) => (
-                        <li
-                          key={suggestion}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="px-3 py-2 text-xs text-gray-600 hover:bg-gray-100 cursor-pointer"
-                        >
-                          {suggestion}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="rounded-lg p-1">
-                  <div className="flex flex-wrap gap-2">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2 mb-2">
                     {selectedAmenities.map((amenity) => (
                       <div
                         key={amenity}
@@ -359,7 +445,7 @@ export default function AddEventCenter() {
                         <span>{amenity}</span>
                         <button
                           type="button"
-                          onClick={() => handleAmenityRemove(amenity)}
+                          onClick={() => handleAmenityChange(amenity)}
                           className="text-blue-800 hover:text-blue-600"
                         >
                           ✕
@@ -367,25 +453,75 @@ export default function AddEventCenter() {
                       </div>
                     ))}
                   </div>
+                  <div className="flex flex-col gap-2 pt-2">
+                    {amenitiesOptions.map((amenity) => (
+                      <label key={amenity} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedAmenities.includes(amenity)}
+                          onChange={() => handleAmenityChange(amenity)}
+                          className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">{amenity}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors.amenities && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.amenities.message}
+                    </p>
+                  )}
                 </div>
               </div>
-              {/* Description */}
+
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
                   Description
                 </h3>
                 <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Enter a description..."
-                  className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1 h-32"
+                  {...register("description")}
+                  className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 h-32"
+                  placeholder="Enter description"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  This is a hint text to help user.
-                </p>
+                {errors.description && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.description.message}
+                  </p>
+                )}
               </div>
-              {/* Image Upload */}
+
+              <div className="mt-4">
+                <h3 className="text-xs font-medium text-gray-900 mb-1">
+                  Terms of Use
+                </h3>
+                <textarea
+                  {...register("termsOfUse")}
+                  className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 h-32"
+                  placeholder="Enter terms of use"
+                />
+                {errors.termsOfUse && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.termsOfUse.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-xs font-medium text-gray-900 mb-1">
+                  Cancellation Policy
+                </h3>
+                <textarea
+                  {...register("cancellationPolicy")}
+                  className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 h-32"
+                  placeholder="Enter cancellation policy"
+                />
+                {errors.cancellationPolicy && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.cancellationPolicy.message}
+                  </p>
+                )}
+              </div>
+
               <div className="mt-6">
                 <h3 className="text-xs font-medium text-gray-900 mb-2">
                   Image Uploads
@@ -394,18 +530,20 @@ export default function AddEventCenter() {
                   className="border border-dashed border-gray-300 rounded-md p-6 text-center"
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  onDragLeave={handleDragOver}
                 >
                   <input
                     type="file"
                     id="fileInput"
                     className="hidden"
                     multiple
+                    accept="image/*"
                     onChange={handleFileInputChange}
                   />
                   <button
                     type="button"
-                    onClick={() => document.getElementById("fileInput")?.click()}
+                    onClick={() =>
+                      document.getElementById("fileInput")?.click()
+                    }
                     className="px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100"
                   >
                     Add File
@@ -413,10 +551,9 @@ export default function AddEventCenter() {
                   <p className="text-xs text-gray-500 mt-2">
                     Or drag and drop files
                   </p>
-                  {/* Display uploaded images (optional preview) */}
-                  {formData.images.length > 0 && (
+                  {images.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {formData.images.map((image, index) => (
+                      {images.map((image, index) => (
                         <div key={index} className="relative">
                           <img
                             src={URL.createObjectURL(image)}
@@ -425,12 +562,7 @@ export default function AddEventCenter() {
                           />
                           <button
                             type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                images: prev.images.filter((_, i) => i !== index),
-                              }))
-                            }
+                            onClick={() => handleImageRemove(index)}
                             className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
                           >
                             ✕
@@ -441,50 +573,24 @@ export default function AddEventCenter() {
                   )}
                 </div>
               </div>
-              {/* Availability and Price */}
-              <div className="mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Availability
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="select days"
-                      className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                    />
-                  </div>
-                  <div className="">
-                    <label className="block text-xs text-gray-900 mb-1">
-                      Price per day
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-900">$</span>
-                      <input
-                        type="number"
-                        name="pricePerDay"
-                        value={formData.pricePerDay}
-                        onChange={handleInputChange}
-                        className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </form>
-          <div className="flex justify-end gap-2 mt-4">
-            <Link href="/admin/manage-event-center">
-              <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
-                Cancel
-              </button>
-            </Link>
-            <button className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700">
-              Publish
-            </button>
-          </div>
         </main>
       </div>
+      {success && (
+        <Notification
+          message={success}
+          type="success"
+          onClose={() => setSuccess("")}
+        />
+      )}
+      {error && (
+        <Notification
+          message={error}
+          type="error"
+          onClose={() => setError("")}
+        />
+      )}
     </div>
   );
 }
