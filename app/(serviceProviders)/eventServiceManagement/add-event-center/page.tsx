@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent, useEffect } from "react";
+import { useState, ChangeEvent, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 import {
   useCreateEventCenterMutation,
   CreateEventCenterRequest,
@@ -51,6 +51,7 @@ const schema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"], {
     errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
   }),
+  images: z.array(z.instanceof(File)).min(1, "At least one image is required"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -60,6 +61,7 @@ export default function AddEventCenter() {
   const [images, setImages] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const router = useRouter();
 
   const [createEventCenter, { isLoading }] = useCreateEventCenterMutation();
@@ -140,7 +142,53 @@ export default function AddEventCenter() {
         : [...currentTypes, type]
     );
   };
+  const validateImage = (file: File) => {
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
+    if (!validTypes.includes(file.type)) {
+      throw new Error("Only JPG, PNG, and WEBP images are allowed");
+    }
+
+    if (file.size > maxSize) {
+      throw new Error("Image size must be less than 5MB");
+    }
+  };
+
+  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      try {
+        const filesArray = Array.from(e.target.files);
+        filesArray.forEach(validateImage);
+        setImages((prev) => [...prev, ...filesArray]);
+        setValue("images", [...images, ...filesArray]);
+      } catch (error) {
+        setError(
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message?: unknown }).message)
+            : "An error occurred while uploading the image."
+        );
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer?.files) {
+      try {
+        const filesArray = Array.from(e.dataTransfer.files);
+        filesArray.forEach(validateImage);
+        setImages((prev) => [...prev, ...filesArray]);
+        setValue("images", [...images, ...filesArray]);
+      } catch (error) {
+        setError(
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message?: unknown }).message)
+            : "An error occurred while uploading the image."
+        );
+      }
+    }
+  };
   const handleAmenityChange = (amenity: string) => {
     const currentAmenities = selectedAmenities;
     setValue(
@@ -151,43 +199,72 @@ export default function AddEventCenter() {
     );
   };
 
-  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setImages((prev) => [...prev, ...filesArray]);
-    }
-  };
-
-  const handleDragOver = (e: FormEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
   };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (e.dataTransfer?.files) {
-      const filesArray = Array.from(e.dataTransfer.files);
-      setImages((prev) => [...prev, ...filesArray]);
-    }
-  };
-
   const handleImageRemove = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+    setValue(
+      "images",
+      images.filter((_, i) => i !== index)
+    );
+  };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
   };
 
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
   const onSubmit = async (data: FormData) => {
     try {
-      // In a real app, images would be uploaded to a storage service (e.g., S3)
-      const imageUrls = images.map((file) => URL.createObjectURL(file));
+      // First upload images to get URLs
+      const imageUrls = await Promise.all(
+        data.images.map(async (file) => {
+          const uploadFormData = new FormData();
+          uploadFormData.append("file", file);
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: uploadFormData,
+          });
+          const result = await response.json();
+          return result.url;
+        })
+      );
 
+      // Create the request object
       const requestData: CreateEventCenterRequest = {
-        ...data,
+        serviceProviderId: data.serviceProviderId,
+        name: data.name,
+        eventTypes: data.eventTypes,
+        depositAmount: data.depositAmount,
+        totalAmount: data.totalAmount,
+        description: data.description,
+        pricingPerSlot: data.pricingPerSlot,
+        sittingCapacity: data.sittingCapacity,
+        venueLayout: data.venueLayout,
+        amenities: data.amenities,
+        termsOfUse: data.termsOfUse,
+        cancellationPolicy: data.cancellationPolicy,
+        streetAddress: data.streetAddress,
+        streetAddress2: data.streetAddress2,
+        city: data.city,
+        location: data.location,
+        contact: data.contact,
+        postal: data.postal,
+        status: data.status,
         images: imageUrls,
       };
 
       await createEventCenter(requestData).unwrap();
       setSuccess("Event center created successfully!");
       setTimeout(() => {
-        router.push("/eventServiceManagement/eventServiceDashboard");
+        router.push("eventServiceManagement/manage-event-center");
       }, 2000);
     } catch (err) {
       function hasStatus(err: unknown): err is { status: number } {
@@ -220,7 +297,14 @@ export default function AddEventCenter() {
       }
     }
   };
-
+  useEffect(() => {
+    return () => {
+      // Clean up object URLs
+      images.forEach((file) => {
+        URL.revokeObjectURL(URL.createObjectURL(file));
+      });
+    };
+  }, [images]);
   // Show loading state while checking user authentication
   if (isUserLoading) {
     return (
@@ -618,12 +702,18 @@ export default function AddEventCenter() {
 
               <div className="mt-6">
                 <h3 className="text-xs font-medium text-gray-900 mb-2">
-                  Image Uploads
+                  Image Uploads (Max 3 images)
                 </h3>
                 <div
-                  className="border border-dashed border-gray-300 rounded-md p-6 text-center"
+                  className={`border border-dashed rounded-md p-6 text-center ${
+                    isDragging
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300"
+                  }`}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
                 >
                   <input
                     type="file"
@@ -632,18 +722,24 @@ export default function AddEventCenter() {
                     multiple
                     accept="image/*"
                     onChange={handleFileInputChange}
+                    disabled={images.length >= 3}
                   />
                   <button
                     type="button"
                     onClick={() =>
                       document.getElementById("fileInput")?.click()
                     }
-                    className="px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100"
+                    className={`px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100 ${
+                      images.length >= 10 ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    disabled={images.length >= 3}
                   >
                     Add File
                   </button>
                   <p className="text-xs text-gray-500 mt-2">
-                    Or drag and drop files
+                    {images.length >= 10
+                      ? "Maximum 10 images reached"
+                      : "Or drag and drop files (PNG, JPG, max 5MB each)"}
                   </p>
                   {images.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">

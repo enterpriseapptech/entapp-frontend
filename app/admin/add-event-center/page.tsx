@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import * as z from "zod";
 import Header from "@/components/layouts/Header";
 import SideBar from "@/components/layouts/SideBar";
 import { useCreateEventCenterMutation } from "../../../redux/services/eventsApi";
+import { useGetUserByIdQuery } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
 
 const eventTypesOptions = ["Wedding", "Conference", "Birthday", "Party"];
@@ -46,12 +47,48 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const LoadingSpinner = () => {
+  return (
+    <div className="fixed inset-0 bg-gray-50/80 flex items-center justify-center z-50">
+      <div className="flex flex-col items-center">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 border-4 border-t-[#0047AB] border-gray-200 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-4 text-sm font-medium text-gray-700">Loading...</p>
+      </div>
+    </div>
+  );
+};
+
 export default function AddEventCenter() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [images, setImages] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
+
+  // Retrieve user ID from storage
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    if (storedUserId) {
+      setUserId(storedUserId);
+    } else {
+      // Redirect to login if no user ID is found
+      router.push("/login");
+    }
+  }, [router]);
+
+  // Fetch user data to verify authentication
+  const {
+    data: user,
+    isLoading: isUserLoading,
+    error: userError,
+  } = useGetUserByIdQuery(userId!, {
+    skip: !userId,
+  });
 
   const [createEventCenter, { isLoading }] = useCreateEventCenterMutation();
 
@@ -85,6 +122,15 @@ export default function AddEventCenter() {
       status: "ACTIVE",
     },
   });
+
+  // Set serviceProviderId when user data is available
+  useEffect(() => {
+    if (user) {
+      const serviceProviderId =
+        user.userType === "ADMIN" ? user.id : user?.serviceProvider?.id || "";
+      setValue("serviceProviderId", serviceProviderId);
+    }
+  }, [user, setValue]);
 
   const selectedEventTypes = watch("eventTypes");
   const selectedAmenities = watch("amenities");
@@ -134,15 +180,15 @@ export default function AddEventCenter() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      // In a real app, images would be uploaded to a storage service (e.g., S3)
-      // and their URLs would be included in the request
-      const imageUrls = images.map((file) => URL.createObjectURL(file));
-
+      const imageUrls = [
+        "https://example.com/image1.jpg",
+        "https://example.com/image2.jpg",
+      ];
       const requestData = {
         ...data,
         images: imageUrls,
       };
-
+      console.log("Request Payload:", JSON.stringify(requestData, null, 2));
       await createEventCenter(requestData).unwrap();
       setSuccess("Event center created successfully!");
       setTimeout(() => {
@@ -150,9 +196,25 @@ export default function AddEventCenter() {
       }, 2000);
     } catch (err) {
       setError("Failed to create event center. Please try again.");
-      console.error(err);
+      console.error("Error:", err);
     }
   };
+
+  // Show loading state while fetching user data
+  if (isUserLoading || !userId) {
+    return <LoadingSpinner />;
+  }
+
+  // Handle authentication errors or unauthenticated state
+  if (userError || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">
+          You must be logged in to add an event center.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -198,6 +260,7 @@ export default function AddEventCenter() {
                     {...register("serviceProviderId")}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
                     placeholder="Enter service provider ID"
+                    disabled // Disable input as it's set automatically
                   />
                   {errors.serviceProviderId && (
                     <p className="text-xs text-red-500 mt-1">

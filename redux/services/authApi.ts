@@ -111,7 +111,7 @@ export interface RefreshTokenResponse {
 }
 export const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://16.171.68.229:8000" }),
+  baseQuery: fetchBaseQuery({ baseUrl: "http://16.16.78.180:8000" }),
   endpoints: (builder) => ({
     createUser: builder.mutation<UserResponse, CreateUserRequest>({
       query: (body) => ({

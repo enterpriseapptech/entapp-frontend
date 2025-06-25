@@ -379,7 +379,7 @@ export default function ManageEventCenter() {
                   />
                   <span>Import</span>
                 </button>
-                <Link href="/eventServiceManagement/add-event-center">
+                <Link href="/admin/add-event-center">
                   <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                     <Image
                       width={10}
@@ -437,7 +437,7 @@ export default function ManageEventCenter() {
                 />
                 <span>Import</span>
               </button>
-              <Link href="/eventServiceManagement/add-event-center">
+              <Link href="/admin/add-event-center">
                 <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                   <Image
                     width={10}

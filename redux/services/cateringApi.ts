@@ -46,7 +46,7 @@ export interface CateringResponse {
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://16.171.68.229:8000",
+    baseUrl: "http://16.16.78.180:8000",
   }),
   endpoints: (builder) => ({
     getCaterings: builder.query<CateringResponse, { limit: number; offset: number }>({

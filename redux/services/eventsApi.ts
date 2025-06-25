@@ -66,8 +66,8 @@ export interface CreateEventCenterRequest {
 
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
- baseQuery: fetchBaseQuery({
-    baseUrl: "http://16.171.68.229:8000",
+  baseQuery: fetchBaseQuery({
+    baseUrl: "http://16.16.78.180:8000",
     prepareHeaders: (headers) => {
       // Retrieve the access token from localStorage or sessionStorage
       const accessToken =
@@ -110,10 +110,13 @@ export const eventsApi = createApi({
       }),
     }),
     createEventCenter: builder.mutation<EventCenter, CreateEventCenterRequest>({
-      query: (eventCenterData) => ({
+      query: (formData) => ({
         url: "/event-centers/create",
         method: "POST",
-        body: eventCenterData,
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       }),
     }),
   }),
