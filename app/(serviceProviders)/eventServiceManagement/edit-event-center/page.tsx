@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, ChangeEvent, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,9 +9,9 @@ import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 import {
-  useCreateEventCenterMutation,
+  useGetEventCenterByIdQuery,
+  useUpdateEventCenterMutation,
   useUploadEventCenterImagesMutation,
-  CreateEventCenterRequest,
 } from "../../../../redux/services/eventsApi";
 import {
   useGetUserByIdQuery,
@@ -29,7 +28,6 @@ const amenitiesOptions = [
   "PROJECTOR",
   "SOUND_SYSTEM",
 ];
-
 
 const schema = z.object({
   serviceProviderId: z.string().uuid("Invalid service provider ID"),
@@ -53,23 +51,35 @@ const schema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"], {
     errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
   }),
-  images: z.array(z.instanceof(File)).max(3, "Maximum 3 images allowed").optional(),
+  images: z.array(z.any()).max(3, "Maximum 3 images allowed").optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
-export default function AddEventCenter() {
+export default function EditEventCenter() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [images, setImages] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventCenterId = searchParams.get("id");
 
-  const [createEventCenter, { isLoading: isCreating }] =
-    useCreateEventCenterMutation();
+  const [updateEventCenter, { isLoading: isUpdating }] =
+    useUpdateEventCenterMutation();
   const [uploadEventCenterImages, { isLoading: isUploadingImages }] =
     useUploadEventCenterImagesMutation();
+
+  // Fetch event center data
+  const {
+    data: eventCenter,
+    isLoading: isEventCenterLoading,
+    error: eventCenterError,
+  } = useGetEventCenterByIdQuery(eventCenterId!, {
+    skip: !eventCenterId,
+  });
 
   // Check authentication
   const userId =
@@ -87,32 +97,40 @@ export default function AddEventCenter() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      serviceProviderId: "",
-      name: "",
-      eventTypes: [],
-      depositAmount: 0,
-      totalAmount: 0,
-      description: "",
-      pricingPerSlot: 0,
-      sittingCapacity: 0,
-      venueLayout: "",
-      amenities: [],
-      termsOfUse: "",
-      cancellationPolicy: "",
-      streetAddress: "",
-      streetAddress2: null,
-      city: "",
-      location: "",
-      contact: "",
-      postal: "",
-      status: "ACTIVE",
-      images: [],
-    },
   });
+
+  // Set form values when event center data is loaded
+  useEffect(() => {
+    if (eventCenter) {
+      setExistingImages(eventCenter.images || []);
+
+      reset({
+        serviceProviderId: eventCenter.serviceProviderId,
+        name: eventCenter.name,
+        eventTypes: eventCenter.eventTypes,
+        depositAmount: eventCenter.depositAmount,
+        totalAmount: eventCenter.totalAmount || 0,
+        description: eventCenter.description,
+        pricingPerSlot: eventCenter.pricingPerSlot,
+        sittingCapacity: eventCenter.sittingCapacity,
+        venueLayout: eventCenter.venueLayout,
+        amenities: eventCenter.amenities,
+        termsOfUse: eventCenter.termsOfUse,
+        cancellationPolicy: eventCenter.cancellationPolicy,
+        streetAddress: eventCenter.streetAddress,
+        streetAddress2: eventCenter.streetAddress2,
+        city: eventCenter.city,
+        location: eventCenter.location,
+        contact: eventCenter.contact,
+        postal: eventCenter.postal,
+        status: eventCenter.status as "ACTIVE" | "INACTIVE", 
+      });
+    }
+  }, [eventCenter, reset]);
 
   // Redirect to login if not authenticated or not a service provider
   useEffect(() => {
@@ -125,19 +143,15 @@ export default function AddEventCenter() {
         user.userType !== UserType.SERVICE_PROVIDER ||
         user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS
       ) {
-        setError("You are not authorized to create event centers.");
+        setError("You are not authorized to edit event centers.");
         router.replace("/login");
         return;
       }
-      // Set the serviceProviderId in the form
-      if (user.serviceProvider?.id) {
-        setValue("serviceProviderId", user.serviceProvider.id);
-      }
     }
-  }, [user, userError, userId, router, setValue]);
+  }, [user, userError, userId, router]);
 
-  const selectedEventTypes = watch("eventTypes");
-  const selectedAmenities = watch("amenities");
+  const selectedEventTypes = watch("eventTypes") || [];
+  const selectedAmenities = watch("amenities") || [];
 
   const handleEventTypeChange = (type: string) => {
     const currentTypes = selectedEventTypes;
@@ -148,6 +162,7 @@ export default function AddEventCenter() {
         : [...currentTypes, type]
     );
   };
+
   const validateImage = (file: File) => {
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
     const maxSize = 5 * 1024 * 1024; // 5MB
@@ -197,6 +212,7 @@ export default function AddEventCenter() {
       }
     }
   };
+
   const handleAmenityChange = (amenity: string) => {
     const currentAmenities = selectedAmenities;
     setValue(
@@ -211,6 +227,7 @@ export default function AddEventCenter() {
     e.preventDefault();
     e.stopPropagation();
   };
+
   const handleImageRemove = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setValue(
@@ -218,6 +235,11 @@ export default function AddEventCenter() {
       images.filter((_, i) => i !== index)
     );
   };
+
+  const handleExistingImageRemove = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -229,55 +251,41 @@ export default function AddEventCenter() {
     e.stopPropagation();
     setIsDragging(false);
   };
+
   const onSubmit = async (data: FormData) => {
     try {
-      const requestData: CreateEventCenterRequest = {
-        serviceProviderId: data.serviceProviderId,
-        name: data.name,
-        eventTypes: data.eventTypes,
-        depositAmount: data.depositAmount,
-        totalAmount: data.totalAmount,
-        description: data.description,
-        pricingPerSlot: data.pricingPerSlot,
-        sittingCapacity: data.sittingCapacity,
-        venueLayout: data.venueLayout,
-        amenities: data.amenities,
-        termsOfUse: data.termsOfUse,
-        cancellationPolicy: data.cancellationPolicy,
-        streetAddress: data.streetAddress,
-        streetAddress2: data.streetAddress2,
-        city: data.city,
-        location: data.location,
-        contact: data.contact,
-        postal: data.postal,
-        status: data.status,
-      };
-
-      const eventCenter = await createEventCenter(requestData).unwrap();
-
-      // Upload images if provided
-      if (images.length > 0) {
-      try {
-        console.log("Uploading images:", images);
-        const uploadResponse = await uploadEventCenterImages({
-          eventCenterId: eventCenter.id,
-          images: images,
-        }).unwrap();
-        console.log("Image upload response:", uploadResponse);
-        setSuccess("Event center created with images successfully!");
-      } catch (uploadError) {
-        setError("Event center created but image upload failed. You can add images later.");
-        console.error("Image upload error:", uploadError);
+      if (!eventCenterId) {
+        throw new Error("Event center ID is missing");
       }
-    } else {
-      setSuccess("Event center created successfully!");
-    }
-      setSuccess("Event center created successfully!");
-      // setTimeout(() => {
-      //   router.push("/eventServiceManagement/manage-event-center");
-      // }, 2000);
-      console.log("Files to upload:", images);
-      console.log("Event Center ID:", eventCenter.id);
+
+      // Update event center data
+      await updateEventCenter({
+        id: eventCenterId,
+        ...data,
+      }).unwrap();
+
+      // Upload new images if provided
+      if (images.length > 0) {
+        try {
+          await uploadEventCenterImages({
+            eventCenterId: eventCenterId,
+            images: images,
+          }).unwrap();
+          setSuccess("Event center updated with new images successfully!");
+        } catch (uploadError) {
+          setSuccess(
+            "Event center updated but image upload failed. You can add images later."
+          );
+          console.error("Image upload error:", uploadError);
+        }
+      } else {
+        setSuccess("Event center updated successfully!");
+      }
+
+      // Redirect after success
+      setTimeout(() => {
+        router.push("/eventServiceManagement/manage-event-center");
+      }, 2000);
     } catch (err) {
       function hasStatus(err: unknown): err is { status: number } {
         return (
@@ -300,7 +308,7 @@ export default function AddEventCenter() {
           sessionStorage.removeItem("user_id");
           router.push("/login");
         } else {
-          setError("Failed to create event center. Please try again.");
+          setError("Failed to update event center. Please try again.");
           console.error(err);
         }
       } else {
@@ -309,6 +317,7 @@ export default function AddEventCenter() {
       }
     }
   };
+
   useEffect(() => {
     return () => {
       // Clean up object URLs
@@ -317,11 +326,32 @@ export default function AddEventCenter() {
       });
     };
   }, [images]);
-  // Show loading state while checking user authentication
-  if (isUserLoading) {
+
+  // Show loading state while checking user authentication or loading event center
+  if (isUserLoading || isEventCenterLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
+      </div>
+    );
+  }
+
+  // Handle errors
+  if (userError || eventCenterError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">
+          Error loading event center data. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  // Handle case where event center ID is not provided
+  if (!eventCenterId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">Event center ID is missing.</p>
       </div>
     );
   }
@@ -337,21 +367,24 @@ export default function AddEventCenter() {
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Add Event Center
+              Edit Event Center
             </h1>
             <div className="flex gap-2">
-              <Link href="/eventServiceManagement/eventServiceDashboard">
-                <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
-                  Cancel
-                </button>
-              </Link>
+              <button
+                onClick={() =>
+                  router.push("/eventServiceManagement/manage-event-center")
+                }
+                className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 form="eventCenterForm"
-                disabled={isCreating || isUploadingImages}
+                disabled={isUpdating || isUploadingImages}
                 className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {isCreating || isUploadingImages ? "Publishing..." : "Publish"}
+                {isUpdating || isUploadingImages ? "Updating..." : "Update"}
               </button>
             </div>
           </div>
@@ -734,7 +767,7 @@ export default function AddEventCenter() {
                     multiple
                     accept="image/*"
                     onChange={handleFileInputChange}
-                    disabled={images.length >= 3}
+                    disabled={images.length + existingImages.length >= 3}
                   />
                   <button
                     type="button"
@@ -742,21 +775,41 @@ export default function AddEventCenter() {
                       document.getElementById("fileInput")?.click()
                     }
                     className={`px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100 ${
-                      images.length >= 3 ? "opacity-50 cursor-not-allowed" : ""
+                      images.length + existingImages.length >= 3
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
                     }`}
-                    disabled={images.length >= 3}
+                    disabled={images.length + existingImages.length >= 3}
                   >
-                   Add Image
+                    Add Image
                   </button>
                   <p className="text-xs text-gray-500 mt-2">
-                    {images.length >= 3
+                    {images.length + existingImages.length >= 3
                       ? "Maximum 3 images reached"
                       : "Or drag and drop files (PNG, JPG, max 5MB each)"}
                   </p>
-                  {images.length > 0 && (
+                  {(images.length > 0 || existingImages.length > 0) && (
                     <div className="mt-4 flex flex-wrap gap-2">
+                      {/* Existing images */}
+                      {existingImages.map((imageUrl, index) => (
+                        <div key={`existing-${index}`} className="relative">
+                          <img
+                            src={imageUrl}
+                            alt={`Existing ${index}`}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleExistingImageRemove(index)}
+                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      {/* Newly uploaded images */}
                       {images.map((image, index) => (
-                        <div key={index} className="relative">
+                        <div key={`new-${index}`} className="relative">
                           <img
                             src={URL.createObjectURL(image)}
                             alt={`Uploaded ${index}`}

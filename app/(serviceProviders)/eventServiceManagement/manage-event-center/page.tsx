@@ -24,14 +24,13 @@ interface EventCenterTableData {
   date: string;
   status: string;
   ratings: number;
-  revenue: string;
+  depositAmount: string;
   bookingType: string;
   paymentStatus: string;
   bookingStatus: string;
   eventType: string;
   capacity: string;
   contactNumber: string;
-  email: string;
 }
 
 const LoadingSpinner = () => {
@@ -133,8 +132,8 @@ export default function ManageEventCenter() {
   const eventCenters: EventCenterTableData[] =
     eventCentersData?.data?.map((center) => ({
       id: center.id,
-      name: center.description.split(" ")[0] + " Center",
-      location: `${center.city}`,
+      name: center.name,
+      location: center.city || "N/A",
       date: new Date(center.createdAt).toLocaleString("en-US", {
         month: "short",
         day: "numeric",
@@ -144,15 +143,14 @@ export default function ManageEventCenter() {
         hour12: true,
       }),
       status: center.status,
-      ratings: 0,
-      revenue: `$${center.depositAmount.toLocaleString()}`,
-      bookingType: center.venueLayout,
+      ratings: center.rating || 0,
+      depositAmount: `$${(center.depositAmount || 0).toLocaleString()}`,
+      bookingType: center.venueLayout || "N/A",
       paymentStatus: center.paymentRequired ? "Pending" : "Paid",
       bookingStatus: center.status === "ACTIVE" ? "Confirmed" : "Pending",
-      eventType: "Event",
-      capacity: center.sittingCapacity.toString(),
-      contactNumber: "+1234567890",
-      email: "contact@example.com",
+      eventType: center.eventTypes?.join(", ") || "Event",
+      capacity: center.sittingCapacity?.toString() || "N/A",
+      contactNumber: center.contact || "N/A",
     })) || [];
 
   // Extract unique values for each filter category
@@ -198,14 +196,13 @@ export default function ManageEventCenter() {
       center.location.toLowerCase().includes(query) ||
       center.date.toLowerCase().includes(query) ||
       center.status.toLowerCase().includes(query) ||
-      center.revenue.toLowerCase().includes(query) ||
+      center.depositAmount.toLowerCase().includes(query) ||
       center.bookingType.toLowerCase().includes(query) ||
       center.paymentStatus.toLowerCase().includes(query) ||
       center.bookingStatus.toLowerCase().includes(query) ||
       center.eventType.toLowerCase().includes(query) ||
       center.capacity.toLowerCase().includes(query) ||
-      center.contactNumber.toLowerCase().includes(query) ||
-      center.email.toLowerCase().includes(query)
+      center.contactNumber.toLowerCase().includes(query)
     );
   });
 
@@ -301,8 +298,8 @@ export default function ManageEventCenter() {
         center.location
       )}&date=${encodeURIComponent(center.date)}&status=${encodeURIComponent(
         center.status
-      )}&ratings=${center.ratings}&revenue=${encodeURIComponent(
-        center.revenue
+      )}&ratings=${center.ratings}&depositAmount=${encodeURIComponent(
+        center.depositAmount
       )}&bookingType=${encodeURIComponent(
         center.bookingType
       )}&paymentStatus=${encodeURIComponent(
@@ -315,7 +312,7 @@ export default function ManageEventCenter() {
         center.capacity
       )}&contactNumber=${encodeURIComponent(
         center.contactNumber
-      )}&email=${encodeURIComponent(center.email)}`
+      )}`
     );
   };
 
@@ -379,8 +376,7 @@ export default function ManageEventCenter() {
             </div>
             <div className="rounded-lg border bg-white shadow p-6 text-center">
               <p className="text-gray-600 text-sm">
-                No event centers found. Click Add; to create a new event
-                center.
+                No event centers found. Click Add to create a new event center.
               </p>
             </div>
           </main>
@@ -790,7 +786,7 @@ export default function ManageEventCenter() {
                       Ratings
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Revenue
+                      Deposit Amount
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Actions
@@ -819,9 +815,7 @@ export default function ManageEventCenter() {
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            center.status === "In Progress"
-                              ? "bg-blue-50 text-blue-700"
-                              : center.status === "Confirmed"
+                            center.status === "ACTIVE"
                               ? "bg-green-50 text-green-700"
                               : "bg-gray-50 text-gray-700"
                           }`}
@@ -848,11 +842,19 @@ export default function ManageEventCenter() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.revenue}
+                        {center.depositAmount}
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <div className="flex gap-2">
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
+                          <button 
+                            className="rounded-lg p-1 hover:bg-gray-100 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/eventServiceManagement/edit-event-center?id=${center.id}`
+                              );
+                            }}
+                          >
                             <Edit2 className="h-4 w-4 text-gray-600" />
                           </button>
                           <button className="rounded-lg p-1 hover:bg-gray-100">

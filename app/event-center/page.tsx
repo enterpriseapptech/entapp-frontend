@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Card from "@/components/ui/card";
 import { X } from "lucide-react";
@@ -24,7 +24,7 @@ export default function EventCenters() {
   const defaultLocation = "Nigeria";
 
   // Pagination settings
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
   const offset = (currentPage - 1) * itemsPerPage;
 
   // Fetch event centers
@@ -32,6 +32,12 @@ export default function EventCenters() {
     limit: itemsPerPage,
     offset,
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error('Error fetching event centers:', error);
+    }
+  }, [error]);
 
   const totalPages = data?.count ? Math.ceil(data.count / itemsPerPage) : 1;
 
@@ -41,17 +47,21 @@ export default function EventCenters() {
   const handleLocationChange = () => setIsLocationOpen(false);
 
   // Map API data to the format expected by the Card component
-  const eventCenters = data?.data?.map((venue) => ({
-    id: venue.id,
-    name: "Event Hall",
-    imageSrc: venue.images[0] || "/placeholder-image.png",
-    label: "Featured",
-    title: venue.description.slice(0, 30) + "...",
-    location: `${venue.city}, ${venue.state}, ${venue.country}`,
-    price: `₦${venue.depositAmount.toLocaleString()}`,
-    eventType: venue.venueLayout, // Map venueLayout to eventType (adjust as needed)
-    capacity: venue.sittingCapacity,
-  })) ?? [];
+  const eventCenters =
+    data?.data?.map((venue) => ({
+      id: venue.id,
+      name: venue.name || "Event Hall",
+      imageSrc: venue.images?.[0] || "/placeholder-image.png",
+      label: "Featured",
+      title: venue.description
+        ? venue.description.slice(0, 50) + "..."
+        : "No description available",
+      location: venue.city ? `${venue.city}, Nigeria` : "Unknown location",
+      price: `₦${venue.depositAmount?.toLocaleString() || "0"}`,
+      eventType: venue.eventTypes[0] || "General Event",
+      capacity: venue.sittingCapacity || 0,
+      rawPrice: venue.depositAmount || 0,
+    })) ?? [];
 
   // Helper function to determine if a capacity value is within the selected range
   const isCapacitySelected = (value: number) => {
@@ -88,20 +98,25 @@ export default function EventCenters() {
     }
   };
 
-  // Filter event centers based on selected event types, capacity, price, and location
+  // Filter event centers based on selected filters
   const filteredEventCenters = eventCenters.filter((center) => {
     const matchesEventType =
       selectedEventTypes.length === 0 ||
-      selectedEventTypes.includes(center.eventType);
+      selectedEventTypes.some(type => 
+        center.eventType.toLowerCase().includes(type.toLowerCase())
+      );
+    
     const matchesCapacity =
       center.capacity >= capacityRange[0] &&
       center.capacity <= capacityRange[1];
-    const centerPrice = parseInt(center.price.replace(/[^0-9]/g, ""));
+    
     const matchesPrice =
-      centerPrice >= priceRange[0] && centerPrice <= priceRange[1];
-    const matchesLocation = center.location
-      .toLowerCase()
-      .includes(location.toLowerCase());
+      center.rawPrice >= priceRange[0] && 
+      center.rawPrice <= priceRange[1];
+    
+    const matchesLocation = location === "Nigeria" || 
+      center.location.toLowerCase().includes(location.toLowerCase());
+    
     return (
       matchesEventType && matchesCapacity && matchesPrice && matchesLocation
     );
@@ -121,11 +136,8 @@ export default function EventCenters() {
     });
   });
 
-  // Add Capacity filter (only if not default range)
-  if (
-    capacityRange[0] !== defaultCapacityRange[0] ||
-    capacityRange[1] !== defaultCapacityRange[1]
-  ) {
+  // Add Capacity filter if not default
+  if (capacityRange[0] !== defaultCapacityRange[0] || capacityRange[1] !== defaultCapacityRange[1]) {
     const capacityLabel =
       capacityRange[0] === capacityRange[1]
         ? `${capacityRange[0].toLocaleString()}`
@@ -134,22 +146,21 @@ export default function EventCenters() {
       label: capacityLabel,
       onRemove: () => setCapacityRange(defaultCapacityRange),
     });
-  }; 
+  }
 
-
-  // Add Location filter (only if not default)
+  // Add Location filter if not default
   if (location !== defaultLocation) {
     activeFilters.push({
       label: location,
       onRemove: () => setLocation(defaultLocation),
     });
-  };
+  }
 
   // Display text for the "Showing results" heading
   const displayEventTypes =
     selectedEventTypes.length > 0 ? selectedEventTypes.join(", ") : "All";
 
-  // Skeleton loader for 10 cards
+  // Skeleton loader for cards
   const loadingSkeletons = (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {Array.from({ length: itemsPerPage }).map((_, index) => (
@@ -163,6 +174,15 @@ export default function EventCenters() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <p className="text-red-600 text-center col-span-full">
         Error loading event centers. Please try again later.
+      </p>
+    </div>
+  );
+
+  // No results display
+  const noResultsDisplay = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <p className="text-gray-600 text-center col-span-full">
+        No event centers match your filters.
       </p>
     </div>
   );
@@ -229,37 +249,37 @@ export default function EventCenters() {
               <li>
                 <button
                   className={`w-full text-left px-3 py-1 rounded-md text-sm ${
-                    selectedEventTypes.includes("Weddings")
+                    selectedEventTypes.includes("Wedding")
                       ? "bg-[#F2F6FC] text-blue-600"
                       : "text-gray-600 hover:bg-gray-100"
                   } transition`}
-                  onClick={() => toggleEventType("Weddings")}
+                  onClick={() => toggleEventType("Wedding")}
                 >
-                  Weddings
+                  Wedding
                 </button>
               </li>
               <li>
                 <button
                   className={`w-full text-left px-3 py-1 rounded-md text-sm ${
-                    selectedEventTypes.includes("Birthdays")
+                    selectedEventTypes.includes("Birthday")
                       ? "bg-[#F2F6FC] text-blue-600"
                       : "text-gray-600 hover:bg-gray-100"
                   } transition`}
-                  onClick={() => toggleEventType("Birthdays")}
+                  onClick={() => toggleEventType("Birthday")}
                 >
-                  Birthdays
+                  Birthday
                 </button>
               </li>
               <li>
                 <button
                   className={`w-full text-left px-3 py-1 rounded-md text-sm ${
-                    selectedEventTypes.includes("Conferences")
+                    selectedEventTypes.includes("Conference")
                       ? "bg-[#F2F6FC] text-blue-600"
                       : "text-gray-600 hover:bg-gray-100"
                   } transition`}
-                  onClick={() => toggleEventType("Conferences")}
+                  onClick={() => toggleEventType("Conference")}
                 >
-                  Conferences
+                  Conference
                 </button>
               </li>
               <li>
@@ -446,12 +466,17 @@ export default function EventCenters() {
               <h3 className="text-lg font-semibold text-gray-800">
                 Showing results for {displayEventTypes} Events
               </h3>
+              <p className="text-sm text-gray-600">
+                {filteredEventCenters.length} of {data?.count || 0} results
+              </p>
             </div>
 
             {isLoading ? (
               loadingSkeletons
-            ) : error || !filteredEventCenters.length ? (
+            ) : error ? (
               errorDisplay
+            ) : filteredEventCenters.length === 0 ? (
+              noResultsDisplay
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredEventCenters.map((center) => (
@@ -463,6 +488,8 @@ export default function EventCenters() {
                       title={center.title}
                       location={center.location}
                       price={center.price}
+                      // eventType={center.eventType}
+                      // capacity={center.capacity}
                     />
                   </Link>
                 ))}

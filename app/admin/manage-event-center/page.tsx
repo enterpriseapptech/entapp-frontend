@@ -101,10 +101,10 @@ export default function ManageEventCenter() {
     skip: !userId,
   });
   useEffect(() => {
-  if (user) {
-    console.log("Full User Object:", JSON.stringify(user, null, 2));
-  }
-}, [user]);
+    if (user) {
+      console.log("Full User Object:", JSON.stringify(user, null, 2));
+    }
+  }, [user]);
   // Log user data when it becomes available
   useEffect(() => {
     if (user) {
@@ -112,10 +112,8 @@ export default function ManageEventCenter() {
     }
   }, [user]);
   // Fetch event centers for the service provider
-  const serviceProviderId = 
-  user?.userType === "ADMIN" 
-    ? user.id 
-    : user?.serviceProvider?.id || '';
+  const serviceProviderId =
+    user?.userType === "ADMIN" ? user.id : user?.serviceProvider?.id || "";
   const {
     data: eventCentersData,
     isLoading: isEventCentersLoading,
@@ -396,8 +394,7 @@ export default function ManageEventCenter() {
             </div>
             <div className="rounded-lg border bg-white shadow p-6 text-center">
               <p className="text-gray-600 text-sm">
-                No event centers found. Click Add; to create a new event
-                center.
+                No event centers found. Click Add; to create a new event center.
               </p>
             </div>
           </main>
@@ -869,8 +866,16 @@ export default function ManageEventCenter() {
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <div className="flex gap-2">
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
-                            <Edit2 className="h-4 w-4 text-gray-600" />
+                          <button
+                            className="rounded-lg p-1 hover:bg-gray-100 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/admin/edit-event-center?id=${center.id}`
+                              );
+                            }}
+                          >
+                            <Edit2 className="h-4 w-4 text-gray-600 cursor-pointer" />
                           </button>
                           <button className="rounded-lg p-1 hover:bg-gray-100">
                             <Trash2 className="h-4 w-4 text-gray-600" />

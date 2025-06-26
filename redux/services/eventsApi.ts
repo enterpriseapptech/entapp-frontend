@@ -52,7 +52,6 @@ export interface CreateEventCenterRequest {
   sittingCapacity: number;
   venueLayout: string;
   amenities: string[];
-  images: string[];
   termsOfUse: string;
   cancellationPolicy: string;
   streetAddress: string;
@@ -69,7 +68,6 @@ export const eventsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "http://16.16.78.180:8000",
     prepareHeaders: (headers) => {
-      // Retrieve the access token from localStorage or sessionStorage
       const accessToken =
         localStorage.getItem("access_token") ||
         sessionStorage.getItem("access_token");
@@ -115,7 +113,37 @@ export const eventsApi = createApi({
         method: "POST",
         body: formData,
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
+        },
+      }),
+    }),
+    uploadEventCenterImages: builder.mutation<
+      EventCenter,
+      { eventCenterId: string; images: File[] }
+    >({
+      query: ({ eventCenterId, images }) => {
+        const formData = new FormData();
+        images.forEach((file) => {
+          formData.append("imagefiles", file);
+        });
+
+        return {
+          url: `/event-centers/${eventCenterId}`,
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
+    updateEventCenter: builder.mutation<
+      EventCenter,
+      Partial<EventCenter> & { id: string }
+    >({
+      query: ({ id, ...patch }) => ({
+        url: `/event-centers/${id}`,
+        method: "PATCH",
+        body: patch,
+        headers: {
+          "Content-Type": "application/json",
         },
       }),
     }),
@@ -127,4 +155,6 @@ export const {
   useGetEventCenterByIdQuery,
   useGetEventCentersByServiceProviderQuery,
   useCreateEventCenterMutation,
+  useUploadEventCenterImagesMutation,
+  useUpdateEventCenterMutation,
 } = eventsApi;

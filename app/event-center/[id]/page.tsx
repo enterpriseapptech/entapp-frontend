@@ -11,23 +11,34 @@ import Footer from "@/components/layouts/Footer";
 import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
 
-interface EventCenter {
+export interface EventCenter {
   id: string;
+  serviceProviderId: string;
   name: string;
-  title: string;
+  eventTypes: string[];
+  depositAmount: number;
+  totalAmount?: number;
   description: string;
-  images: string[];
-  location: string;
-  price: string;
-  eventType: string;
-  capacity: number;
-  availability: string[];
+  pricingPerSlot: number;
+  sittingCapacity: number;
+  venueLayout: string;
   amenities: string[];
+  images: string[];
   termsOfUse: string;
   cancellationPolicy: string;
   streetAddress: string;
   streetAddress2: string | null;
+  city: string;
+  location: string;
+  postal: string;
   status: string;
+  rating?: number;
+  paymentRequired: boolean;
+  contact: string;
+  // createdAt: string;
+  // updatedAt: string;
+  // deletedAt: string | null;
+  // deletedBy: string | null;
 }
 
 export default function EventCenterDetails() {
@@ -41,21 +52,28 @@ export default function EventCenterDetails() {
   const eventCenter: EventCenter | undefined = eventCenterData
     ? {
         id: eventCenterData.id,
-        name: "Event Hall",
-        title: eventCenterData.description,
+        serviceProviderId: eventCenterData.serviceProviderId,
+        name: eventCenterData.name,
+        eventTypes: eventCenterData.eventTypes,
+        depositAmount: eventCenterData.depositAmount,
+        totalAmount: eventCenterData.totalAmount,
         description: eventCenterData.description,
-        images: eventCenterData.images.length ? eventCenterData.images : ["/placeholder-image.png"],
-        location: `${eventCenterData.city}, ${eventCenterData.state}, ${eventCenterData.country}`,
-        price: `₦${eventCenterData.depositAmount.toLocaleString()}`,
-        eventType: eventCenterData.venueLayout,
-        capacity: eventCenterData.sittingCapacity,
-        availability: [], // API doesn't provide availability; use empty array or fetch from another endpoint
+        pricingPerSlot: eventCenterData.pricingPerSlot,
+        sittingCapacity: eventCenterData.sittingCapacity,
+        venueLayout: eventCenterData.venueLayout,
         amenities: eventCenterData.amenities,
+        images: eventCenterData.images.length ? eventCenterData.images : ["/placeholder-image.png"],
         termsOfUse: eventCenterData.termsOfUse,
         cancellationPolicy: eventCenterData.cancellationPolicy,
         streetAddress: eventCenterData.streetAddress,
         streetAddress2: eventCenterData.streetAddress2,
+        city: eventCenterData.city,
+        location: eventCenterData.location,
+        postal: eventCenterData.postal,
         status: eventCenterData.status,
+        rating: eventCenterData.rating,
+        paymentRequired: eventCenterData.paymentRequired,
+        contact: eventCenterData.contact,
       }
     : undefined;
 
@@ -155,8 +173,8 @@ export default function EventCenterDetails() {
     }
     router.push(
       `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
-        eventCenter!.price
-      }&eventTitle=${eventCenter!.title}`
+        eventCenter!.totalAmount
+      }&eventTitle=${eventCenter!.name}`
     );
   };
 
@@ -236,21 +254,22 @@ export default function EventCenterDetails() {
             <Link href="/event-centers" className="hover:underline">
               Event Centers
             </Link>{" "}
-            {">"} <span className="text-gray-800">{eventCenter.title}</span>
+            {">"} <span className="text-gray-800">{eventCenter.name}</span>
           </nav>
 
           <h1 className="md:text-4xl text-2xl font-bold text-gray-900 mb-4">
-            {eventCenter.title}
+            {eventCenter.name}
           </h1>
           <p className="text-gray-600 mb-8">{eventCenter.description}</p>
 
           <div className="relative mb-8">
             <Image
               src={images[currentImageIndex]}
-              alt={eventCenter.title}
+              alt={eventCenter.name}
               width={800}
               height={400}
               className="w-full h-80 object-cover rounded-lg"
+              unoptimized={!images[currentImageIndex].startsWith('/')}
             />
             <button
               onClick={handlePrevImage}
@@ -304,21 +323,38 @@ export default function EventCenterDetails() {
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">
-              {eventCenter.title}
+              {eventCenter.name}
             </h2>
             <p className="text-gray-600">{eventCenter.description}</p>
-
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-2 pt-2">
-                Availability
+                Event Types
               </h3>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">
-                  {eventCenter.availability.length > 0
-                    ? eventCenter.availability.join(", ")
-                    : "Contact for availability"}
-                </span>
+              <div className="flex flex-wrap gap-2">
+                {eventCenter.eventTypes.map((type, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                    {type}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1 mt-2">
+                Amenities
+              </h3>
+              <div className="flex gap-6">
+                {eventCenter.amenities.map((amenity, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    {amenity === "WIFI" && <Wifi className="w-4 h-4 text-gray-600" />}
+                    {amenity === "PACKINGSPACE" && (
+                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v-4a4 4 0 014-4h0a4 4 0 014 4v4m-8 0h8m-8 0H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2h-3m-8 0v4a1 1 0 001 1h6a1 1 0 001-1v-4" />
+                      </svg>
+                    )}
+                    {amenity === "SECURITY" && <Shield className="w-4 h-4 text-gray-600" />}
+                    <span className="text-gray-600 text-sm">{amenity}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -408,7 +444,33 @@ export default function EventCenterDetails() {
                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span className="text-gray-600">{eventCenter.capacity}</span>
+                <span className="text-gray-600">{eventCenter.sittingCapacity}</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Pricing
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-sm">
+                  Deposit: ₦{eventCenter.depositAmount.toLocaleString()}
+                </span>
+                {eventCenter.totalAmount && (
+                  <span className="text-gray-600 text-sm">
+                    | Total: ₦{eventCenter.totalAmount.toLocaleString()}
+                  </span>
+                )}
+                <span className="text-gray-600 text-sm">
+                  | Per slot: ₦{eventCenter.pricingPerSlot.toLocaleString()}
+                </span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Venue Layout
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-sm">{eventCenter.venueLayout}</span>
               </div>
             </div>
             <div>
@@ -484,13 +546,13 @@ export default function EventCenterDetails() {
                       <option value="" disabled>
                         Select a date
                       </option>
-                      {eventCenter.availability
+                      {/* {eventCenter.availability
                         .filter((availDate) => !selectedDates.includes(availDate) || availDate === date)
                         .map((availDate) => (
                           <option key={availDate} value={availDate}>
                             {availDate}
                           </option>
-                        ))}
+                        ))} */}
                     </select>
                   </div>
                   {isMoreThanOneDay && selectedDates.length > 1 && (
@@ -529,11 +591,11 @@ export default function EventCenterDetails() {
                     <option value="" disabled>
                       Select a date
                     </option>
-                    {eventCenter.availability.map((availDate) => (
+                    {/* {eventCenter.availability.map((availDate) => (
                       <option key={availDate} value={availDate}>
                         {availDate}
                       </option>
-                    ))}
+                    ))} */}
                   </select>
                 </div>
               )}
@@ -573,7 +635,7 @@ export default function EventCenterDetails() {
               type="submit"
               className="w-full cursor-pointer bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold"
             >
-              Book {eventCenter.price}
+              Book {eventCenter.totalAmount ? `₦${eventCenter.totalAmount.toLocaleString()}` : "now"}
             </button>
             <hr className="mb-2" />
             <div className="flex justify-between items-center mt-4">
