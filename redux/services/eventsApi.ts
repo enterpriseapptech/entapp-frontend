@@ -147,6 +147,22 @@ export const eventsApi = createApi({
         },
       }),
     }),
+    updateEventCenterWithImages: builder.mutation<
+      EventCenter,
+      { id: string; data: FormData }
+    >({
+      query: ({ id, data }) => ({
+        url: `/event-centers/${id}/images`,
+        method: "PATCH",
+        body: data,
+      }),
+    }),
+    deleteEventCenter: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/event-centers/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -157,4 +173,6 @@ export const {
   useCreateEventCenterMutation,
   useUploadEventCenterImagesMutation,
   useUpdateEventCenterMutation,
+  useUpdateEventCenterWithImagesMutation,
+  useDeleteEventCenterMutation,
 } = eventsApi;

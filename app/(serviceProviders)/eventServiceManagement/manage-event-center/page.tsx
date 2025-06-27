@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 import { useGetEventCentersByServiceProviderQuery } from "../../../../redux/services/eventsApi";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
+import { useDeleteEventCenterMutation } from "../../../../redux/services/eventsApi";
+import Notification from "../../../../components/ui/Notification";
 
 type FilterType =
   | "location"
@@ -82,7 +84,57 @@ export default function ManageEventCenter() {
 
   // Retrieve user ID from storage
   const [userId, setUserId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "success" });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [eventCenterToDelete, setEventCenterToDelete] = useState<string | null>(
+    null
+  );
+  const [deleteEventCenter, { isLoading: isDeleting }] =
+    useDeleteEventCenterMutation();
 
+  // Add these functions to handle the delete flow
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setEventCenterToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!eventCenterToDelete) return;
+
+    try {
+      await deleteEventCenter(eventCenterToDelete).unwrap();
+      setNotification({
+        show: true,
+        message: "Event center deleted successfully",
+        type: "success",
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch {
+      setNotification({
+        show: true,
+        message: "Failed to delete event center",
+        type: "error",
+      });
+    } finally {
+      setShowDeleteModal(false);
+      setEventCenterToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setEventCenterToDelete(null);
+  };
+  const closeNotification = () => {
+    setNotification((prev) => ({ ...prev, show: false }));
+  };
   useEffect(() => {
     const storedUserId =
       localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
@@ -310,9 +362,7 @@ export default function ManageEventCenter() {
         center.eventType
       )}&capacity=${encodeURIComponent(
         center.capacity
-      )}&contactNumber=${encodeURIComponent(
-        center.contactNumber
-      )}`
+      )}&contactNumber=${encodeURIComponent(center.contactNumber)}`
     );
   };
 
@@ -846,7 +896,7 @@ export default function ManageEventCenter() {
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             className="rounded-lg p-1 hover:bg-gray-100 cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -857,8 +907,11 @@ export default function ManageEventCenter() {
                           >
                             <Edit2 className="h-4 w-4 text-gray-600" />
                           </button>
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
-                            <Trash2 className="h-4 w-4 text-gray-600" />
+                          <button
+                            className="rounded-lg p-1 hover:bg-gray-100"
+                            onClick={(e) => handleDeleteClick(e, center.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-600 cursor-pointer" />
                           </button>
                         </div>
                       </td>
@@ -926,6 +979,45 @@ export default function ManageEventCenter() {
           </div>
         </main>
       </div>
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Are you sure you want to delete this event?
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              This action cannot be undone. All data associated with this event
+              center will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification */}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
     </div>
   );
 }

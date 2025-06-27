@@ -127,7 +127,7 @@ export default function EditEventCenter() {
         location: eventCenter.location,
         contact: eventCenter.contact,
         postal: eventCenter.postal,
-        status: eventCenter.status as "ACTIVE" | "INACTIVE", 
+        status: eventCenter.status as "ACTIVE" | "INACTIVE",
       });
     }
   }, [eventCenter, reset]);
@@ -230,10 +230,6 @@ export default function EditEventCenter() {
 
   const handleImageRemove = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
-    setValue(
-      "images",
-      images.filter((_, i) => i !== index)
-    );
   };
 
   const handleExistingImageRemove = (index: number) => {
@@ -258,25 +254,31 @@ export default function EditEventCenter() {
         throw new Error("Event center ID is missing");
       }
 
-      // Update event center data
-      await updateEventCenter({
+      // First update the event center data
+      const updateResponse = await updateEventCenter({
         id: eventCenterId,
         ...data,
+        images: existingImages, // Send the updated list of existing images
       }).unwrap();
+
+      console.log("Update response:", updateResponse); // Debug log
 
       // Upload new images if provided
       if (images.length > 0) {
+        console.log("Uploading images:", images); // Debug log
         try {
-          await uploadEventCenterImages({
+          const uploadResponse = await uploadEventCenterImages({
             eventCenterId: eventCenterId,
             images: images,
           }).unwrap();
+          console.log("Upload response:", uploadResponse); // Debug log
           setSuccess("Event center updated with new images successfully!");
         } catch (uploadError) {
-          setSuccess(
+          console.error("Image upload error:", uploadError);
+          setError(
             "Event center updated but image upload failed. You can add images later."
           );
-          console.error("Image upload error:", uploadError);
+          return; // Return early since we want to show the error
         }
       } else {
         setSuccess("Event center updated successfully!");

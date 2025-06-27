@@ -83,7 +83,7 @@ export default function ManageEventCenter() {
 
   // Retrieve user ID from storage
   const [userId, setUserId] = useState<string | null>(null);
-
+ 
   useEffect(() => {
     const storedUserId =
       localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
@@ -91,6 +91,7 @@ export default function ManageEventCenter() {
       setUserId(storedUserId);
     }
   }, []);
+
 
   // Fetch user data to get serviceProviderId
   const {
@@ -877,8 +878,10 @@ export default function ManageEventCenter() {
                           >
                             <Edit2 className="h-4 w-4 text-gray-600 cursor-pointer" />
                           </button>
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
-                            <Trash2 className="h-4 w-4 text-gray-600" />
+                          <button
+                            className="rounded-lg p-1 hover:bg-gray-100"
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-600 cursor-pointer" />
                           </button>
                         </div>
                       </td>

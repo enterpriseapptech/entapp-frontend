@@ -273,9 +273,9 @@ export default function AddEventCenter() {
       setSuccess("Event center created successfully!");
     }
       setSuccess("Event center created successfully!");
-      // setTimeout(() => {
-      //   router.push("/eventServiceManagement/manage-event-center");
-      // }, 2000);
+      setTimeout(() => {
+        router.push("/eventServiceManagement/manage-event-center");
+      }, 2000);
       console.log("Files to upload:", images);
       console.log("Event Center ID:", eventCenter.id);
     } catch (err) {
