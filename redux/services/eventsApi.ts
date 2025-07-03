@@ -66,7 +66,7 @@ export interface CreateEventCenterRequest {
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://16.16.78.180:8000",
+    baseUrl: "http://56.228.27.51:8000",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||

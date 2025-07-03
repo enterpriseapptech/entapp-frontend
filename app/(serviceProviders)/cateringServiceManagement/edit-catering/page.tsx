@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, ChangeEvent, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
 import {
-  useCreateEventCenterMutation,
-  useUploadEventCenterImagesMutation,
-  CreateEventCenterRequest,
-} from "../../../../redux/services/eventsApi";
+  useGetCateringByIdQuery,
+  useUpdateCateringMutation,
+  useUploadCateringImagesMutation,
+} from "../../../../redux/services/cateringApi";
 import {
   useGetUserByIdQuery,
   UserType,
@@ -21,64 +20,59 @@ import {
 } from "../../../../redux/services/authApi";
 import Notification from "../../../../components/ui/Notification";
 
-const eventTypesOptions = ["Wedding", "Conference", "Birthday", "Party"];
-const amenitiesOptions = [
-  "WIFI",
-  "SECURITY",
-  "PARKINGSPACE",
-  "PROJECTOR",
-  "SOUND_SYSTEM",
-];
-
+const cuisineOptions = ["Italian", "Mexican", "Indian"];
+const dishTypeOptions = ["Vegetarian", "Non-Vegetarian", "Vegan"];
+const eventTypeOptions = ["wedding", "conference", "birthday"];
 
 const schema = z.object({
   serviceProviderId: z.string().uuid("Invalid service provider ID"),
-  name: z.string().min(1, "Event center name is required"),
+  name: z.string().min(1, "Catering service name is required"),
   eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
+  location: z.array(z.string().uuid("Invalid location ID")).min(1, "At least one location is required"),
+  tagLine: z.string().min(1, "Tagline is required"),
   depositAmount: z.number().min(0, "Deposit amount must be non-negative"),
-  totalAmount: z.number().min(0, "Total amount must be non-negative"),
+  startPrice: z.number().min(0, "Start price must be non-negative"),
+  minCapacity: z.number().min(1, "Minimum capacity must be at least 1"),
+  maxCapacity: z.number().min(1, "Maximum capacity must be at least 1"),
+  cuisine: z.array(z.string()).min(1, "At least one cuisine is required"),
   description: z.string().min(1, "Description is required"),
-  pricingPerSlot: z.number().min(0, "Pricing per slot must be non-negative"),
-  sittingCapacity: z.number().min(1, "Sitting capacity must be at least 1"),
-  venueLayout: z.string().min(1, "Venue layout is required"),
-  amenities: z.array(z.string()).min(1, "At least one amenity is required"),
+  dishTypes: z.array(z.string()).min(1, "At least one dish type is required"),
   termsOfUse: z.string().min(1, "Terms of use are required"),
   cancellationPolicy: z.string().min(1, "Cancellation policy is required"),
   streetAddress: z.string().min(1, "Street address is required"),
   streetAddress2: z.string().nullable(),
   city: z.string().min(1, "City is required"),
-  location: z.string().uuid("Invalid location ID"),
-  contact: z.string().min(1, "Contact number is required"),
   postal: z.string().min(1, "Postal code is required"),
   status: z.enum(["ACTIVE", "INACTIVE"], {
     errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
   }),
-  images: z.array(z.instanceof(File)).max(3, "Maximum 3 images allowed").optional(),
+  images: z.array(z.any()).max(3, "Maximum 3 images allowed").optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
-export default function AddEventCenter() {
+export default function EditCateringService() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [images, setImages] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [newLocation, setNewLocation] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const cateringId = searchParams.get("id");
 
-  const [createEventCenter, { isLoading: isCreating }] =
-    useCreateEventCenterMutation();
-  const [uploadEventCenterImages, { isLoading: isUploadingImages }] =
-    useUploadEventCenterImagesMutation();
+  const [updateCatering, { isLoading: isUpdating }] = useUpdateCateringMutation();
+  const [uploadCateringImages, { isLoading: isUploadingImages }] = useUploadCateringImagesMutation();
 
-  // Check authentication
-  const userId =
-    localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
-  const {
-    data: user,
-    isLoading: isUserLoading,
-    error: userError,
-  } = useGetUserByIdQuery(userId!, {
+  const { data: cateringService, isLoading: isCateringLoading, error: cateringError } = useGetCateringByIdQuery(cateringId!, {
+    skip: !cateringId,
+  });
+
+  const userId = localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+  const { data: user, isLoading: isUserLoading, error: userError } = useGetUserByIdQuery(userId!, {
     skip: !userId,
   });
 
@@ -87,34 +81,40 @@ export default function AddEventCenter() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      serviceProviderId: "",
-      name: "",
-      eventTypes: [],
-      depositAmount: 0,
-      totalAmount: 0,
-      description: "",
-      pricingPerSlot: 0,
-      sittingCapacity: 0,
-      venueLayout: "",
-      amenities: [],
-      termsOfUse: "",
-      cancellationPolicy: "",
-      streetAddress: "",
-      streetAddress2: "",
-      city: "",
-      location: "",
-      contact: "",
-      postal: "",
-      status: "ACTIVE",
-      images: [],
-    },
   });
 
-  // Redirect to login if not authenticated or not a service provider
+  useEffect(() => {
+    if (cateringService) {
+      setExistingImages(cateringService.images || []);
+      setLocations(cateringService.location || []);
+      reset({
+        serviceProviderId: cateringService.serviceProviderId,
+        name: cateringService.name,
+        eventTypes: cateringService.eventTypes,
+        location: cateringService.location,
+        tagLine: cateringService.tagLine,
+        depositAmount: cateringService.depositAmount,
+        startPrice: cateringService.startPrice,
+        minCapacity: cateringService.minCapacity,
+        maxCapacity: cateringService.maxCapacity,
+        cuisine: cateringService.cuisine,
+        description: cateringService.description,
+        dishTypes: cateringService.dishTypes,
+        termsOfUse: cateringService.termsOfUse,
+        cancellationPolicy: cateringService.cancellationPolicy,
+        streetAddress: cateringService.streetAddress,
+        streetAddress2: cateringService.streetAddress2 || null,
+        city: cateringService.city,
+        postal: cateringService.postal,
+        status: cateringService.status as "ACTIVE" | "INACTIVE",
+      });
+    }
+  }, [cateringService, reset]);
+
   useEffect(() => {
     if (!userId || userError) {
       router.replace("/login");
@@ -123,21 +123,18 @@ export default function AddEventCenter() {
     if (user) {
       if (
         user.userType !== UserType.SERVICE_PROVIDER ||
-        user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS
+        user.serviceProvider?.serviceType !== ServiceType.CATERING
       ) {
-        setError("You are not authorized to create event centers.");
+        setError("You are not authorized to edit catering services.");
         router.replace("/login");
         return;
       }
-      // Set the serviceProviderId in the form
-      if (user.serviceProvider?.id) {
-        setValue("serviceProviderId", user.serviceProvider.id);
-      }
     }
-  }, [user, userError, userId, router, setValue]);
+  }, [user, userError, userId, router]);
 
-  const selectedEventTypes = watch("eventTypes");
-  const selectedAmenities = watch("amenities");
+  const selectedEventTypes = watch("eventTypes") || [];
+  const selectedCuisines = watch("cuisine") || [];
+  const selectedDishTypes = watch("dishTypes") || [];
 
   const handleEventTypeChange = (type: string) => {
     const currentTypes = selectedEventTypes;
@@ -148,14 +145,53 @@ export default function AddEventCenter() {
         : [...currentTypes, type]
     );
   };
+
+  const handleCuisineChange = (cuisine: string) => {
+    const currentCuisines = selectedCuisines;
+    setValue(
+      "cuisine",
+      currentCuisines.includes(cuisine)
+        ? currentCuisines.filter((c) => c !== cuisine)
+        : [...currentCuisines, cuisine]
+    );
+  };
+
+  const handleDishTypeChange = (dishType: string) => {
+    const currentDishTypes = selectedDishTypes;
+    setValue(
+      "dishTypes",
+      currentDishTypes.includes(dishType)
+        ? currentDishTypes.filter((d) => d !== dishType)
+        : [...currentDishTypes, dishType]
+    );
+  };
+
+  const handleAddLocation = () => {
+    if (newLocation && !locations.includes(newLocation)) {
+      try {
+        z.string().uuid().parse(newLocation); // Validate UUID
+        const updatedLocations = [...locations, newLocation];
+        setLocations(updatedLocations);
+        setValue("location", updatedLocations);
+        setNewLocation("");
+      } catch {
+        setError("Invalid location ID format");
+      }
+    }
+  };
+
+  const handleRemoveLocation = (index: number) => {
+    const updatedLocations = locations.filter((_, i) => i !== index);
+    setLocations(updatedLocations);
+    setValue("location", updatedLocations);
+  };
+
   const validateImage = (file: File) => {
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
     const maxSize = 5 * 1024 * 1024; // 5MB
-
     if (!validTypes.includes(file.type)) {
       throw new Error("Only JPG, PNG, and WEBP images are allowed");
     }
-
     if (file.size > maxSize) {
       throw new Error("Image size must be less than 5MB");
     }
@@ -166,58 +202,36 @@ export default function AddEventCenter() {
       try {
         const filesArray = Array.from(e.target.files);
         filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3);
+        const newImages = [...images, ...filesArray].slice(0, 3 - existingImages.length);
         setImages(newImages);
         setValue("images", newImages);
       } catch (error) {
-        setError(
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message)
-            : "An error occurred while uploading the image."
-        );
+        setError(error instanceof Error ? error.message : "An error occurred while uploading the image.");
       }
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setIsDragging(false);
     if (e.dataTransfer?.files) {
       try {
         const filesArray = Array.from(e.dataTransfer.files);
         filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3);
+        const newImages = [...images, ...filesArray].slice(0, 3 - existingImages.length);
         setImages(newImages);
         setValue("images", newImages);
       } catch (error) {
-        setError(
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message)
-            : "An error occurred while uploading the image."
-        );
+        setError(error instanceof Error ? error.message : "An error occurred while uploading the image.");
       }
     }
-  };
-  const handleAmenityChange = (amenity: string) => {
-    const currentAmenities = selectedAmenities;
-    setValue(
-      "amenities",
-      currentAmenities.includes(amenity)
-        ? currentAmenities.filter((a) => a !== amenity)
-        : [...currentAmenities, amenity]
-    );
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
-  const handleImageRemove = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setValue(
-      "images",
-      images.filter((_, i) => i !== index)
-    );
-  };
+
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -229,96 +243,64 @@ export default function AddEventCenter() {
     e.stopPropagation();
     setIsDragging(false);
   };
+
+  const handleImageRemove = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    setValue("images", newImages);
+  };
+
+  const handleExistingImageRemove = (index: number) => {
+    const newExistingImages = existingImages.filter((_, i) => i !== index);
+    setExistingImages(newExistingImages);
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
-      const requestData: CreateEventCenterRequest = {
-        serviceProviderId: data.serviceProviderId,
-        name: data.name,
-        eventTypes: data.eventTypes,
-        depositAmount: data.depositAmount,
-        totalAmount: data.totalAmount,
-        description: data.description,
-        pricingPerSlot: data.pricingPerSlot,
-        sittingCapacity: data.sittingCapacity,
-        venueLayout: data.venueLayout,
-        amenities: data.amenities,
-        termsOfUse: data.termsOfUse,
-        cancellationPolicy: data.cancellationPolicy,
-        streetAddress: data.streetAddress,
-        streetAddress2: data.streetAddress2,
-        city: data.city,
-        location: data.location,
-        contact: data.contact,
-        postal: data.postal,
-        status: data.status,
+      if (!cateringId) {
+        throw new Error("Catering service ID is missing");
+      }
+      const requestData = {
+        ...data,
+        images: existingImages,
       };
-
-      const eventCenter = await createEventCenter(requestData).unwrap();
-
-      // Upload images if provided
+      await updateCatering({
+        id: cateringId,
+        ...requestData,
+      }).unwrap();
       if (images.length > 0) {
-      try {
-        console.log("Uploading images:", images);
-        const uploadResponse = await uploadEventCenterImages({
-          eventCenterId: eventCenter.id,
+        await uploadCateringImages({
+          cateringId: cateringId,
           images: images,
         }).unwrap();
-        console.log("Image upload response:", uploadResponse);
-        setSuccess("Event center created with images successfully!");
-      } catch (uploadError) {
-        setError("Event center created but image upload failed. You can add images later.");
-        console.error("Image upload error:", uploadError);
-      }
-    } else {
-      setSuccess("Event center created successfully!");
-    }
-      setSuccess("Event center created successfully!");
-      setTimeout(() => {
-        router.push("/eventServiceManagement/manage-event-center");
-      }, 2000);
-      console.log("Files to upload:", images);
-      console.log("Event Center ID:", eventCenter.id);
-    } catch (err) {
-      function hasStatus(err: unknown): err is { status: number } {
-        return (
-          typeof err === "object" &&
-          err !== null &&
-          "status" in err &&
-          typeof (err as { status?: unknown }).status === "number"
-        );
-      }
-
-      if (hasStatus(err)) {
-        if (err.status === 401) {
-          setError("You are not authorized. Please log in again.");
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          localStorage.removeItem("token_expiry");
-          localStorage.removeItem("user_id");
-          sessionStorage.removeItem("access_token");
-          sessionStorage.removeItem("refresh_token");
-          sessionStorage.removeItem("user_id");
-          router.push("/login");
-        } else {
-          setError("Failed to create event center. Please try again.");
-          console.error(err);
-        }
+        setSuccess("Catering service updated with new images successfully!");
       } else {
-        setError("An unexpected error occurred. Please try again.");
-        console.error(err);
+        setSuccess("Catering service updated successfully!");
+      }
+      setTimeout(() => {
+        router.push("/cateringServiceManagement/manage-catering-services");
+      }, 2000);
+    } catch (err) {
+      const errorMessage =
+        (err as { status?: number })?.status === 401
+          ? "You are not authorized. Please log in again."
+          : "Failed to update catering service. Please try again.";
+      setError(errorMessage);
+      if ((err as { status?: number })?.status === 401) {
+        localStorage.clear();
+        sessionStorage.clear();
+        router.push("/login");
       }
     }
   };
+
   useEffect(() => {
     return () => {
-      // Clean up object URLs
-      images.forEach((file) => {
-        URL.revokeObjectURL(URL.createObjectURL(file));
-      });
+      images.forEach((file) => URL.revokeObjectURL(URL.createObjectURL(file)));
     };
   }, [images]);
-  // Show loading state while checking user authentication
-  if (isUserLoading) {
+
+  if (isUserLoading || isCateringLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
@@ -326,9 +308,27 @@ export default function AddEventCenter() {
     );
   }
 
+  if (userError || cateringError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">
+          Error loading catering service data. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  if (!cateringId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-red-500">Catering service ID is missing.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <CateringServiceSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -337,26 +337,29 @@ export default function AddEventCenter() {
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Add Event Center
+              Edit Catering Service
             </h1>
             <div className="flex gap-2">
-              <Link href="/eventServiceManagement/eventServiceDashboard">
-                <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
-                  Cancel
-                </button>
-              </Link>
+              <button
+                onClick={() =>
+                  router.push("/cateringServiceManagement/manage-catering-services")
+                }
+                className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
-                form="eventCenterForm"
-                disabled={isCreating || isUploadingImages}
-                className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                form="cateringForm"
+                disabled={isUpdating || isUploadingImages}
+                className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
               >
-                {isCreating || isUploadingImages ? "Publishing..." : "Publish"}
+                {isUpdating || isUploadingImages ? "Updating..." : "Update"}
               </button>
             </div>
           </div>
 
-          <form id="eventCenterForm" onSubmit={handleSubmit(onSubmit)}>
+          <form id="cateringForm" onSubmit={handleSubmit(onSubmit)}>
             <div className="bg-white p-8">
               <h3 className="text-md font-semibold text-gray-900 mb-4">
                 Information
@@ -385,11 +388,90 @@ export default function AddEventCenter() {
                   <input
                     {...register("name")}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter event center name"
+                    placeholder="Enter catering service name"
                   />
                   {errors.name && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.name.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Tagline
+                  </label>
+                  <input
+                    {...register("tagLine")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter a catchy tagline"
+                  />
+                  {errors.tagLine && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.tagLine.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Deposit Amount
+                  </label>
+                  <input
+                    type="number"
+                    {...register("depositAmount", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter deposit amount"
+                  />
+                  {errors.depositAmount && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.depositAmount.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Starting Price
+                  </label>
+                  <input
+                    type="number"
+                    {...register("startPrice", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter starting price"
+                  />
+                  {errors.startPrice && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.startPrice.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Minimum Capacity
+                  </label>
+                  <input
+                    type="number"
+                    {...register("minCapacity", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter minimum capacity"
+                  />
+                  {errors.minCapacity && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.minCapacity.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Maximum Capacity
+                  </label>
+                  <input
+                    type="number"
+                    {...register("maxCapacity", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter maximum capacity"
+                  />
+                  {errors.maxCapacity && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.maxCapacity.message}
                     </p>
                   )}
                 </div>
@@ -435,21 +517,6 @@ export default function AddEventCenter() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Location ID
-                  </label>
-                  <input
-                    {...register("location")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter location ID"
-                  />
-                  {errors.location && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.location.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
                     Postal Code
                   </label>
                   <input
@@ -460,100 +527,6 @@ export default function AddEventCenter() {
                   {errors.postal && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.postal.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Contact Number
-                  </label>
-                  <input
-                    {...register("contact")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter contact number"
-                  />
-                  {errors.contact && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.contact.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Sitting Capacity
-                  </label>
-                  <input
-                    type="number"
-                    {...register("sittingCapacity", { valueAsNumber: true })}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter sitting capacity"
-                  />
-                  {errors.sittingCapacity && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.sittingCapacity.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Venue Layout
-                  </label>
-                  <input
-                    {...register("venueLayout")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter venue layout"
-                  />
-                  {errors.venueLayout && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.venueLayout.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Deposit Amount
-                  </label>
-                  <input
-                    type="number"
-                    {...register("depositAmount", { valueAsNumber: true })}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter deposit amount"
-                  />
-                  {errors.depositAmount && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.depositAmount.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Total Amount
-                  </label>
-                  <input
-                    type="number"
-                    {...register("totalAmount", { valueAsNumber: true })}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter total amount"
-                  />
-                  {errors.totalAmount && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.totalAmount.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Pricing Per Slot
-                  </label>
-                  <input
-                    type="number"
-                    {...register("pricingPerSlot", { valueAsNumber: true })}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter pricing per slot"
-                  />
-                  {errors.pricingPerSlot && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.pricingPerSlot.message}
                     </p>
                   )}
                 </div>
@@ -580,6 +553,52 @@ export default function AddEventCenter() {
 
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
+                  Locations
+                </h3>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {locations.map((loc, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
+                      >
+                        <span>{loc}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLocation(index)}
+                          className="text-blue-800 hover:text-blue-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newLocation}
+                      onChange={(e) => setNewLocation(e.target.value)}
+                      className="flex-1 text-gray-400 p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                      placeholder="Enter location ID (UUID)"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddLocation}
+                      className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {errors.location && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.location.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-xs font-medium text-gray-900 mb-1">
                   Event Types
                 </h3>
                 <div className="border border-gray-200 rounded-lg p-4">
@@ -601,7 +620,7 @@ export default function AddEventCenter() {
                     ))}
                   </div>
                   <div className="flex flex-col gap-2 pt-2">
-                    {eventTypesOptions.map((type) => (
+                    {eventTypeOptions.map((type) => (
                       <label key={type} className="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -623,19 +642,19 @@ export default function AddEventCenter() {
 
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
-                  Amenities
+                  Cuisine Types
                 </h3>
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedAmenities.map((amenity) => (
+                    {selectedCuisines.map((cuisine) => (
                       <div
-                        key={amenity}
+                        key={cuisine}
                         className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
                       >
-                        <span>{amenity}</span>
+                        <span>{cuisine}</span>
                         <button
                           type="button"
-                          onClick={() => handleAmenityChange(amenity)}
+                          onClick={() => handleCuisineChange(cuisine)}
                           className="text-blue-800 hover:text-blue-600"
                         >
                           ✕
@@ -644,21 +663,64 @@ export default function AddEventCenter() {
                     ))}
                   </div>
                   <div className="flex flex-col gap-2 pt-2">
-                    {amenitiesOptions.map((amenity) => (
-                      <label key={amenity} className="flex items-center gap-2">
+                    {cuisineOptions.map((cuisine) => (
+                      <label key={cuisine} className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={selectedAmenities.includes(amenity)}
-                          onChange={() => handleAmenityChange(amenity)}
+                          checked={selectedCuisines.includes(cuisine)}
+                          onChange={() => handleCuisineChange(cuisine)}
                           className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <span className="text-xs text-gray-600">{amenity}</span>
+                        <span className="text-xs text-gray-600">{cuisine}</span>
                       </label>
                     ))}
                   </div>
-                  {errors.amenities && (
+                  {errors.cuisine && (
                     <p className="text-xs text-red-500 mt-1">
-                      {errors.amenities.message}
+                      {errors.cuisine.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-xs font-medium text-gray-900 mb-1">
+                  Dish Types
+                </h3>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedDishTypes.map((dishType) => (
+                      <div
+                        key={dishType}
+                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
+                      >
+                        <span>{dishType}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDishTypeChange(dishType)}
+                          className="text-blue-800 hover:text-blue-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2 pt-2">
+                    {dishTypeOptions.map((dishType) => (
+                      <label key={dishType} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedDishTypes.includes(dishType)}
+                          onChange={() => handleDishTypeChange(dishType)}
+                          className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">{dishType}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors.dishTypes && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.dishTypes.message}
                     </p>
                   )}
                 </div>
@@ -718,9 +780,7 @@ export default function AddEventCenter() {
                 </h3>
                 <div
                   className={`border border-dashed rounded-md p-6 text-center ${
-                    isDragging
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300"
+                    isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
                   }`}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -734,29 +794,45 @@ export default function AddEventCenter() {
                     multiple
                     accept="image/*"
                     onChange={handleFileInputChange}
-                    disabled={images.length >= 3}
+                    disabled={images.length + existingImages.length >= 3}
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      document.getElementById("fileInput")?.click()
-                    }
+                    onClick={() => document.getElementById("fileInput")?.click()}
                     className={`px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100 ${
-                      images.length >= 3 ? "opacity-50 cursor-not-allowed" : ""
+                      images.length + existingImages.length >= 3
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
                     }`}
-                    disabled={images.length >= 3}
+                    disabled={images.length + existingImages.length >= 3}
                   >
-                   Add Image
+                    Add Image
                   </button>
                   <p className="text-xs text-gray-500 mt-2">
-                    {images.length >= 3
+                    {images.length + existingImages.length >= 3
                       ? "Maximum 3 images reached"
                       : "Or drag and drop files (PNG, JPG, max 5MB each)"}
                   </p>
-                  {images.length > 0 && (
+                  {(images.length > 0 || existingImages.length > 0) && (
                     <div className="mt-4 flex flex-wrap gap-2">
+                      {existingImages.map((imageUrl, index) => (
+                        <div key={`existing-${index}`} className="relative">
+                          <img
+                            src={imageUrl}
+                            alt={`Existing ${index}`}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleExistingImageRemove(index)}
+                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
                       {images.map((image, index) => (
-                        <div key={index} className="relative">
+                        <div key={`new-${index}`} className="relative">
                           <img
                             src={URL.createObjectURL(image)}
                             alt={`Uploaded ${index}`}

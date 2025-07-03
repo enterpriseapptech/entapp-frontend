@@ -8,6 +8,7 @@ export enum ServiceType {
 
 export interface Catering {
   id: string;
+  name: string;
   serviceProviderId: string;
   tagLine: string;
   depositAmount: number;
@@ -25,7 +26,7 @@ export interface Catering {
   city: string;
   state: string;
   country: string;
-  location: string;
+  location: string[];
   postal: string;
   status: string;
   isFeatured: boolean;
@@ -35,7 +36,10 @@ export interface Catering {
   updatedBy: string | null;
   deletedAt: string | null;
   deletedBy: string | null;
-  paymentRequired?: boolean;
+  rating?: number;
+  paymentRequired: boolean;
+  contact: string | null;
+  eventTypes: string[];
 }
 
 export interface CateringResponse {
@@ -43,10 +47,43 @@ export interface CateringResponse {
   data: Catering[];
 }
 
+export interface CreateCateringRequest {
+  serviceProviderId: string;
+  name: string;
+  eventTypes: string[];
+  location: string[];
+  tagLine: string;
+  depositAmount: number;
+  startPrice: number;
+  minCapacity: number;
+  maxCapacity: number;
+  cuisine: string[];
+  description: string;
+  dishTypes: string[];
+  termsOfUse: string;
+  cancellationPolicy: string;
+  streetAddress: string;
+  streetAddress2?: string;
+  city: string;
+  state: string;
+  country: string;
+  postal: string;
+}
+
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://16.16.78.180:8000",
+    baseUrl: "http://56.228.27.51:8000",
+    prepareHeaders: (headers) => {
+      const accessToken =
+        localStorage.getItem("access_token") ||
+        sessionStorage.getItem("access_token");
+
+      if (accessToken) {
+        headers.set("Authorization", `Bearer ${accessToken}`);
+      }
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     getCaterings: builder.query<CateringResponse, { limit: number; offset: number }>({
@@ -70,6 +107,62 @@ export const cateringApi = createApi({
         method: "GET",
       }),
     }),
+    createCatering: builder.mutation<Catering, CreateCateringRequest>({
+      query: (formData) => ({
+        url: "/catering",
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    }),
+    uploadCateringImages: builder.mutation<
+      Catering,
+      { cateringId: string; images: File[] }
+    >({
+      query: ({ cateringId, images }) => {
+        const formData = new FormData();
+        images.forEach((file) => {
+          formData.append("imagefiles", file);
+        });
+
+        return {
+          url: `/catering/${cateringId}`,
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
+    updateCatering: builder.mutation<
+      Catering,
+      Partial<Catering> & { id: string }
+    >({
+      query: ({ id, ...patch }) => ({
+        url: `/catering/${id}`,
+        method: "PATCH",
+        body: patch,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    }),
+    updateCateringWithImages: builder.mutation<
+      Catering,
+      { id: string; data: FormData }
+    >({
+      query: ({ id, data }) => ({
+        url: `/catering/${id}/images`,
+        method: "PATCH",
+        body: data,
+      }),
+    }),
+    deleteCatering: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/catering/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -77,4 +170,9 @@ export const {
   useGetCateringsQuery,
   useGetCateringByIdQuery,
   useGetCateringsByServiceProviderQuery,
+  useCreateCateringMutation,
+  useUploadCateringImagesMutation,
+  useUpdateCateringMutation,
+  useUpdateCateringWithImagesMutation,
+  useDeleteCateringMutation,
 } = cateringApi;

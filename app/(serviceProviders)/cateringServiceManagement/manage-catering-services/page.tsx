@@ -6,21 +6,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
-import { useGetCateringsByServiceProviderQuery } from "../../../../redux/services/cateringApi";
+import { useGetCateringsByServiceProviderQuery, useDeleteCateringMutation } from "../../../../redux/services/cateringApi";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
+import Notification from "../../../../components/ui/Notification";
 
-type FilterType = "location" | "status" | "ratings" | "dateAdded" | "availability";
+type FilterType =
+  | "location"
+  | "status"
+  | "ratings"
+  | "cuisine"
+  | "capacity"
+  | "dishTypes";
 
-interface CateringService {
+interface CateringTableData {
   id: string;
   name: string;
   location: string;
   date: string;
   status: string;
   ratings: number;
-  revenue: string;
-  dateAdded: string;
-  availability: string;
+  depositAmount: string;
+  cuisine: string;
+  minCapacity: string;
+  maxCapacity: string;
+  dishTypes: string;
+  contactNumber: string;
 }
 
 const LoadingSpinner = () => {
@@ -38,7 +48,7 @@ const LoadingSpinner = () => {
   );
 };
 
-export default function ManageCateringServices() {
+export default function ManageCatering() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,14 +59,16 @@ export default function ManageCateringServices() {
     location: string | null;
     status: string | null;
     ratings: number | null;
-    dateAdded: string | null;
-    availability: string | null;
+    cuisine: string | null;
+    capacity: string | null;
+    dishTypes: string | null;
   }>({
     location: null,
     status: null,
     ratings: null,
-    dateAdded: null,
-    availability: null,
+    cuisine: null,
+    capacity: null,
+    dishTypes: null,
   });
 
   // State for search input
@@ -70,6 +82,55 @@ export default function ManageCateringServices() {
 
   // Retrieve user ID from storage
   const [userId, setUserId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "success" });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [cateringToDelete, setCateringToDelete] = useState<string | null>(null);
+  const [deleteCatering, { isLoading: isDeleting }] = useDeleteCateringMutation();
+
+  // Handle delete flow
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setCateringToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!cateringToDelete) return;
+
+    try {
+      await deleteCatering(cateringToDelete).unwrap();
+      setNotification({
+        show: true,
+        message: "Catering service deleted successfully",
+        type: "success",
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch {
+      setNotification({
+        show: true,
+        message: "Failed to delete catering service",
+        type: "error",
+      });
+    } finally {
+      setShowDeleteModal(false);
+      setCateringToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setCateringToDelete(null);
+  };
+
+  const closeNotification = () => {
+    setNotification((prev) => ({ ...prev, show: false }));
+  };
 
   useEffect(() => {
     const storedUserId =
@@ -91,9 +152,9 @@ export default function ManageCateringServices() {
   // Fetch catering services for the service provider
   const serviceProviderId = user?.serviceProvider?.id;
   const {
-    data: cateringServicesData,
-    isLoading: isCateringServicesLoading,
-    error: cateringServicesError,
+    data: cateringData,
+    isLoading: isCateringLoading,
+    error: cateringError,
   } = useGetCateringsByServiceProviderQuery(
     {
       serviceProviderId: serviceProviderId!,
@@ -117,10 +178,10 @@ export default function ManageCateringServices() {
   }, []);
 
   // Map API data to table format
-  const cateringServices: CateringService[] =
-    cateringServicesData?.data?.map((service) => ({
+  const cateringServices: CateringTableData[] =
+    cateringData?.data?.map((service) => ({
       id: service.id,
-      name: service.tagLine || "Catering Service",
+      name: service.name || service.tagLine || "Catering Service",
       location: `${service.city}, ${service.state}`,
       date: new Date(service.createdAt).toLocaleString("en-US", {
         month: "short",
@@ -131,20 +192,22 @@ export default function ManageCateringServices() {
         hour12: true,
       }),
       status: service.status,
-      ratings: 0, // Placeholder: API doesn't provide ratings
-      revenue: `$${service.depositAmount.toLocaleString()}`,
-      dateAdded: new Date(service.createdAt).toISOString().split("T")[0],
-      availability: service.status === "ACTIVE" ? "Available" : "Booked",
+      ratings: service.rating || 0,
+      depositAmount: `$${(service.depositAmount || 0).toLocaleString()}`,
+      cuisine: service.cuisine?.join(", ") || "N/A",
+      minCapacity: service.minCapacity?.toString() || "N/A",
+      maxCapacity: service.maxCapacity?.toString() || "N/A",
+      dishTypes: service.dishTypes?.join(", ") || "N/A",
+      contactNumber: service.contact || "N/A",
     })) || [];
 
   // Extract unique values for each filter category
   const uniqueLocations = [...new Set(cateringServices.map((service) => service.location))];
   const uniqueStatuses = [...new Set(cateringServices.map((service) => service.status))];
-  const uniqueRatings = [...new Set(cateringServices.map((service) => service.ratings))].sort(
-    (a, b) => a - b
-  );
-  const uniqueDateAdded = [...new Set(cateringServices.map((service) => service.dateAdded))].sort();
-  const availabilityOptions = ["Available", "Booked"];
+  const uniqueRatings = [...new Set(cateringServices.map((service) => service.ratings))].sort((a, b) => a - b);
+  const uniqueCuisines = [...new Set(cateringServices.flatMap(service => service.cuisine.split(", ")))];
+  const uniqueCapacities = [...new Set(cateringServices.map(service => `${service.minCapacity}-${service.maxCapacity}`))];
+  const uniqueDishTypes = [...new Set(cateringServices.flatMap(service => service.dishTypes.split(", ")))];
 
   // Apply filters to the data
   const filteredCateringServices = cateringServices.filter((service) => {
@@ -152,8 +215,9 @@ export default function ManageCateringServices() {
       (!filters.location || service.location === filters.location) &&
       (!filters.status || service.status === filters.status) &&
       (filters.ratings === null || service.ratings === filters.ratings) &&
-      (!filters.dateAdded || service.dateAdded === filters.dateAdded) &&
-      (!filters.availability || service.availability === filters.availability)
+      (!filters.cuisine || service.cuisine.includes(filters.cuisine)) &&
+      (!filters.capacity || `${service.minCapacity}-${service.maxCapacity}` === filters.capacity) &&
+      (!filters.dishTypes || service.dishTypes.includes(filters.dishTypes))
     );
   });
 
@@ -167,9 +231,12 @@ export default function ManageCateringServices() {
       service.location.toLowerCase().includes(query) ||
       service.date.toLowerCase().includes(query) ||
       service.status.toLowerCase().includes(query) ||
-      service.revenue.toLowerCase().includes(query) ||
-      service.dateAdded.toLowerCase().includes(query) ||
-      service.availability.toLowerCase().includes(query)
+      service.depositAmount.toLowerCase().includes(query) ||
+      service.cuisine.toLowerCase().includes(query) ||
+      service.minCapacity.toLowerCase().includes(query) ||
+      service.maxCapacity.toLowerCase().includes(query) ||
+      service.dishTypes.toLowerCase().includes(query) ||
+      service.contactNumber.toLowerCase().includes(query)
     );
   });
 
@@ -223,7 +290,10 @@ export default function ManageCateringServices() {
   };
 
   // Handle filter application
-  const applyFilter = (filterType: FilterType, value: string | number | null) => {
+  const applyFilter = (
+    filterType: FilterType,
+    value: string | number | null
+  ) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
@@ -254,7 +324,7 @@ export default function ManageCateringServices() {
   };
 
   // Handle navigation to the details page
-  const handleViewCateringService = (service: CateringService) => {
+  const handleViewCateringService = (service: CateringTableData) => {
     router.push(
       `/cateringServiceManagement/catering-service-details?id=${encodeURIComponent(
         service.id
@@ -262,21 +332,27 @@ export default function ManageCateringServices() {
         service.location
       )}&date=${encodeURIComponent(service.date)}&status=${encodeURIComponent(
         service.status
-      )}&ratings=${service.ratings}&revenue=${encodeURIComponent(
-        service.revenue
-      )}&dateAdded=${encodeURIComponent(
-        service.dateAdded
-      )}&availability=${encodeURIComponent(service.availability)}`
+      )}&ratings=${service.ratings}&depositAmount=${encodeURIComponent(
+        service.depositAmount
+      )}&cuisine=${encodeURIComponent(
+        service.cuisine
+      )}&minCapacity=${encodeURIComponent(
+        service.minCapacity
+      )}&maxCapacity=${encodeURIComponent(
+        service.maxCapacity
+      )}&dishTypes=${encodeURIComponent(
+        service.dishTypes
+      )}&contactNumber=${encodeURIComponent(service.contactNumber)}`
     );
   };
 
   // Show loading state
-  if (isUserLoading || isCateringServicesLoading || !userId) {
+  if (isUserLoading || isCateringLoading || !userId) {
     return <LoadingSpinner />;
   }
 
   // Handle errors
-  if (userError || cateringServicesError) {
+  if (userError || cateringError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-red-500">
@@ -287,7 +363,7 @@ export default function ManageCateringServices() {
   }
 
   // Handle empty data state
-  if (!cateringServicesData?.data?.length) {
+  if (!cateringData?.data?.length) {
     return (
       <div className="min-h-screen bg-gray-50">
         <CateringServiceSideBar
@@ -352,7 +428,7 @@ export default function ManageCateringServices() {
         {/* Header */}
         <Header setIsSidebarOpen={setIsSidebarOpen} />
 
-        {/* Manage Catering Services Content */}
+        {/* Manage Catering Content */}
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
@@ -396,7 +472,7 @@ export default function ManageCateringServices() {
                     value ? (
                       <button
                         key={key}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium cursor-pointer"
                         onClick={() => removeFilter(key as FilterType)}
                       >
                         <span>
@@ -406,22 +482,23 @@ export default function ManageCateringServices() {
                       </button>
                     ) : null
                   )}
+
                   <div className="relative">
                     <button
-                      className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium cursor-pointer"
                       onClick={() =>
                         setIsFilterDropdownOpen(!isFilterDropdownOpen)
                       }
                     >
                       <Image
+                        src="/filterIcon.png"
+                        alt="Filter Icon"
                         width={10}
                         height={10}
-                        alt="filter"
-                        src="/filterIcon.png"
                         className="w-4 h-4"
                         unoptimized
                       />
-                      <span>More filters</span>
+                      <span>More Filters</span>
                     </button>
 
                     {isFilterDropdownOpen && (
@@ -430,18 +507,32 @@ export default function ManageCateringServices() {
                           {/* Location Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("location")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("location")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("location")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("location")
+                              }
                             >
                               Location
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "location" : hoveredFilter === "location") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "location"
+                              : hoveredFilter === "location") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueLocations.map((location) => (
                                   <button
                                     key={location}
@@ -460,23 +551,39 @@ export default function ManageCateringServices() {
                           {/* Status Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("status")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("status")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("status")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("status")
+                              }
                             >
                               Status
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "status" : hoveredFilter === "status") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "status"
+                              : hoveredFilter === "status") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueStatuses.map((status) => (
                                   <button
                                     key={status}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() => applyFilter("status", status)}
+                                    onClick={() =>
+                                      applyFilter("status", status)
+                                    }
                                   >
                                     {status}
                                   </button>
@@ -488,18 +595,32 @@ export default function ManageCateringServices() {
                           {/* Ratings Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("ratings")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("ratings")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("ratings")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("ratings")
+                              }
                             >
                               Ratings
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "ratings" : hoveredFilter === "ratings") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
+                            {(isMobile
+                              ? clickedFilter === "ratings"
+                              : hoveredFilter === "ratings") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
                                 {uniqueRatings.map((rating) => (
                                   <button
                                     key={rating}
@@ -515,68 +636,133 @@ export default function ManageCateringServices() {
                             )}
                           </div>
 
-                          {/* Date Added Filter */}
+                          {/* Cuisine Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("dateAdded")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("cuisine")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("dateAdded")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("cuisine")
+                              }
                             >
-                              Date Added
+                              Cuisine
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "dateAdded" : hoveredFilter === "dateAdded") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
-                                {uniqueDateAdded.map((date) => (
+                            {(isMobile
+                              ? clickedFilter === "cuisine"
+                              : hoveredFilter === "cuisine") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueCuisines.map((cuisine) => (
                                   <button
-                                    key={date}
+                                    key={cuisine}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter("dateAdded", date)
+                                      applyFilter("cuisine", cuisine)
                                     }
                                   >
-                                    {date}
+                                    {cuisine}
                                   </button>
                                 ))}
                               </div>
                             )}
                           </div>
 
-                          {/* Availability Filter */}
+                          {/* Capacity Filter */}
                           <div
                             className="relative"
-                            onMouseEnter={() => !isMobile && setHoveredFilter("availability")}
-                            onMouseLeave={() => !isMobile && setHoveredFilter(null)}
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("capacity")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
                           >
                             <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => isMobile && toggleSubDropdown("availability")}
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("capacity")
+                              }
                             >
-                              Availability
+                              Capacity
                               <ChevronRight className="w-4 h-4" />
                             </button>
-                            {(isMobile ? clickedFilter === "availability" : hoveredFilter === "availability") && (
-                              <div className={`absolute ${isMobile ? "left-0 top-full mt-1 bg-gray-900 z-20" : "left-full top-0 bg-white"} w-48 border border-gray-200 rounded-lg shadow-lg`}>
-                                {availabilityOptions.map((option) => (
-                                  <label
-                                    key={option}
-                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            {(isMobile
+                              ? clickedFilter === "capacity"
+                              : hoveredFilter === "capacity") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueCapacities.map((capacity) => (
+                                  <button
+                                    key={capacity}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("capacity", capacity)
+                                    }
                                   >
-                                    <input
-                                      type="radio"
-                                      name="availability"
-                                      value={option}
-                                      checked={filters.availability === option}
-                                      onChange={() =>
-                                        applyFilter("availability", option)
-                                      }
-                                      className="mr-2"
-                                    />
-                                    {option}
-                                  </label>
+                                    {capacity}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Dish Types Filter */}
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("dishTypes")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("dishTypes")
+                              }
+                            >
+                              Dish Types
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "dishTypes"
+                              : hoveredFilter === "dishTypes") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueDishTypes.map((dishType) => (
+                                  <button
+                                    key={dishType}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("dishTypes", dishType)
+                                    }
+                                  >
+                                    {dishType}
+                                  </button>
                                 ))}
                               </div>
                             )}
@@ -615,7 +801,7 @@ export default function ManageCateringServices() {
                       Location
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Next Booking
+                      Date Added
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Status
@@ -624,7 +810,7 @@ export default function ManageCateringServices() {
                       Ratings
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Revenue
+                      Deposit Amount
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Actions
@@ -655,8 +841,6 @@ export default function ManageCateringServices() {
                           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                             service.status === "ACTIVE"
                               ? "bg-green-50 text-green-700"
-                              : service.status === "Confirmed"
-                              ? "bg-blue-50 text-blue-700"
                               : "bg-gray-50 text-gray-700"
                           }`}
                         >
@@ -682,15 +866,26 @@ export default function ManageCateringServices() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {service.revenue}
+                        {service.depositAmount}
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <div className="flex gap-2">
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
+                          <button
+                            className="rounded-lg p-1 hover:bg-gray-100 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/cateringServiceManagement/edit-catering?id=${service.id}`
+                              );
+                            }}
+                          >
                             <Edit2 className="h-4 w-4 text-gray-600" />
                           </button>
-                          <button className="rounded-lg p-1 hover:bg-gray-100">
-                            <Trash2 className="h-4 w-4 text-gray-600" />
+                          <button
+                            className="rounded-lg p-1 hover:bg-gray-100"
+                            onClick={(e) => handleDeleteClick(e, service.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-600 cursor-pointer" />
                           </button>
                         </div>
                       </td>
@@ -758,6 +953,44 @@ export default function ManageCateringServices() {
           </div>
         </main>
       </div>
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Are you sure you want to delete this catering service?
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              This action cannot be undone. All data associated with this catering service will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification */}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
     </div>
   );
 }
