@@ -4,179 +4,82 @@ import Link from "next/link";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
-import { Calendar, Wifi, Shield} from "lucide-react";
-import { useParams } from "next/navigation";
+import { Calendar, Wifi, Shield, User, FileText, Ban } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
+import CardSkeleton from "@/components/ui/card-skeleton";
+import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
 
 interface CateringService {
   id: string;
   name: string;
-  title: string;
+  tagLine: string;
   description: string;
   images: string[];
-  location: string;
-  price: string;
-  cuisineType: string;
-  orderSize: number;
-  availability: string;
-  amenities: string[];
+  streetAddress: string;
+  streetAddress2: string | null;
+  city: string;
+  state: string;
+  country: string;
+  location: string[];
+  postal: string;
+  startPrice: number;
+  cuisine: string[];
+  dishTypes: string[];
+  minCapacity: number;
+  maxCapacity: number;
+  termsOfUse: string;
+  cancellationPolicy: string;
+  status: string;
+  rating?: number;
+  paymentRequired: boolean;
+  contact: string | null;
+  eventTypes: string[];
 }
 
 export default function CateringServiceDetails() {
   const params = useParams();
-  const { id } = params;
-  // const router = useRouter();
+  const { id } = params as { id: string };
+  const router = useRouter();
 
-  const cateringServices: CateringService[] = [
-    {
-      id: "1",
-      name: "Catering Service",
-      title: "Taste of Africa",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/event.png", "/catering.png"],
-      location: "Lagos, Nigeria",
-      price: "₦500,000",
-      cuisineType: "African",
-      orderSize: 2000,
-      availability: "Sat 10 Feb 2024",
-      amenities: ["WiFi", "Parking Space", "Security"],
-    },
-    {
-      id: "2",
-      name: "Catering Service",
-      title: "Italian Delight",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "Abuja, Nigeria",
-      price: "₦300,000",
-      cuisineType: "Italian",
-      orderSize: 1000,
-      availability: "Sun 11 Feb 2024",
-      amenities: ["WiFi", "Security"],
-    },
-    {
-      id: "3",
-      name: "Catering Service",
-      title: "Chinese Feast",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "London, UK",
-      price: "₦800,000",
-      cuisineType: "Chinese",
-      orderSize: 3000,
-      availability: "Mon 12 Feb 2024",
-      amenities: ["WiFi", "Parking Space"],
-    },
-    {
-      id: "4",
-      name: "Catering Service",
-      title: "French Gourmet",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "New York, USA",
-      price: "₦600,000",
-      cuisineType: "French",
-      orderSize: 1500,
-      availability: "Tue 13 Feb 2024",
-      amenities: ["Security", "Parking Space"],
-    },
-    {
-      id: "5",
-      name: "Catering Service",
-      title: "African Spice",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "Lagos, Nigeria",
-      price: "₦450,000",
-      cuisineType: "African",
-      orderSize: 800,
-      availability: "Wed 14 Feb 2024",
-      amenities: ["WiFi", "Security"],
-    },
-    {
-      id: "6",
-      name: "Catering Service",
-      title: "Italian Bistro",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "Abuja, Nigeria",
-      price: "₦250,000",
-      cuisineType: "Italian",
-      orderSize: 500,
-      availability: "Thu 15 Feb 2024",
-      amenities: ["WiFi", "Parking Space"],
-    },
-    {
-      id: "7",
-      name: "Catering Service",
-      title: "Chinese Dragon",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "London, UK",
-      price: "₦700,000",
-      cuisineType: "Chinese",
-      orderSize: 4000,
-      availability: "Fri 16 Feb 2024",
-      amenities: ["Security", "WiFi"],
-    },
-    {
-      id: "8",
-      name: "Catering Service",
-      title: "French Elegance",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "New York, USA",
-      price: "₦550,000",
-      cuisineType: "French",
-      orderSize: 2500,
-      availability: "Sat 17 Feb 2024",
-      amenities: ["Parking Space", "Security"],
-    },
-    {
-      id: "9",
-      name: "Catering Service",
-      title: "Savory Africa",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "Lagos, Nigeria",
-      price: "₦400,000",
-      cuisineType: "African",
-      orderSize: 1800,
-      availability: "Sun 18 Feb 2024",
-      amenities: ["WiFi", "Parking Space"],
-    },
-    {
-      id: "10",
-      name: "Catering Service",
-      title: "Italian Charm",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-      images: ["/catering.png", "/catering.png", "/catering.png"],
-      location: "Abuja, Nigeria",
-      price: "₦200,000",
-      cuisineType: "Italian",
-      orderSize: 600,
-      availability: "Mon 19 Feb 2024",
-      amenities: ["WiFi", "Security"],
-    },
-  ];
+  const { data: cateringData, isLoading, error } = useGetCateringByIdQuery(id);
 
-  const cateringService = cateringServices.find((service) => service.id === id);
+  // Map API data to component's CateringService interface
+  const cateringService: CateringService | undefined = cateringData
+    ? {
+        id: cateringData.id,
+        name: cateringData.name,
+        tagLine: cateringData.tagLine,
+        description: cateringData.description,
+        images: cateringData.images.length ? cateringData.images : ["/catering.png"],
+        streetAddress: cateringData.streetAddress,
+        streetAddress2: cateringData.streetAddress2,
+        city: cateringData.city,
+        state: cateringData.state,
+        country: cateringData.country,
+        location: cateringData.location,
+        postal: cateringData.postal,
+        startPrice: cateringData.startPrice,
+        cuisine: cateringData.cuisine,
+        dishTypes: cateringData.dishTypes,
+        minCapacity: cateringData.minCapacity,
+        maxCapacity: cateringData.maxCapacity,
+        termsOfUse: cateringData.termsOfUse,
+        cancellationPolicy: cateringData.cancellationPolicy,
+        status: cateringData.status,
+        rating: cateringData.rating,
+        paymentRequired: cateringData.paymentRequired,
+        contact: cateringData.contact,
+        eventTypes: cateringData.eventTypes,
+      }
+    : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  // const [selectedDate, setSelectedDate] = useState<string>("");
-  // const [numberOfGuests, setNumberOfGuests] = useState<string>("");
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false);
+  const [numberOfGuests, setNumberOfGuests] = useState<string>("");
 
   const images = cateringService?.images || ["/catering.png"];
 
@@ -232,9 +135,7 @@ export default function CateringServiceDetails() {
   const handleNextReview = () =>
     setCurrentReviewPage((prev) => (prev + 1) % totalReviewPages);
   const handlePrevReview = () =>
-    setCurrentReviewPage(
-      (prev) => (prev - 1 + totalReviewPages) % totalReviewPages
-    );
+    setCurrentReviewPage((prev) => (prev - 1 + totalReviewPages) % totalReviewPages);
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -244,8 +145,87 @@ export default function CateringServiceDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  if (!cateringService) {
-    return <div className="min-h-screen bg-gray-50 p-8">Service not found</div>;
+  const handleAddDate = () => {
+    setSelectedDates([...selectedDates, ""]);
+  };
+
+  const handleDateChange = (index: number, date: string) => {
+    const updatedDates = [...selectedDates];
+    updatedDates[index] = date;
+    setSelectedDates(updatedDates);
+  };
+
+  const handleRemoveDate = (index: number) => {
+    const updatedDates = selectedDates.filter((_, i) => i !== index);
+    setSelectedDates(updatedDates);
+  };
+
+  const handleBook = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedDates.length === 0 || selectedDates.some((date) => !date)) {
+      alert("Please select all dates.");
+      return;
+    }
+    if (!numberOfGuests) {
+      alert("Please select the number of guests.");
+      return;
+    }
+    router.push(
+      `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
+        cateringService!.startPrice
+      }&serviceTitle=${cateringService!.name}`
+    );
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <HeroWithNavbar
+          isCategoryOpen={false}
+          isLocationOpen={false}
+          toggleCategoryDropdown={() => {}}
+          toggleLocationDropdown={() => {}}
+          handleCategoryChange={() => {}}
+          handleLocationChange={() => {}}
+          height="400px"
+          backgroundImage="url('/caterringSerDetails.png')"
+          heading="Catering Services"
+          subheading=""
+        />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-8">
+          <div className="flex-1">
+            <CardSkeleton />
+          </div>
+          <div className="lg:w-[350px]">
+            <CardSkeleton />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state or service not found
+  if (error || !cateringService) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <HeroWithNavbar
+          isCategoryOpen={false}
+          isLocationOpen={false}
+          toggleCategoryDropdown={() => {}}
+          toggleLocationDropdown={() => {}}
+          handleCategoryChange={() => {}}
+          handleLocationChange={() => {}}
+          height="400px"
+          backgroundImage="url('/caterringSerDetails.png')"
+          heading="Catering Services"
+          subheading=""
+        />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center text-red-600">
+          Service not found or error loading data. Please try again later.
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -277,12 +257,12 @@ export default function CateringServiceDetails() {
             <Link href="/catering-service" className="hover:underline">
               Catering Services
             </Link>{" "}
-            {">"} <span className="text-gray-800">{cateringService.title}</span>
+            {">"} <span className="text-gray-800">{cateringService.name}</span>
           </nav>
 
           {/* Catering Service Title */}
           <h1 className="md:text-4xl text-2xl font-bold text-gray-900 mb-4">
-            {cateringService.title}
+            {cateringService.name}
           </h1>
           <p className="text-gray-600 mb-8">{cateringService.description}</p>
 
@@ -290,10 +270,11 @@ export default function CateringServiceDetails() {
           <div className="relative mb-8">
             <Image
               src={images[currentImageIndex]}
-              alt={cateringService.title}
+              alt={cateringService.name}
               width={800}
               height={400}
               className="w-full h-80 object-cover rounded-lg"
+              unoptimized={!images[currentImageIndex].startsWith('/')}
             />
             <button
               onClick={handlePrevImage}
@@ -349,20 +330,49 @@ export default function CateringServiceDetails() {
           <div className="space-y-4">
             {/* Title */}
             <h2 className="text-xl font-semibold text-gray-800">
-              {cateringService.title}
+              {cateringService.name}
             </h2>
             <p className="text-gray-600">{cateringService.description}</p>
 
-            {/* Availability */}
+            {/* Event Types */}
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-2 pt-2">
-                Availability
+                Event Types
               </h3>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">
-                  {cateringService.availability}
-                </span>
+              <div className="flex flex-wrap gap-2">
+                {cateringService.eventTypes.map((type, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                    {type}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Cuisine */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-2 pt-2">
+                Cuisine
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {cateringService.cuisine.map((cuisine, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                    {cuisine}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Dish Types */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-2 pt-2">
+                Dish Types
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {cateringService.dishTypes.map((dishType, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                    {dishType}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -393,7 +403,9 @@ export default function CateringServiceDetails() {
                   />
                 </svg>
                 <span className="text-gray-600 text-sm">
-                  {cateringService.location}
+                  {cateringService.streetAddress}
+                  {cateringService.streetAddress2 && `, ${cateringService.streetAddress2}`}
+                  , {cateringService.city}, {cateringService.state}, {cateringService.country}
                 </span>
               </div>
             </div>
@@ -404,12 +416,12 @@ export default function CateringServiceDetails() {
                 Amenities
               </h3>
               <div className="flex gap-6">
-                {cateringService.amenities.map((amenity, index) => (
+                {cateringService.amenities?.map((amenity, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    {amenity === "WiFi" && (
+                    {amenity === "WIFI" && (
                       <Wifi className="w-4 h-4 text-gray-600" />
                     )}
-                    {amenity === "Parking Space" && (
+                    {amenity === "PACKINGSPACE" && (
                       <svg
                         className="w-4 h-4 text-gray-600"
                         fill="none"
@@ -425,7 +437,7 @@ export default function CateringServiceDetails() {
                         />
                       </svg>
                     )}
-                    {amenity === "Security" && (
+                    {amenity === "SECURITY" && (
                       <Shield className="w-4 h-4 text-gray-600" />
                     )}
                     <span className="text-gray-600 text-sm">{amenity}</span>
@@ -434,10 +446,10 @@ export default function CateringServiceDetails() {
               </div>
             </div>
 
-            {/* Order Size */}
+            {/* Capacity */}
             <div className="pb-10">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Order Size
+                Capacity
               </h3>
               <div className="flex items-center gap-2">
                 <svg
@@ -455,8 +467,42 @@ export default function CateringServiceDetails() {
                   />
                 </svg>
                 <span className="text-gray-600">
-                  {cateringService.orderSize}
+                  {cateringService.minCapacity} - {cateringService.maxCapacity}
                 </span>
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Pricing
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-sm">
+                  Starting at: ₦{cateringService.startPrice.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Terms of Use */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Terms of Use
+              </h3>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-600 text-sm">{cateringService.termsOfUse}</span>
+              </div>
+            </div>
+
+            {/* Cancellation Policy */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-800 mb-1">
+                Cancellation Policy
+              </h3>
+              <div className="flex items-center gap-2">
+                <Ban className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-600 text-sm">{cateringService.cancellationPolicy}</span>
               </div>
             </div>
 
@@ -466,115 +512,184 @@ export default function CateringServiceDetails() {
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Description
               </h3>
-              <p className="text-gray-600 text-xs">
-                {cateringService.description}
-              </p>
+              <p className="text-gray-600 text-xs">{cateringService.description}</p>
               <button className="text-blue-600 text-xs mt-2">Read more</button>
             </div>
           </div>
         </div>
 
         {/* Right Section: Booking Form */}
-        <aside className="lg:w-[350px] h-[45%] bg-white p-6 rounded-lg shadow-md sticky top-6">
-          {/* Text Information */}
-          <div className="mb-4">
-            <h2 className="text-md font-semibold text-gray-800">
-              Information
-            </h2>
-          </div>
-
-          {/* Image and Title */}
-          <div className="flex items-center mb-4">
-            <Image
-              src={cateringService.images[0] || "/catering.png"}
-              alt={cateringService.title}
-              width={80}
-              height={80}
-              className="w-15 h-15 object-cover rounded-full mr-4"
-            />
-            <div className="flex flex-col">
-              <h3 className="text-md font-semibold text-gray-800">
-                {cateringService.title}
-              </h3>
-              <p className="text-sm text-gray-600">delish@entapp.com</p>
-            </div>   
-          </div>
-
-          {/* Send a Message Section */}
-          <h2 className="text-sm text-gray-600 mb-2">
-            Send a Message
-          </h2>
-          <form className="space-y-4">
-            <div className="relative">
-              <textarea
-                placeholder="Enter a description..."
-                className="w-full text-gray-600 text-sm border border-gray-300 rounded-md p-3 focus:outline-none resize-none"
-                rows={4}
-              />
+        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-md sticky top-6">
+          <h2 className="text-md font-semibold text-gray-800 mb-4">Book Now</h2>
+          <form className="space-y-4" onSubmit={handleBook}>
+            <div>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="accent-blue-600"
+                  checked={isMoreThanOneDay}
+                  onChange={(e) => {
+                    setIsMoreThanOneDay(e.target.checked);
+                    if (!e.target.checked) {
+                      setSelectedDates(selectedDates.slice(0, 1));
+                    }
+                  }}
+                />
+                <span className="text-gray-600 text-sm">More than one day</span>
+              </label>
             </div>
 
-            {/* Request a Quote Button */}
+            <div className="space-y-3">
+              {selectedDates.map((date, index) => (
+                <div key={index} className="relative flex items-center gap-2">
+                  <div className="flex-1 flex items-center border rounded-md px-3 py-2">
+                    <Calendar className="w-4 h-4 text-gray-600 mr-2" />
+                    <select
+                      className="w-full text-gray-600 text-sm focus:outline-none"
+                      value={date}
+                      onChange={(e) => handleDateChange(index, e.target.value)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Select a date
+                      </option>
+                      {/* Placeholder for dynamic availability */}
+                      <option value="2025-07-10">2025-07-10</option>
+                      <option value="2025-07-11">2025-07-11</option>
+                      <option value="2025-07-12">2025-07-12</option>
+                    </select>
+                  </div>
+                  {isMoreThanOneDay && selectedDates.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDate(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {selectedDates.length === 0 && (
+                <div className="flex items-center border rounded-md px-3 py-2">
+                  <Calendar className="w-4 h-4 text-gray-600 mr-2" />
+                  <select
+                    className="w-full text-gray-600 text-sm focus:outline-none"
+                    value=""
+                    onChange={(e) => setSelectedDates([e.target.value])}
+                    required
+                  >
+                    <option value="" disabled>
+                      Select a date
+                    </option>
+                    {/* Placeholder for dynamic availability */}
+                    <option value="2025-07-10">2025-07-10</option>
+                    <option value="2025-07-11">2025-07-11</option>
+                    <option value="2025-07-12">2025-07-12</option>
+                  </select>
+                </div>
+              )}
+              {isMoreThanOneDay && (
+                <button
+                  type="button"
+                  onClick={handleAddDate}
+                  className="text-blue-600 text-sm block w-full text-right hover:underline"
+                >
+                  Add another date
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <div className="flex items-center border rounded-md px-3 py-2">
+                <User className="w-4 h-4 text-gray-600 mr-2" />
+                <select
+                  className="w-full text-gray-600 text-sm focus:outline-none"
+                  value={numberOfGuests}
+                  onChange={(e) => setNumberOfGuests(e.target.value)}
+                  required
+                >
+                  <option value="" disabled hidden>
+                    Number of guests
+                  </option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5+">5+</option>
+                </select>
+              </div>
+            </div>
+
             <button
               type="submit"
               className="w-full cursor-pointer bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold"
             >
-              Request a Quote
+              Book ₦{cateringService.startPrice.toLocaleString()}
             </button>
-          </form>
-
-          <hr className="my-4" />
-
-          {/* Share Options (Unchanged) */}
-          <div className="flex justify-between items-center mt-4">
-            <span className="text-gray-400 text-sm">Share</span>
-            <div className="flex gap-3">
-              <Image
-                src="/whatsapp.png"
-                alt="WhatsApp"
-                width={20}
-                height={20}
-                className="w-6 h-6"
-              />
-              <Image
-                src="/facebook.png"
-                alt="Facebook"
-                width={20}
-                height={20}
-                className="w-6 h-6"
-              />
-              <Image
-                src="/twitter.png"
-                alt="Twitter"
-                width={20}
-                height={20}
-                className="w-6 h-6"
-              />
-              <Image
-                src="/email.png"
-                alt="Email"
-                width={20}
-                height={20}
-                className="w-6 h-6"
-              />
-              <Image
-                src="/pinterest.png"
-                alt="Pinterest"
-                width={20}
-                height={20}
-                className="w-6 h-6"
-              />
+            <hr className="mb-2" />
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-gray-400 text-sm">Share</span>
+              <div className="flex gap-3">
+                <Image
+                  src="/whatsapp.png"
+                  alt="WhatsApp"
+                  width={20}
+                  height={20}
+                  className="w-6 h-6"
+                />
+                <Image
+                  src="/facebook.png"
+                  alt="Facebook"
+                  width={20}
+                  height={20}
+                  className="w-6 h-6"
+                />
+                <Image
+                  src="/twitter.png"
+                  alt="Twitter"
+                  width={20}
+                  height={20}
+                  className="w-6 h-6"
+                />
+                <Image
+                  src="/email.png"
+                  alt="Email"
+                  width={20}
+                  height={20}
+                  className="w-6 h-6"
+                />
+                <Image
+                  src="/pinterest.png"
+                  alt="Pinterest"
+                  width={20}
+                  height={20}
+                  className="w-6 h-6"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Note (Unchanged) */}
-          <p className="text-xs text-gray-500 mt-4">
-            Note: Invoice amount will be displayed in NGN currency but can be
-            paid with Credit Cards in other currencies.
-          </p>
+            <p className="text-xs text-gray-500 mt-4">
+              Note: Invoice amount will be displayed in NGN currency but can be
+              paid with Credit Cards in other currencies.
+            </p>
+          </form>
         </aside>
       </div>
       <hr className="mb-4 mt-4 mx-30" />
-      {/* Customer Reviews Section */}
       <CustomerReviews
         reviews={reviews}
         currentPage={currentReviewPage}

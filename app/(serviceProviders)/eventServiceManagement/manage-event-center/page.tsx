@@ -851,7 +851,7 @@ export default function ManageEventCenter() {
                       onClick={() => handleViewEventCenter(center)}
                     >
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.id}
+                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {center.name}

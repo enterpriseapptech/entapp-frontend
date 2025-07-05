@@ -825,7 +825,7 @@ export default function ManageCatering() {
                       onClick={() => handleViewCateringService(service)}
                     >
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {service.id}
+                        {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {service.name}
