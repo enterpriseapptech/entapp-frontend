@@ -3,13 +3,14 @@ import Link from "next/link";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
-import { Calendar, Wifi, Shield, User, BadgeCheck, FileText, Ban } from "lucide-react";
+import { FileText, Ban, BadgeCheck, Wifi, Shield } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
 import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
+import DatePicker from "@/components/ui/DatePicker";
 
 export interface EventCenter {
   id: string;
@@ -35,10 +36,13 @@ export interface EventCenter {
   rating?: number;
   paymentRequired: boolean;
   contact: string;
-  // createdAt: string;
-  // updatedAt: string;
-  // deletedAt: string | null;
-  // deletedBy: string | null;
+}
+
+interface BookingData {
+  date: string;
+  time: string;
+  guests: number;
+  price: number;
 }
 
 export default function EventCenterDetails() {
@@ -48,7 +52,6 @@ export default function EventCenterDetails() {
 
   const { data: eventCenterData, isLoading, error } = useGetEventCenterByIdQuery(id);
 
-  // Map API data to component's EventCenter interface
   const eventCenter: EventCenter | undefined = eventCenterData
     ? {
         id: eventCenterData.id,
@@ -78,13 +81,11 @@ export default function EventCenterDetails() {
     : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false);
-  const [numberOfGuests, setNumberOfGuests] = useState<string>("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
 
   const images = eventCenter?.images || ["/placeholder-image.png"];
 
-  // State and logic for CustomerReviews pagination
   const [currentReviewPage, setCurrentReviewPage] = useState<number>(0);
 
   const reviews = [
@@ -146,39 +147,14 @@ export default function EventCenterDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const handleAddDate = () => {
-    setSelectedDates([...selectedDates, ""]);
-  };
-
-  const handleDateChange = (index: number, date: string) => {
-    const updatedDates = [...selectedDates];
-    updatedDates[index] = date;
-    setSelectedDates(updatedDates);
-  };
-
-  const handleRemoveDate = (index: number) => {
-    const updatedDates = selectedDates.filter((_, i) => i !== index);
-    setSelectedDates(updatedDates);
-  };
-
-  const handleBook = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedDates.length === 0 || selectedDates.some((date) => !date)) {
-      alert("Please select all dates.");
-      return;
-    }
-    if (!numberOfGuests) {
-      alert("Please select the number of guests.");
-      return;
-    }
+  const handleBook = (bookingData: BookingData) => {
+    setLastBooking(bookingData);
+    console.log('Booking confirmed:', bookingData);
     router.push(
-      `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
-        eventCenter!.totalAmount
-      }&eventTitle=${eventCenter!.name}`
+      `/payment?date=${bookingData.date}&time=${bookingData.time}&guests=${bookingData.guests}&totalCost=${bookingData.price}&eventTitle=${eventCenter!.name}`
     );
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
@@ -206,7 +182,6 @@ export default function EventCenterDetails() {
     );
   }
 
-  // Error state or event not found
   if (error || !eventCenter) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
@@ -390,41 +365,6 @@ export default function EventCenterDetails() {
               </div>
             </div>
 
-            <div>
-              <h3 className="text-md font-semibold text-gray-800 mb-1 mt-2">
-                Amenities
-              </h3>
-              <div className="flex gap-6">
-                {eventCenter.amenities.map((amenity, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    {amenity === "WIFI" && (
-                      <Wifi className="w-4 h-4 text-gray-600" />
-                    )}
-                    {amenity === "PACKINGSPACE" && (
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M8 14v-4a4 4 0 014-4h0a4 4 0 014 4v4m-8 0h8m-8 0H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2h-3m-8 0v4a1 1 0 001 1h6a1 1 0 001-1v-4"
-                        />
-                      </svg>
-                    )}
-                    {amenity === "SECURITY" && (
-                      <Shield className="w-4 h-4 text-gray-600" />
-                    )}
-                    <span className="text-gray-600 text-sm">{amenity}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="pb-10">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
                 Capacity
@@ -491,7 +431,6 @@ export default function EventCenterDetails() {
                 <span className="text-gray-600 text-sm">{eventCenter.termsOfUse}</span>
               </div>
             </div>
-
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-1">
                 Cancellation Policy
@@ -512,180 +451,130 @@ export default function EventCenterDetails() {
           </div>
         </div>
 
-        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-md sticky top-6">
-          <h2 className="text-md font-semibold text-gray-800 mb-4">Book Now</h2>
-          <form className="space-y-4" onSubmit={handleBook}>
-            <div>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="accent-blue-600"
-                  checked={isMoreThanOneDay}
-                  onChange={(e) => {
-                    setIsMoreThanOneDay(e.target.checked);
-                    if (!e.target.checked) {
-                      setSelectedDates(selectedDates.slice(0, 1));
-                    }
-                  }}
-                />
-                <span className="text-gray-600 text-sm">More than one day</span>
-              </label>
-            </div>
+        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-lg sticky top-6 h-[750px]">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Book Your Event
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Reserve our premium event center for your special occasion
+            </p>
+          </div>
 
-            <div className="space-y-3">
-              {selectedDates.map((date, index) => (
-                <div key={index} className="relative flex items-center gap-2">
-                  <div className="flex-1 flex items-center border rounded-md px-3 py-2">
-                    <Calendar className="w-4 h-4 text-gray-600 mr-2" />
-                    <select
-                      className="w-full text-gray-600 text-sm focus:outline-none"
-                      value={date}
-                      onChange={(e) => handleDateChange(index, e.target.value)}
-                      required
-                    >
-                      <option value="" disabled>
-                        Select a date
-                      </option>
-                      {/* {eventCenter.availability
-                        .filter((availDate) => !selectedDates.includes(availDate) || availDate === date)
-                        .map((availDate) => (
-                          <option key={availDate} value={availDate}>
-                            {availDate}
-                          </option>
-                        ))} */}
-                    </select>
-                  </div>
-                  {isMoreThanOneDay && selectedDates.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDate(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ))}
-              {selectedDates.length === 0 && (
-                <div className="flex items-center border rounded-md px-3 py-2">
-                  <Calendar className="w-4 h-4 text-gray-600 mr-2" />
-                  <select
-                    className="w-full text-gray-600 text-sm focus:outline-none"
-                    value=""
-                    onChange={(e) => setSelectedDates([e.target.value])}
-                    required
-                  >
-                    <option value="" disabled>
-                      Select a date
-                    </option>
-                    {/* {eventCenter.availability.map((availDate) => (
-                      <option key={availDate} value={availDate}>
-                        {availDate}
-                      </option>
-                    ))} */}
-                  </select>
-                </div>
-              )}
-              {isMoreThanOneDay && (
-                <button
-                  type="button"
-                  onClick={handleAddDate}
-                  className="text-blue-600 text-sm block w-full text-right hover:underline"
-                >
-                  Add another date
-                </button>
-              )}
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center border rounded-md px-3 py-2">
-                <User className="w-4 h-4 text-gray-600 mr-2" />
-                <select
-                  className="w-full text-gray-600 text-sm focus:outline-none"
-                  value={numberOfGuests}
-                  onChange={(e) => setNumberOfGuests(e.target.value)}
-                  required
-                >
-                  <option value="" disabled hidden>
-                    Number of guests
-                  </option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5+">5+</option>
-                </select>
+          <div className="space-y-4 mb-6">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                What&apos;s Included
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Spacious venue with modern amenities</p>
+                <p>• Professional event support team</p>
+                <p>• Flexible seating arrangements</p>
+                <p>• High-speed Wi-Fi and AV equipment</p>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full cursor-pointer bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold"
-            >
-              Book {eventCenter.totalAmount ? `₦${eventCenter.totalAmount.toLocaleString()}` : "now"}
-            </button>
-            <hr className="mb-2" />
-            <div className="flex justify-between items-center mt-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Pricing</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Starting from</span>
+                <span className="text-2xl font-bold text-[#0047AB]">
+                  ₦{eventCenter.depositAmount.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Final price depends on event duration and guest count
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsDatePickerOpen(true)}
+            className="w-full bg-[#0047AB] text-white py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+          >
+            Choose Date & Time
+          </button>
+
+          {lastBooking && (
+            <div className="mt-6 border border-green-200 bg-green-50 rounded-lg p-4">
+              <h3 className="font-semibold text-green-900 mb-2">
+                Latest Booking
+              </h3>
+              <div className="space-y-1 text-sm text-green-800">
+                <p>Date: {new Date(lastBooking.date).toLocaleDateString()}</p>
+                <p>Time: {lastBooking.time}</p>
+                <p>Guests: {lastBooking.guests}</p>
+                <p>Price: ₦{lastBooking.price.toLocaleString()}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-2">
+                Need help with your booking?
+              </p>
+              <p className="text-sm font-medium text-[#0047AB]">
+                {eventCenter.contact}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Share</span>
               <div className="flex gap-3">
                 <Image
                   src="/whatsapp.png"
                   alt="WhatsApp"
-                  width={20}
-                  height={20}
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
                 />
                 <Image
                   src="/facebook.png"
                   alt="Facebook"
-                  width={20}
-                  height={20}
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
                 />
                 <Image
                   src="/twitter.png"
                   alt="Twitter"
-                  width={20}
-                  height={20}
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
                 />
                 <Image
                   src="/email.png"
                   alt="Email"
-                  width={20}
-                  height={20}
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
                 />
                 <Image
                   src="/pinterest.png"
                   alt="Pinterest"
-                  width={20}
-                  height={20}
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
                 />
               </div>
             </div>
+          </div>
 
-            <p className="text-xs text-gray-500 mt-4">
-              Note: Invoice amount will be displayed in NGN currency but can be
-              paid with Credit Cards in other currencies.
-            </p>
-          </form>
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Secure booking • Flexible cancellation • Professional service guaranteed
+          </p>
         </aside>
       </div>
+
+      <DatePicker
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        onBook={handleBook}
+      />
+
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews
         reviews={reviews}

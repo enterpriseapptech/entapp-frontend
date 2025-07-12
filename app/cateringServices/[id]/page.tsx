@@ -1,16 +1,18 @@
-// pages/catering-service/[id].tsx
 "use client";
 import Link from "next/link";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
-import { Calendar, Wifi, Shield, User, FileText, Ban } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+// import { Calendar, Wifi, Shield, User, FileText, Ban } from "lucide-react";
+import { FileText, Ban } from "lucide-react";
+// import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
 import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
+import DatePicker from "@/components/ui/DatePicker";
 
 interface CateringService {
   id: string;
@@ -38,11 +40,18 @@ interface CateringService {
   contact: string | null;
   eventTypes: string[];
 }
+interface BookingData {
+  date: string;
+  time: string;
+  guests: number;
+  price: number;
+}
+
 
 export default function CateringServiceDetails() {
   const params = useParams();
   const { id } = params as { id: string };
-  const router = useRouter();
+  // const router = useRouter();
 
   const { data: cateringData, isLoading, error } = useGetCateringByIdQuery(id);
 
@@ -53,7 +62,9 @@ export default function CateringServiceDetails() {
         name: cateringData.name,
         tagLine: cateringData.tagLine,
         description: cateringData.description,
-        images: cateringData.images.length ? cateringData.images : ["/catering.png"],
+        images: cateringData.images.length
+          ? cateringData.images
+          : ["/catering.png"],
         streetAddress: cateringData.streetAddress,
         streetAddress2: cateringData.streetAddress2,
         city: cateringData.city,
@@ -77,9 +88,11 @@ export default function CateringServiceDetails() {
     : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false);
-  const [numberOfGuests, setNumberOfGuests] = useState<string>("");
+  // const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
+  // const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false);
+  // const [numberOfGuests, setNumberOfGuests] = useState<string>("");
 
   const images = cateringService?.images || ["/catering.png"];
 
@@ -135,7 +148,9 @@ export default function CateringServiceDetails() {
   const handleNextReview = () =>
     setCurrentReviewPage((prev) => (prev + 1) % totalReviewPages);
   const handlePrevReview = () =>
-    setCurrentReviewPage((prev) => (prev - 1 + totalReviewPages) % totalReviewPages);
+    setCurrentReviewPage(
+      (prev) => (prev - 1 + totalReviewPages) % totalReviewPages
+    );
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -145,36 +160,37 @@ export default function CateringServiceDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const handleAddDate = () => {
-    setSelectedDates([...selectedDates, ""]);
-  };
+  // const handleAddDate = () => {
+  //   setSelectedDates([...selectedDates, ""]);
+  // };
 
-  const handleDateChange = (index: number, date: string) => {
-    const updatedDates = [...selectedDates];
-    updatedDates[index] = date;
-    setSelectedDates(updatedDates);
-  };
+  // const handleDateChange = (index: number, date: string) => {
+  //   const updatedDates = [...selectedDates];
+  //   updatedDates[index] = date;
+  //   setSelectedDates(updatedDates);
+  // };
 
-  const handleRemoveDate = (index: number) => {
-    const updatedDates = selectedDates.filter((_, i) => i !== index);
-    setSelectedDates(updatedDates);
-  };
+  // const handleRemoveDate = (index: number) => {
+  //   const updatedDates = selectedDates.filter((_, i) => i !== index);
+  //   setSelectedDates(updatedDates);
+  // };
 
-  const handleBook = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedDates.length === 0 || selectedDates.some((date) => !date)) {
-      alert("Please select all dates.");
-      return;
-    }
-    if (!numberOfGuests) {
-      alert("Please select the number of guests.");
-      return;
-    }
-    router.push(
-      `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
-        cateringService!.startPrice
-      }&serviceTitle=${cateringService!.name}`
-    );
+  const handleBook = (bookingData: BookingData) => {
+    setLastBooking(bookingData);
+    console.log('Booking confirmed:', bookingData);
+    // if (selectedDates.length === 0 || selectedDates.some((date) => !date)) {
+    //   alert("Please select all dates.");
+    //   return;
+    // }
+    // if (!numberOfGuests) {
+    //   alert("Please select the number of guests.");
+    //   return;
+    // }
+    // router.push(
+    //   `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
+    //     cateringService!.startPrice
+    //   }&serviceTitle=${cateringService!.name}`
+    // );
   };
 
   // Loading state
@@ -274,7 +290,7 @@ export default function CateringServiceDetails() {
               width={800}
               height={400}
               className="w-full h-80 object-cover rounded-lg"
-              unoptimized={!images[currentImageIndex].startsWith('/')}
+              unoptimized={!images[currentImageIndex].startsWith("/")}
             />
             <button
               onClick={handlePrevImage}
@@ -341,7 +357,10 @@ export default function CateringServiceDetails() {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {cateringService.eventTypes.map((type, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                  >
                     {type}
                   </span>
                 ))}
@@ -355,7 +374,10 @@ export default function CateringServiceDetails() {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {cateringService.cuisine.map((cuisine, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                  >
                     {cuisine}
                   </span>
                 ))}
@@ -369,7 +391,10 @@ export default function CateringServiceDetails() {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {cateringService.dishTypes.map((dishType, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                  >
                     {dishType}
                   </span>
                 ))}
@@ -404,14 +429,16 @@ export default function CateringServiceDetails() {
                 </svg>
                 <span className="text-gray-600 text-sm">
                   {cateringService.streetAddress}
-                  {cateringService.streetAddress2 && `, ${cateringService.streetAddress2}`}
-                  , {cateringService.city}, {cateringService.state}, {cateringService.country}
+                  {cateringService.streetAddress2 &&
+                    `, ${cateringService.streetAddress2}`}
+                  , {cateringService.city}, {cateringService.state},{" "}
+                  {cateringService.country}
                 </span>
               </div>
             </div>
 
             {/* Amenities */}
-            <div>
+            {/* <div>
               <h3 className="text-md font-semibold text-gray-800 mb-1 mt-2">
                 Amenities
               </h3>
@@ -444,7 +471,7 @@ export default function CateringServiceDetails() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Capacity */}
             <div className="pb-10">
@@ -491,7 +518,9 @@ export default function CateringServiceDetails() {
               </h3>
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">{cateringService.termsOfUse}</span>
+                <span className="text-gray-600 text-sm">
+                  {cateringService.termsOfUse}
+                </span>
               </div>
             </div>
 
@@ -502,7 +531,9 @@ export default function CateringServiceDetails() {
               </h3>
               <div className="flex items-center gap-2">
                 <Ban className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">{cateringService.cancellationPolicy}</span>
+                <span className="text-gray-600 text-sm">
+                  {cateringService.cancellationPolicy}
+                </span>
               </div>
             </div>
 
@@ -512,183 +543,124 @@ export default function CateringServiceDetails() {
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Description
               </h3>
-              <p className="text-gray-600 text-xs">{cateringService.description}</p>
+              <p className="text-gray-600 text-xs">
+                {cateringService.description}
+              </p>
               <button className="text-blue-600 text-xs mt-2">Read more</button>
             </div>
           </div>
         </div>
 
         {/* Right Section: Booking Form */}
-        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-md sticky top-6">
-          <h2 className="text-md font-semibold text-gray-800 mb-4">Book Now</h2>
-          <form className="space-y-4" onSubmit={handleBook}>
-            <div>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="accent-blue-600"
-                  checked={isMoreThanOneDay}
-                  onChange={(e) => {
-                    setIsMoreThanOneDay(e.target.checked);
-                    if (!e.target.checked) {
-                      setSelectedDates(selectedDates.slice(0, 1));
-                    }
-                  }}
-                />
-                <span className="text-gray-600 text-sm">More than one day</span>
-              </label>
-            </div>
+        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-lg sticky top-6 h-[750px]">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Book Your Event
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Reserve our premium catering service for your special occasion
+            </p>
+          </div>
 
-            <div className="space-y-3">
-              {selectedDates.map((date, index) => (
-                <div key={index} className="relative flex items-center gap-2">
-                  <div className="flex-1 flex items-center border rounded-md px-3 py-2">
-                    <Calendar className="w-4 h-4 text-gray-600 mr-2" />
-                    <select
-                      className="w-full text-gray-600 text-sm focus:outline-none"
-                      value={date}
-                      onChange={(e) => handleDateChange(index, e.target.value)}
-                      required
-                    >
-                      <option value="" disabled>
-                        Select a date
-                      </option>
-                      {/* Placeholder for dynamic availability */}
-                      <option value="2025-07-10">2025-07-10</option>
-                      <option value="2025-07-11">2025-07-11</option>
-                      <option value="2025-07-12">2025-07-12</option>
-                    </select>
-                  </div>
-                  {isMoreThanOneDay && selectedDates.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDate(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ))}
-              {selectedDates.length === 0 && (
-                <div className="flex items-center border rounded-md px-3 py-2">
-                  <Calendar className="w-4 h-4 text-gray-600 mr-2" />
-                  <select
-                    className="w-full text-gray-600 text-sm focus:outline-none"
-                    value=""
-                    onChange={(e) => setSelectedDates([e.target.value])}
-                    required
-                  >
-                    <option value="" disabled>
-                      Select a date
-                    </option>
-                    {/* Placeholder for dynamic availability */}
-                    <option value="2025-07-10">2025-07-10</option>
-                    <option value="2025-07-11">2025-07-11</option>
-                    <option value="2025-07-12">2025-07-12</option>
-                  </select>
-                </div>
-              )}
-              {isMoreThanOneDay && (
-                <button
-                  type="button"
-                  onClick={handleAddDate}
-                  className="text-blue-600 text-sm block w-full text-right hover:underline"
-                >
-                  Add another date
-                </button>
-              )}
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center border rounded-md px-3 py-2">
-                <User className="w-4 h-4 text-gray-600 mr-2" />
-                <select
-                  className="w-full text-gray-600 text-sm focus:outline-none"
-                  value={numberOfGuests}
-                  onChange={(e) => setNumberOfGuests(e.target.value)}
-                  required
-                >
-                  <option value="" disabled hidden>
-                    Number of guests
-                  </option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5+">5+</option>
-                </select>
+          {/* Service Highlights */}
+          <div className="space-y-4 mb-6">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                What&apos;s Included
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Professional catering team</p>
+                <p>• Fresh, high-quality ingredients</p>
+                <p>• Complete event setup</p>
+                <p>• Customizable menu options</p>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full cursor-pointer bg-[#0047AB] text-white py-3 rounded-md hover:bg-blue-700 transition text-lg font-semibold"
-            >
-              Book ₦{cateringService.startPrice.toLocaleString()}
-            </button>
-            <hr className="mb-2" />
-            <div className="flex justify-between items-center mt-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Pricing</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Starting from</span>
+                <span className="text-2xl font-bold text-[#0047AB]">
+                  ₦{cateringService.startPrice.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Final price depends on menu selection and guest count
+              </p>
+            </div>
+          </div>
+
+          {/* Book Button */}
+          <button
+            onClick={() => setIsDatePickerOpen(true)}
+            className="w-full bg-[#0047AB] text-white py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+          >
+            Choose Date & Time
+          </button>
+
+          {/* Last Booking Display */}
+          {lastBooking && (
+            <div className="mt-6 border border-green-200 bg-green-50 rounded-lg p-4">
+              <h3 className="font-semibold text-green-900 mb-2">
+                Latest Booking
+              </h3>
+              <div className="space-y-1 text-sm text-green-800">
+                <p>Date: {new Date(lastBooking.date).toLocaleDateString()}</p>
+                <p>Time: {lastBooking.time}</p>
+                <p>Guests: {lastBooking.guests}</p>
+                <p>Price: ₦{lastBooking.price.toLocaleString()}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Contact Info */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-2">
+                Need help with your booking?
+              </p>
+              <p className="text-sm font-medium text-[#0047AB]">
+                {cateringService.contact}
+              </p>
+            </div>
+          </div>
+
+          {/* Share Section */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Share</span>
               <div className="flex gap-3">
-                <Image
-                  src="/whatsapp.png"
-                  alt="WhatsApp"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/facebook.png"
-                  alt="Facebook"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/twitter.png"
-                  alt="Twitter"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/email.png"
-                  alt="Email"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
-                <Image
-                  src="/pinterest.png"
-                  alt="Pinterest"
-                  width={20}
-                  height={20}
-                  className="w-6 h-6"
-                />
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">W</span>
+                </div>
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">F</span>
+                </div>
+                <div className="w-6 h-6 bg-blue-400 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">T</span>
+                </div>
+                <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">@</span>
+                </div>
+                <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">P</span>
+                </div>
               </div>
             </div>
+          </div>
 
-            <p className="text-xs text-gray-500 mt-4">
-              Note: Invoice amount will be displayed in NGN currency but can be
-              paid with Credit Cards in other currencies.
-            </p>
-          </form>
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Secure booking • Flexible cancellation • Professional service
+            guaranteed
+          </p>
         </aside>
       </div>
+      {/* Date Picker Modal */}
+      <DatePicker
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        onBook={handleBook}
+      />
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews
         reviews={reviews}
