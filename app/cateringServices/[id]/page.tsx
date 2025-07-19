@@ -660,6 +660,7 @@ export default function CateringServiceDetails() {
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
         onBook={handleBook}
+        startPrice={cateringService.startPrice}
       />
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews

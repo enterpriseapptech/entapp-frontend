@@ -9,12 +9,15 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useGetTimeSlotsByServiceProviderQuery } from "@/redux/services/timeslot";
+import { useCreateBookingMutation } from "@/redux/services/book";
 import { useParams } from "next/navigation";
+import type { CreateBookingRequest } from "@/redux/services/book";
 
 interface DatePickerProps {
   isOpen: boolean;
   onClose: () => void;
   onBook: (bookingData: BookingData) => void;
+  startPrice: number;
 }
 
 interface BookingData {
@@ -41,16 +44,24 @@ interface TimeSlot {
   deletedBy: string | null;
 }
 
-const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
+const DatePicker: React.FC<DatePickerProps> = ({
+  isOpen,
+  onClose,
+  onBook,
+  startPrice,
+}) => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [numberOfGuests, setNumberOfGuests] = useState<number>(1);
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 6)); // July 2025
   const [showUnavailableMessage, setShowUnavailableMessage] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const params = useParams();
   const { id } = params as { id: string };
+  const userId =
+    localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
 
   const {
     data: timeSlotsData,
@@ -60,6 +71,9 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
     { serviceId: id, limit: 100, offset: 0 },
     { skip: !id }
   );
+
+  const [createBooking, { isLoading: isBookingLoading }] =
+    useCreateBookingMutation();
 
   const availableDates = Array.from(
     new Set(
@@ -78,7 +92,6 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
     return timeSlotsData.data
       .filter(
         (slot: TimeSlot) =>
-          slot.isAvailable &&
           new Date(slot.startTime).toISOString().split("T")[0] === selectedDate
       )
       .map((slot: TimeSlot) => ({
@@ -92,10 +105,12 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
           minute: "2-digit",
           hour12: true,
         }),
+        isAvailable: slot.isAvailable && slot.bookingId === null,
+        fullSlot: slot,
       }));
   })();
 
-  const basePrice = 5000;
+  // const basePrice = 5000;
 
   const resetModal = () => {
     setStep(1);
@@ -103,6 +118,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
     setSelectedTime("");
     setNumberOfGuests(1);
     setShowUnavailableMessage(false);
+    setBookingError(null);
   };
 
   const handleClose = () => {
@@ -154,17 +170,63 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
     setStep(3);
   };
 
-  const handleConfirmBooking = () => {
-    setStep(4);
-    setTimeout(() => {
-      onBook({
-        date: selectedDate,
-        time: selectedTime,
-        guests: numberOfGuests,
-        price: basePrice,
-      });
-      handleClose();
-    }, 8000);
+  const handleConfirmBooking = async () => {
+    try {
+      const selectedSlot = availableTimeSlots.find(
+        (slot) => `${slot.start} – ${slot.end}` === selectedTime
+      );
+
+      if (!selectedSlot) {
+        setBookingError("Selected time slot is not available.");
+        return;
+      }
+      if (!userId) {
+        throw new Error("User ID not found in localStorage or sessionStorage");
+      }
+
+      const payload: CreateBookingRequest = {
+        customerId: userId,
+        timeslotId: [selectedSlot.fullSlot.id],
+        serviceType:
+          selectedSlot.fullSlot.serviceType === "EVENTCENTERS"
+            ? "EVENTCENTER"
+            : "CATERING",
+        totalBeforeDiscount: startPrice,
+        discount: 0,
+        totalAfterDiscount: startPrice,
+        bookingDates: [selectedDate],
+        isTermsAccepted: true,
+        isCancellationPolicyAccepted: true,
+        isLiabilityWaiverSigned: true,
+        source: "WEB",
+        serviceNotes: "Please ensure the hall is cleaned before the event.",
+        customerNotes: "Need additional chairs for guests.",
+        serviceId: id,
+        eventName: "Event Booking",
+        eventTheme: "",
+        eventType: "General",
+        description: "",
+        noOfGuest: numberOfGuests,
+        specialRequirements: [],
+      };
+
+      await createBooking(payload).unwrap();
+      setStep(4);
+      setTimeout(() => {
+        onBook({
+          date: selectedDate,
+          time: selectedTime,
+          guests: numberOfGuests,
+          price: startPrice,
+        });
+        handleClose();
+      }, 2000);
+    } catch (error: unknown) {
+      const apiError = error as { data?: { message?: string } };
+      setBookingError(
+        apiError?.data?.message || "Failed to create booking. Please try again."
+      );
+    }
   };
 
   const formatDateDisplay = (dateStr: string) =>
@@ -349,17 +411,28 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  {availableTimeSlots.map((slot, index) => (
-                    <button
-                      key={index}
-                      onClick={() =>
-                        handleTimeSelect(`${slot.start} – ${slot.end}`)
-                      }
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
-                    >
-                      {slot.start} – {slot.end}
-                    </button>
-                  ))}
+                  {availableTimeSlots.map((slot, index) => {
+                    const isDisabled = !slot.isAvailable;
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() =>
+                          !isDisabled &&
+                          handleTimeSelect(`${slot.start} – ${slot.end}`)
+                        }
+                        disabled={isDisabled}
+                        className={`px-3 py-2 border rounded-lg text-sm font-medium transition-colors
+        ${
+          isDisabled
+            ? "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
+            : "border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+        }`}
+                      >
+                        {slot.start} – {slot.end}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -431,7 +504,6 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
                       ))}
                     </select>
 
-                    {/* Custom dropdown icon */}
                     <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
                       <svg
                         className="h-4 w-4 text-gray-600"
@@ -456,17 +528,32 @@ const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, onBook }) => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Price</span>
                   <span className="text-lg font-semibold text-gray-900">
-                    ₦{basePrice.toLocaleString()}
+                    ₦{startPrice.toLocaleString()}
                   </span>
                 </div>
               </div>
 
+              {/* Error Message */}
+              {bookingError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700 text-center">
+                    {bookingError}
+                  </p>
+                </div>
+              )}
+
               {/* Confirm Button */}
               <button
                 onClick={handleConfirmBooking}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                disabled={isBookingLoading}
+                className={`w-full py-3 rounded-lg font-semibold transition-colors
+                  ${
+                    isBookingLoading
+                      ? "bg-blue-400 text-white cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
               >
-                Confirm & Book Now
+                {isBookingLoading ? "Booking..." : "Confirm & Book Now"}
               </button>
             </div>
           </div>

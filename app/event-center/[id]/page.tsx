@@ -4,7 +4,7 @@ import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
 import { FileText, Ban, BadgeCheck, Wifi, Shield } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
@@ -48,7 +48,7 @@ interface BookingData {
 export default function EventCenterDetails() {
   const params = useParams();
   const { id } = params as { id: string };
-  const router = useRouter();
+  // const router = useRouter();
 
   const { data: eventCenterData, isLoading, error } = useGetEventCenterByIdQuery(id);
 
@@ -150,9 +150,9 @@ export default function EventCenterDetails() {
   const handleBook = (bookingData: BookingData) => {
     setLastBooking(bookingData);
     console.log('Booking confirmed:', bookingData);
-    router.push(
-      `/payment?date=${bookingData.date}&time=${bookingData.time}&guests=${bookingData.guests}&totalCost=${bookingData.price}&eventTitle=${eventCenter!.name}`
-    );
+    // router.push(
+    //   `/payment?date=${bookingData.date}&time=${bookingData.time}&guests=&totalCost=${bookingData.price}&eventTitle=${eventCenter!.name}`
+    // );
   };
 
   if (isLoading) {
@@ -573,6 +573,7 @@ export default function EventCenterDetails() {
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
         onBook={handleBook}
+        startPrice={eventCenter.depositAmount}
       />
 
       <hr className="mb-4 mt-4 mx-30" />
