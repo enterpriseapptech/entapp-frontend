@@ -1,0 +1,652 @@
+"use client";
+import { ChevronDown, X, Search } from "lucide-react";
+import Header from "@/components/layouts/Header";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+
+type FilterType =
+  | "bookingType"
+  | "customerName"
+  | "customerEmail"
+  | "eventType"
+  | "dateAndTime"
+  | "invoiceStatus";
+
+export default function QuoteRequests() {
+  const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const [filters, setFilters] = useState<{
+    bookingType: string | null;
+    customerName: string | null;
+    customerEmail: string | null;
+    eventType: string | null;
+    dateAndTime: string | null;
+    invoiceStatus: string | null;
+  }>({
+    bookingType: null,
+    customerName: null,
+    customerEmail: null,
+    eventType: null,
+    dateAndTime: null,
+    invoiceStatus: null,
+  });
+
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
+  const [clickedFilter, setClickedFilter] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const quotes = [
+    {
+      requestId: "QR-2024-001",
+      customerName: "Jonnel Doe",
+      customerEmail: "jonneldoe@email.com",
+      eventType: "Wedding",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      invoiceStatus: "Sent",
+    },
+    {
+      requestId: "QR-2024-002",
+      customerName: "Jonnel Doe",
+      customerEmail: "jonneldoe@email.com",
+      eventType: "Birthday Party",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      invoiceStatus: "Pending",
+    },
+    {
+      requestId: "QR-2024-003",
+      customerName: "Jonnel Doe",
+      customerEmail: "jonneldoe@email.com",
+      eventType: "Wedding",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      invoiceStatus: "Sent",
+    },
+    {
+      requestId: "QR-2024-004",
+      customerName: "Jonnel Doe",
+      customerEmail: "jonneldoe@email.com",
+      eventType: "Birthday Party",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      invoiceStatus: "Pending",
+    },
+    {
+      requestId: "QR-2024-005",
+      customerName: "Jonnel Doe",
+      customerEmail: "jonneldoe@email.com",
+      eventType: "Wedding",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      invoiceStatus: "Sent",
+    },
+    {
+      requestId: "QR-2024-006",
+      customerName: "Jonnel Doe",
+      customerEmail: "jonneldoe@email.com",
+      eventType: "Birthday Party",
+      dateAndTime: "Feb 2, 2025, 5:00 PM",
+      invoiceStatus: "Pending",
+    },
+  ];
+
+  const uniqueEventTypes = [...new Set(quotes.map((quote) => quote.eventType))];
+  const uniqueCustomerNames = [
+    ...new Set(quotes.map((quote) => quote.customerName)),
+  ];
+  const uniqueCustomerEmails = [
+    ...new Set(quotes.map((quote) => quote.customerEmail)),
+  ];
+  const uniqueDateAndTimes = [
+    ...new Set(quotes.map((quote) => quote.dateAndTime)),
+  ].sort();
+  const uniqueInvoiceStatuses = [
+    ...new Set(quotes.map((quote) => quote.invoiceStatus)),
+  ];
+
+  const filteredQuotes = quotes.filter((quote) => {
+    return (
+      (!filters.bookingType || quote.eventType === filters.bookingType) &&
+      (!filters.customerName || quote.customerName === filters.customerName) &&
+      (!filters.customerEmail ||
+        quote.customerEmail === filters.customerEmail) &&
+      (!filters.dateAndTime || quote.dateAndTime === filters.dateAndTime) &&
+      (!filters.invoiceStatus || quote.invoiceStatus === filters.invoiceStatus)
+    );
+  });
+
+  const searchedQuotes = filteredQuotes.filter((quote) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      quote.requestId.toLowerCase().includes(query) ||
+      quote.customerName.toLowerCase().includes(query) ||
+      quote.customerEmail.toLowerCase().includes(query) ||
+      quote.eventType.toLowerCase().includes(query) ||
+      quote.dateAndTime.toLowerCase().includes(query) ||
+      quote.invoiceStatus.toLowerCase().includes(query)
+    );
+  });
+
+  const totalPages = Math.ceil(searchedQuotes.length / itemsPerPage);
+  const paginatedQuotes = searchedQuotes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      pageNumbers.push(1);
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      if (endPage - startPage < 2) {
+        if (startPage === 2) {
+          endPage = startPage + 2;
+        } else {
+          startPage = endPage - 2;
+        }
+      }
+
+      if (startPage > 2) {
+        pageNumbers.push("...");
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+
+      if (endPage < totalPages - 1) {
+        pageNumbers.push("...");
+      }
+
+      pageNumbers.push(totalPages);
+    }
+
+    return pageNumbers;
+  };
+
+  const applyFilter = (filterType: FilterType, value: string | null) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: value,
+    }));
+    setCurrentPage(1);
+    setIsFilterDropdownOpen(false);
+    setClickedFilter(null);
+  };
+
+  const removeFilter = (filterType: FilterType) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: null,
+    }));
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const toggleSubDropdown = (filter: string) => {
+    setClickedFilter((prev) => (prev === filter ? null : filter));
+  };
+
+  type Quote = {
+    requestId: string;
+    customerName: string;
+    customerEmail: string;
+    eventType: string;
+    dateAndTime: string;
+    invoiceStatus: string;
+  };
+
+  const handleViewQuote = (quote: Quote) => {
+    router.push(
+      `/eventServiceManagement/manage-quotes-details?requestId=${encodeURIComponent(
+        quote.requestId
+      )}&customerName=${encodeURIComponent(
+        quote.customerName
+      )}&customerEmail=${encodeURIComponent(
+        quote.customerEmail
+      )}&eventType=${encodeURIComponent(
+        quote.eventType
+      )}&dateAndTime=${encodeURIComponent(
+        quote.dateAndTime
+      )}&invoiceStatus=${encodeURIComponent(quote.invoiceStatus)}`
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <EventServiceSideBar
+        isOpen={isSidebarOpen}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
+
+      <div className="md:ml-[280px]">
+        <Header setIsSidebarOpen={setIsSidebarOpen} />
+
+        <main className="md:p-10 p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="md:text-xl text-md font-bold text-gray-950">
+              Quote Request List
+            </h1>
+          </div>
+
+          <div className="rounded-lg border bg-white shadow">
+            <div className="p-6">
+              <div className="flex md:flex-row flex-col justify-between md:items-center items-start gap-5">
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(filters).map(([key, value]) =>
+                    value ? (
+                      <button
+                        key={key}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium"
+                        onClick={() => removeFilter(key as FilterType)}
+                      >
+                        <span>
+                          {key.charAt(0).toUpperCase() + key.slice(1)}: {value}
+                        </span>
+                        <X className="w-3 h-3" />
+                      </button>
+                    ) : null
+                  )}
+                  <div className="relative">
+                    <button
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium"
+                      onClick={() =>
+                        setIsFilterDropdownOpen(!isFilterDropdownOpen)
+                      }
+                    >
+                      <span>More filters</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+
+                    {isFilterDropdownOpen && (
+                      <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <div className="py-1">
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("eventType")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("eventType")
+                              }
+                            >
+                              Event Type
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "eventType"
+                              : hoveredFilter === "eventType") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueEventTypes.map((type) => (
+                                  <button
+                                    key={type}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("bookingType", type)
+                                    }
+                                  >
+                                    {type}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("customerName")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("customerName")
+                              }
+                            >
+                              Customer Name
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "customerName"
+                              : hoveredFilter === "customerName") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueCustomerNames.map((name) => (
+                                  <button
+                                    key={name}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("customerName", name)
+                                    }
+                                  >
+                                    {name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("customerEmail")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("customerEmail")
+                              }
+                            >
+                              Customer Email
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "customerEmail"
+                              : hoveredFilter === "customerEmail") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueCustomerEmails.map((email) => (
+                                  <button
+                                    key={email}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("customerEmail", email)
+                                    }
+                                  >
+                                    {email}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("dateAndTime")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("dateAndTime")
+                              }
+                            >
+                              Date and Time
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "dateAndTime"
+                              : hoveredFilter === "dateAndTime") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueDateAndTimes.map((date) => (
+                                  <button
+                                    key={date}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("dateAndTime", date)
+                                    }
+                                  >
+                                    {date}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              !isMobile && setHoveredFilter("invoiceStatus")
+                            }
+                            onMouseLeave={() =>
+                              !isMobile && setHoveredFilter(null)
+                            }
+                          >
+                            <button
+                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() =>
+                                isMobile && toggleSubDropdown("invoiceStatus")
+                              }
+                            >
+                              Invoice Status
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {(isMobile
+                              ? clickedFilter === "invoiceStatus"
+                              : hoveredFilter === "invoiceStatus") && (
+                              <div
+                                className={`absolute ${
+                                  isMobile
+                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
+                                    : "left-full top-0 bg-white"
+                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
+                              >
+                                {uniqueInvoiceStatuses.map((status) => (
+                                  <button
+                                    key={status}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    onClick={() =>
+                                      applyFilter("invoiceStatus", status)
+                                    }
+                                  >
+                                    {status}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    className="w-full pl-10 pr-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-200 focus:ring-1 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto min-w-[800px]">
+                <thead>
+                  <tr className="border-t">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Request ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Customer Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Customer Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Event Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Date and Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Invoice Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedQuotes.map((quote, index) => (
+                    <tr key={index} className="border-t hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {quote.requestId}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {quote.customerName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {quote.customerEmail}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {quote.eventType}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                        {quote.dateAndTime}
+                      </td>
+                      <td className="px-6 py-4 text-sm whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                            quote.invoiceStatus === "Sent"
+                              ? "bg-green-50 text-green-700"
+                              : quote.invoiceStatus === "Pending"
+                              ? "bg-orange-50 text-orange-700"
+                              : "bg-gray-50 text-gray-700"
+                          }`}
+                        >
+                          {quote.invoiceStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm whitespace-nowrap">
+                        <button
+                          onClick={() => handleViewQuote(quote)}
+                          className="text-blue-600 hover:underline cursor-pointer"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+              >
+                <Image
+                  src="/leftArrow.png"
+                  alt="Previous"
+                  width={10}
+                  height={10}
+                  className="w-4 h-4"
+                  unoptimized
+                />
+                <span>Previous</span>
+              </button>
+              <div className="flex gap-2 flex-wrap justify-center">
+                {getPageNumbers().map((page, index) => (
+                  <button
+                    key={index}
+                    onClick={() =>
+                      typeof page === "number" && setCurrentPage(page)
+                    }
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      page === currentPage
+                        ? "bg-blue-600 text-white"
+                        : typeof page === "number"
+                        ? "text-gray-600 hover:bg-gray-100"
+                        : "text-gray-600 cursor-default"
+                    }`}
+                    disabled={typeof page !== "number"}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+              >
+                <span>Next</span>
+                <Image
+                  src="/rightArrow.png"
+                  alt="Next"
+                  width={10}
+                  height={10}
+                  className="w-4 h-4"
+                  unoptimized
+                />
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -73,7 +73,7 @@ export interface CreateCateringRequest {
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://51.20.143.145:8000",
+    baseUrl: "http://13.61.137.254:8000",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||

@@ -205,7 +205,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         eventName: "Event Booking",
         eventTheme: "",
         eventType: "General",
-        description: "",
+        description: "This event",
         noOfGuest: numberOfGuests,
         specialRequirements: [],
       };

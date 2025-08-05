@@ -46,7 +46,6 @@ export interface CreateBookingResponse {
   rescheduledBy: string | null;
   rescheduledAt: string | null;
   previousDates: string[];
-  cancelledBy: string | null;
   canceledAt: string | null;
   cancelationReason: string | null;
   createdAt: string;
@@ -55,10 +54,21 @@ export interface CreateBookingResponse {
   deletedBy: string | null;
 }
 
+export interface GetBookingsByServiceProviderResponse {
+  count: number;
+  data: CreateBookingResponse[];
+}
+
+export interface GetBookingsByServiceProviderQueryParams {
+  serviceProvider: string;
+  limit?: number;
+  offset?: number;
+}
+
 export const bookingApi = createApi({
   reducerPath: "bookingApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://51.20.143.145:8000",
+    baseUrl: "http://13.61.137.254:8000",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||
@@ -81,7 +91,21 @@ export const bookingApi = createApi({
         },
       }),
     }),
+    getBookingsByServiceProvider: builder.query<
+      GetBookingsByServiceProviderResponse,
+      GetBookingsByServiceProviderQueryParams
+    >({
+      query: ({ serviceProvider, limit = 10, offset = 0 }) => ({
+        url: `/booking`,
+        method: "GET",
+        params: {
+          serviceProvider,
+          limit,
+          offset,
+        },
+      }),
+    }),
   }),
 });
 
-export const { useCreateBookingMutation } = bookingApi;
+export const { useCreateBookingMutation, useGetBookingsByServiceProviderQuery } = bookingApi;

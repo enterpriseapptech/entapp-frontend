@@ -12,6 +12,7 @@ import {
 } from "../../../../redux/services/timeslot";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import { useDeleteTimeSlotMutation } from "../../../../redux/services/timeslot";
+import { useGetBookingsByServiceProviderQuery } from "../../../../redux/services/book";
 import Notification from "../../../../components/ui/Notification";
 
 const LoadingSpinner = () => {
@@ -21,9 +22,6 @@ const LoadingSpinner = () => {
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 border-4 border-t-[#0047AB] border-gray-200 rounded-full animate-spin"></div>
         </div>
-        <p className="mt-4 text-sm font-medium text-gray-700">
-          Loading Event Center Details...
-        </p>
       </div>
     </div>
   );
@@ -42,7 +40,6 @@ export default function EventCenterDetails() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteTimeSlot] = useDeleteTimeSlotMutation();
   const serviceType = "EVENTCENTER" as const;
- 
 
   const searchParams = useSearchParams();
   const userId =
@@ -69,6 +66,19 @@ export default function EventCenterDetails() {
       offset: 0,
     },
     { skip: !id }
+  );
+
+  const {
+    data: bookingsData,
+    isLoading: isBookingsLoading,
+    error: bookingsError,
+  } = useGetBookingsByServiceProviderQuery(
+    {
+      serviceProvider: eventCenter?.id || "",
+      limit: 10,
+      offset: 0,
+    },
+    { skip: !eventCenter || isEventCenterLoading }
   );
 
   const [createTimeSlots, { isLoading: isCreating }] =
@@ -245,10 +255,6 @@ export default function EventCenterDetails() {
                   label="Venue Layout"
                   value={eventCenter.venueLayout}
                 />
-                {/* <DetailRow
-                  label="Location"
-                  value={`${eventCenter.city}, ${eventCenter.state}`}
-                /> */}
                 <DetailRow
                   label="Street"
                   value={`${eventCenter.streetAddress}${
@@ -261,7 +267,6 @@ export default function EventCenterDetails() {
                   label="Postal Code"
                   value={eventCenter.postal}
                 />
-                {/* <DetailRow label="Country" value={eventCenter.country} /> */}
                 <DetailRow label="Created At" value={formattedDate} />
               </div>
               <div className="space-y-3">
@@ -295,7 +300,8 @@ export default function EventCenterDetails() {
             </div>
           </div>
 
-          <div className="bg-white shadow-lg rounded-lg p-6">
+          {/* Available Time Slots */}
+          <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 Available Time Slots
@@ -324,7 +330,6 @@ export default function EventCenterDetails() {
                     .map((slot) => (
                       <tr key={slot.id} className="border-b">
                         <td className="px-4 py-2 text-gray-600">
-                          {" "}
                           {new Date(slot.startTime).toLocaleDateString(
                             "en-GB",
                             {
@@ -353,6 +358,66 @@ export default function EventCenterDetails() {
                         </td>
                       </tr>
                     ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Bookings */}
+          <div className="bg-white shadow-lg rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Bookings</h2>
+            </div>
+            {isBookingsLoading ? (
+              <p className="text-sm text-gray-500">Loading bookings...</p>
+            ) : bookingsError ? (
+              <p className="text-sm text-red-500">Error loading bookings.</p>
+            ) : !bookingsData?.data.length ? (
+              <p className="text-sm text-gray-500">No bookings found.</p>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="bg-gray-100 text-xs uppercase">
+                  <tr>
+                    <th className="px-4 py-2 text-black">Date</th>
+                    <th className="px-4 py-2 text-black">Status</th>
+                    <th className="px-4 py-2 text-black">Booking Reference</th>
+                    <th className="px-4 py-2 text-black">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookingsData.data.map((booking) => (
+                    <tr key={booking.id} className="border-b">
+                      <td className="px-4 py-2 text-gray-600">
+                        {new Date(booking.bookingDates[0]).toLocaleDateString(
+                          "en-GB",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-gray-600">
+                        <span
+                          className={`text-xs font-medium ${
+                            booking.status === "PENDING"
+                              ? "text-yellow-600"
+                              : booking.status === "CONFIRMED"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-gray-600">
+                        {booking.bookingReference}
+                      </td>
+                      <td className="px-4 py-2 text-gray-600">
+                        ₦{booking.totalAfterDiscount.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
