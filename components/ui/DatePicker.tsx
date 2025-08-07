@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Calendar,
   Clock,
-  User,
   X,
   CheckCircle,
   ChevronLeft,
@@ -44,6 +43,11 @@ interface TimeSlot {
   deletedBy: string | null;
 }
 
+enum SpecialRequirement {
+  WHEELCHAIRACCESS = "WHEELCHAIRACCESS",
+  TEMPERATUREADJUSTMENT = "TEMPERATUREADJUSTMENT",
+}
+
 const DatePicker: React.FC<DatePickerProps> = ({
   isOpen,
   onClose,
@@ -54,7 +58,18 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [numberOfGuests, setNumberOfGuests] = useState<number>(1);
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 6)); // July 2025
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [serviceType, setServiceType] = useState("");
+  const [source, setSource] = useState<"WEB" | "MOBILE">("WEB");
+  const [serviceNotes, setServiceNotes] = useState("");
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [eventTheme, setEventTheme] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [description, setDescription] = useState("");
+  const [specialRequirement, setSpecialRequirement] = useState<
+    SpecialRequirement | ""
+  >("");
+
   const [showUnavailableMessage, setShowUnavailableMessage] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -110,13 +125,19 @@ const DatePicker: React.FC<DatePickerProps> = ({
       }));
   })();
 
-  // const basePrice = 5000;
-
   const resetModal = () => {
     setStep(1);
     setSelectedDate("");
     setSelectedTime("");
     setNumberOfGuests(1);
+    setServiceType("");
+    setSource("WEB");
+    setServiceNotes("");
+    setCustomerNotes("");
+    setEventTheme("");
+    setEventType("");
+    setDescription("");
+    setSpecialRequirement("");
     setShowUnavailableMessage(false);
     setBookingError(null);
   };
@@ -198,16 +219,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
         isTermsAccepted: true,
         isCancellationPolicyAccepted: true,
         isLiabilityWaiverSigned: true,
-        source: "WEB",
-        serviceNotes: "Please ensure the hall is cleaned before the event.",
-        customerNotes: "Need additional chairs for guests.",
+        source,
+        serviceNotes,
+        customerNotes,
         serviceId: id,
         eventName: "Event Booking",
-        eventTheme: "",
-        eventType: "General",
-        description: "This event",
+        eventTheme,
+        eventType,
+        description,
         noOfGuest: numberOfGuests,
-        specialRequirements: [],
+        specialRequirements: specialRequirement ? [specialRequirement] : [],
       };
 
       await createBooking(payload).unwrap();
@@ -249,7 +270,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl transform transition-all  max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
@@ -264,74 +285,74 @@ const DatePicker: React.FC<DatePickerProps> = ({
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
+        <div className="overflow-y-auto p-6 space-y-6 grow">
+          {/* Step 1: Choose a Date */}
+          {step === 1 && (
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+                Choose a Date
+              </h2>
 
-        {/* Step 1: Choose a Date */}
-        {step === 1 && (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-              Choose a Date
-            </h2>
-
-            {isLoading ? (
-              <div className="text-center text-gray-600">Loading...</div>
-            ) : error ? (
-              <div className="text-center text-red-600">
-                Error loading available dates. Please try again.
-              </div>
-            ) : (
-              <>
-                {/* Month Navigation */}
-                <div className="flex items-center justify-between mb-6">
-                  <button
-                    onClick={() => navigateMonth("prev")}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {currentMonth.toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </h3>
-                  <button
-                    onClick={() => navigateMonth("next")}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                  </button>
+              {isLoading ? (
+                <div className="text-center text-gray-600">Loading...</div>
+              ) : error ? (
+                <div className="text-center text-red-600">
+                  Error loading available dates. Please try again.
                 </div>
-
-                {/* Calendar */}
-                <div className="grid grid-cols-7 gap-1 mb-4">
-                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                    <div
-                      key={day}
-                      className="text-center text-sm font-medium text-gray-500 py-2"
+              ) : (
+                <>
+                  {/* Month Navigation */}
+                  <div className="flex items-center justify-between mb-6">
+                    <button
+                      onClick={() => navigateMonth("prev")}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                      {day}
-                    </div>
-                  ))}
-                  {getDaysInMonth(currentMonth).map((day, index) => {
-                    if (day === null) {
-                      return <div key={index} className="h-10"></div>;
-                    }
+                      <ChevronLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {currentMonth.toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </h3>
+                    <button
+                      onClick={() => navigateMonth("next")}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-600" />
+                    </button>
+                  </div>
 
-                    const dateStr = formatDate(
-                      currentMonth.getFullYear(),
-                      currentMonth.getMonth(),
-                      day
-                    );
-                    const isAvailable = isDateAvailable(dateStr);
-                    const isToday =
-                      new Date().toDateString() ===
-                      new Date(dateStr).toDateString();
+                  {/* Calendar */}
+                  <div className="grid grid-cols-7 gap-1 mb-4">
+                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                      <div
+                        key={day}
+                        className="text-center text-sm font-medium text-gray-500 py-2"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                    {getDaysInMonth(currentMonth).map((day, index) => {
+                      if (day === null) {
+                        return <div key={index} className="h-10"></div>;
+                      }
 
-                    return (
-                      <div key={index} className="relative">
-                        <button
-                          onClick={() => handleDateClick(day)}
-                          className={`
+                      const dateStr = formatDate(
+                        currentMonth.getFullYear(),
+                        currentMonth.getMonth(),
+                        day
+                      );
+                      const isAvailable = isDateAvailable(dateStr);
+                      const isToday =
+                        new Date().toDateString() ===
+                        new Date(dateStr).toDateString();
+
+                      return (
+                        <div key={index} className="relative">
+                          <button
+                            onClick={() => handleDateClick(day)}
+                            className={`
                             w-10 h-10 rounded-full text-sm font-medium transition-all
                             ${
                               isAvailable
@@ -340,241 +361,354 @@ const DatePicker: React.FC<DatePickerProps> = ({
                             }
                             ${isToday ? "ring-2 ring-blue-500" : ""}
                           `}
-                          disabled={!isAvailable}
-                        >
-                          {day}
-                        </button>
-                        {/* Blue dot for available dates */}
-                        {isAvailable && (
-                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>Available</span>
+                            disabled={!isAvailable}
+                          >
+                            {day}
+                          </button>
+                          {/* Blue dot for available dates */}
+                          {isAvailable && (
+                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    <span>Unavailable</span>
+
+                  {/* Legend */}
+                  <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>Available</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                      <span>Unavailable</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Unavailable message */}
-                {showUnavailableMessage && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-700 text-center">
-                      This date is not available. Please choose another date.
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Step 2: Select a Time */}
-        {step === 2 && (
-          <div className="p-6">
-            <div className="flex items-center mb-6">
-              <button
-                onClick={() => setStep(1)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Select a Time
-              </h2>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-2">Available slots for</p>
-              <p className="font-medium text-gray-900">
-                {formatDateDisplay(selectedDate)}
-              </p>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Available Time Slots
-              </h3>
-
-              {availableTimeSlots.length === 0 ? (
-                <p className="text-sm text-gray-600">
-                  No available time slots for this date.
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {availableTimeSlots.map((slot, index) => {
-                    const isDisabled = !slot.isAvailable;
-
-                    return (
-                      <button
-                        key={index}
-                        onClick={() =>
-                          !isDisabled &&
-                          handleTimeSelect(`${slot.start} – ${slot.end}`)
-                        }
-                        disabled={isDisabled}
-                        className={`px-3 py-2 border rounded-lg text-sm font-medium transition-colors
-        ${
-          isDisabled
-            ? "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
-            : "border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-        }`}
-                      >
-                        {slot.start} – {slot.end}
-                      </button>
-                    );
-                  })}
-                </div>
+                  {/* Unavailable message */}
+                  {showUnavailableMessage && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-700 text-center">
+                        This date is not available. Please choose another date.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 3: Confirm Your Details */}
-        {step === 3 && (
-          <div className="p-6">
-            <div className="flex items-center mb-6">
-              <button
-                onClick={() => setStep(2)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Confirm Your Details
-              </h2>
-            </div>
-
-            <div className="space-y-6">
-              {/* Service */}
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm text-gray-600">Service</p>
-                  <p className="font-medium text-gray-900">Catering Service</p>
-                </div>
+          {/* Step 2: Select a Time */}
+          {step === 2 && (
+            <div className="p-6">
+              <div className="flex items-center mb-6">
+                <button
+                  onClick={() => setStep(1)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Select a Time
+                </h2>
               </div>
 
-              {/* Date */}
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Date</p>
-                  <p className="font-medium text-gray-900">
-                    {formatDateDisplay(selectedDate)}
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-2">
+                  Available slots for
+                </p>
+                <p className="font-medium text-gray-900">
+                  {formatDateDisplay(selectedDate)}
+                </p>
+              </div>
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Available Time Slots
+                </h3>
+
+                {availableTimeSlots.length === 0 ? (
+                  <p className="text-sm text-gray-600">
+                    No available time slots for this date.
                   </p>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableTimeSlots.map((slot, index) => {
+                      const isDisabled = !slot.isAvailable;
+
+                      return (
+                        <button
+                          key={index}
+                          onClick={() =>
+                            !isDisabled &&
+                            handleTimeSelect(`${slot.start} – ${slot.end}`)
+                          }
+                          disabled={isDisabled}
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium transition-colors
+          ${
+            isDisabled
+              ? "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
+              : "border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+          }`}
+                        >
+                          {slot.start} – {slot.end}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Confirm Your Details */}
+          {step === 3 && (
+            <div className="p-6">
+              <div className="flex items-center mb-6">
+                <button
+                  onClick={() => setStep(2)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Confirm Your Details
+                </h2>
               </div>
 
-              {/* Time */}
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gray-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Time</p>
-                  <p className="font-medium text-gray-900">{selectedTime}</p>
-                </div>
-              </div>
-
-              {/* Guests */}
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-gray-600" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 mb-2">Number of guests</p>
-                  <div className="relative">
+              <div className="space-y-4">
+                {/* Service Type and Source */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Service Type
+                    </label>
                     <select
+                      value={serviceType}
+                      onChange={(e) => setServiceType(e.target.value)}
+                      className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">Select a service</option>
+                      <option value="EVENTCENTER">Event Center</option>
+                      <option value="CATERING">Catering</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Source
+                    </label>
+                    <select
+                      value={source}
+                      onChange={(e) =>
+                        setSource(e.target.value as "WEB" | "MOBILE")
+                      }
+                      className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="WEB">Web</option>
+                      <option value="MOBILE">Mobile</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Date and Time */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Date
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formatDateDisplay(selectedDate)}
+                        readOnly
+                        className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-sm"
+                      />
+                      <Calendar className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Time
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={selectedTime}
+                        readOnly
+                        className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-sm"
+                      />
+                      <Clock className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Type and Number of Guests */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Type
+                    </label>
+                    <input
+                      type="text"
+                      value={eventType}
+                      onChange={(e) => setEventType(e.target.value)}
+                      className="w-full  text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Enter event type"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Guests
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
                       value={numberOfGuests}
                       onChange={(e) =>
                         setNumberOfGuests(parseInt(e.target.value))
                       }
-                      className="w-full appearance-none bg-gray-100 text-gray-800 px-4 py-2 border border-gray-400 rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                        <option key={num} value={num}>
-                          {num} {num === 1 ? "guest" : "guests"}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                      <svg
-                        className="h-4 w-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
+                      className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="e.g. 2000"
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* Price */}
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Price</span>
-                  <span className="text-lg font-semibold text-gray-900">
-                    ₦{startPrice.toLocaleString()}
-                  </span>
+                {/* Event Theme and Budget Range (Optional) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Event Theme
+                    </label>
+                    <input
+                      type="text"
+                      value={eventTheme}
+                      onChange={(e) => setEventTheme(e.target.value)}
+                      className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Enter event theme"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Error Message */}
-              {bookingError && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-700 text-center">
-                    {bookingError}
-                  </p>
+                {/* Service Notes and Customer Notes */}
+                <div className="">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Service Notes
+                    </label>
+                    <textarea
+                      value={serviceNotes}
+                      rows={3}
+                      onChange={(e) => setServiceNotes(e.target.value)}
+                      className="w-full px-3 text-gray-400 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Enter service notes"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Customer Notes
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={customerNotes}
+                      onChange={(e) => setCustomerNotes(e.target.value)}
+                      className="w-full px-3 text-gray-400 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Enter customer notes"
+                    />
+                  </div>
                 </div>
-              )}
 
-              {/* Confirm Button */}
-              <button
-                onClick={handleConfirmBooking}
-                disabled={isBookingLoading}
-                className={`w-full py-3 rounded-lg font-semibold transition-colors
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Tell us more about your event..."
+                  />
+                </div>
+
+                {/* Special Requirement */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Special Requirement
+                  </label>
+                  <select
+                    value={specialRequirement}
+                    onChange={(e) =>
+                      setSpecialRequirement(
+                        e.target.value as SpecialRequirement | ""
+                      )
+                    }
+                    className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="" className="">Select a requirement</option>
+                    <option value={SpecialRequirement.WHEELCHAIRACCESS}>
+                      Wheelchair Access
+                    </option>
+                    <option value={SpecialRequirement.TEMPERATUREADJUSTMENT}>
+                      Temperature Adjustment
+                    </option>
+                  </select>
+                </div>
+
+                {/* Price */}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Price</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      ₦{startPrice.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {bookingError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700 text-center">
+                      {bookingError}
+                    </p>
+                  </div>
+                )}
+
+                {/* Confirm Button */}
+                <button
+                  onClick={handleConfirmBooking}
+                  disabled={isBookingLoading}
+                  className={`w-full py-3 rounded-lg font-semibold transition-colors mt-6
                   ${
                     isBookingLoading
                       ? "bg-blue-400 text-white cursor-not-allowed"
                       : "bg-blue-600 text-white hover:bg-blue-700"
                   }`}
-              >
-                {isBookingLoading ? "Booking..." : "Confirm & Book Now"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Booking Confirmed */}
-        {step === 4 && (
-          <div className="p-6 text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+                >
+                  {isBookingLoading ? "Booking..." : "Confirm & Book Now"}
+                </button>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Booking Confirmed!
-              </h2>
-              <p className="text-gray-600">
-                You&apos;ll receive a confirmation email shortly.
-              </p>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Step 4: Booking Confirmed */}
+          {step === 4 && (
+            <div className="p-6 text-center">
+              <div className="mb-6 cursor-pointer">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Booking Confirmed!
+                </h2>
+                <p className="text-gray-600">
+                  You&apos;ll receive a confirmation email shortly.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

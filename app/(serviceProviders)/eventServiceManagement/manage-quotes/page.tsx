@@ -3,7 +3,7 @@ import { ChevronDown, X, Search } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+// import Link from "next/link";
 import { useRouter } from "next/navigation";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 
