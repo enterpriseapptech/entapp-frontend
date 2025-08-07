@@ -43,7 +43,7 @@ export default function FeaturedVenues({ heading }: FeaturedProps) {
     imageSrc: venue.images[0] || "/placeholder-image.png",
     label: "Featured",
     title: venue.description,
-    location: `${venue.city}, ${venue.state}, ${venue.country}`,
+    location: `${venue.city}`,
     price: `₦${venue.depositAmount.toLocaleString()}`,
     name: "Event Hall",
   })) ?? [];
