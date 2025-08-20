@@ -11,8 +11,8 @@ export interface EventCenter {
   serviceProviderId: string;
   name: string;
   eventTypes: string[];
-  depositAmount: number;
-  totalAmount?: number;
+  discountPercentage: number;
+  depositPercentage: number;
   description: string;
   pricingPerSlot: number;
   sittingCapacity: number;
@@ -27,8 +27,8 @@ export interface EventCenter {
   location: string;
   postal: string;
   status: string;
-  rating?: number;
   paymentRequired: boolean;
+  rating: number | null;
   contact: string;
   createdAt: string;
   updatedAt: string;
@@ -45,8 +45,8 @@ export interface CreateEventCenterRequest {
   serviceProviderId: string;
   name: string;
   eventTypes: string[];
-  depositAmount: number;
-  totalAmount: number;
+  discountPercentage?: number;
+  depositPercentage: number;
   description: string;
   pricingPerSlot: number;
   sittingCapacity: number;
@@ -55,12 +55,13 @@ export interface CreateEventCenterRequest {
   termsOfUse: string;
   cancellationPolicy: string;
   streetAddress: string;
-  streetAddress2: string | null;
+  streetAddress2?: string | null;
   city: string;
   location: string;
   contact: string;
   postal: string;
   status: string;
+  // ❌ no `images` here since upload handled separately
 }
 
 export const eventsApi = createApi({

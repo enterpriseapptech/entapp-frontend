@@ -30,13 +30,12 @@ const amenitiesOptions = [
   "SOUND_SYSTEM",
 ];
 
-
 const schema = z.object({
   serviceProviderId: z.string().uuid("Invalid service provider ID"),
   name: z.string().min(1, "Event center name is required"),
   eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
-  depositAmount: z.number().min(0, "Deposit amount must be non-negative"),
-  totalAmount: z.number().min(0, "Total amount must be non-negative"),
+  discountPercentage: z.number().min(0).max(100).optional(),
+  depositPercentage: z.number().min(0).max(100),
   description: z.string().min(1, "Description is required"),
   pricingPerSlot: z.number().min(0, "Pricing per slot must be non-negative"),
   sittingCapacity: z.number().min(1, "Sitting capacity must be at least 1"),
@@ -45,7 +44,7 @@ const schema = z.object({
   termsOfUse: z.string().min(1, "Terms of use are required"),
   cancellationPolicy: z.string().min(1, "Cancellation policy is required"),
   streetAddress: z.string().min(1, "Street address is required"),
-  streetAddress2: z.string().nullable(),
+  streetAddress2: z.string().nullable().optional(),
   city: z.string().min(1, "City is required"),
   location: z.string().uuid("Invalid location ID"),
   contact: z.string().min(1, "Contact number is required"),
@@ -53,7 +52,7 @@ const schema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"], {
     errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
   }),
-  images: z.array(z.instanceof(File)).max(3, "Maximum 3 images allowed").optional(),
+  images: z.array(z.instanceof(File)).max(3).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -61,6 +60,7 @@ type FormData = z.infer<typeof schema>;
 export default function AddEventCenter() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -71,7 +71,6 @@ export default function AddEventCenter() {
   const [uploadEventCenterImages, { isLoading: isUploadingImages }] =
     useUploadEventCenterImagesMutation();
 
-  // Check authentication
   const userId =
     localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
   const {
@@ -94,8 +93,6 @@ export default function AddEventCenter() {
       serviceProviderId: "",
       name: "",
       eventTypes: [],
-      depositAmount: 0,
-      totalAmount: 0,
       description: "",
       pricingPerSlot: 0,
       sittingCapacity: 0,
@@ -111,28 +108,31 @@ export default function AddEventCenter() {
       postal: "",
       status: "ACTIVE",
       images: [],
+      depositPercentage: 0,
     },
   });
 
-  // Redirect to login if not authenticated or not a service provider
   useEffect(() => {
-    if (!userId || userError) {
+    if (!userId) {
       router.replace("/login");
       return;
     }
-    if (user) {
-      if (
-        user.userType !== UserType.SERVICE_PROVIDER ||
-        user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS
-      ) {
-        setError("You are not authorized to create event centers.");
-        router.replace("/login");
-        return;
-      }
-      // Set the serviceProviderId in the form
-      if (user.serviceProvider?.id) {
-        setValue("serviceProviderId", user.serviceProvider.id);
-      }
+    if (userError) {
+      setError("Failed to fetch user data.");
+      router.replace("/login");
+      return;
+    }
+    if (
+      user &&
+      (user.userType !== UserType.SERVICE_PROVIDER ||
+        user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS)
+    ) {
+      setError("You are not authorized to create event centers.");
+      router.replace("/login");
+      return;
+    }
+    if (user?.serviceProvider?.id) {
+      setValue("serviceProviderId", user.serviceProvider.id);
     }
   }, [user, userError, userId, router, setValue]);
 
@@ -141,83 +141,64 @@ export default function AddEventCenter() {
 
   const handleEventTypeChange = (type: string) => {
     const currentTypes = selectedEventTypes;
-    setValue(
-      "eventTypes",
-      currentTypes.includes(type)
-        ? currentTypes.filter((t) => t !== type)
-        : [...currentTypes, type]
-    );
+    const newTypes = currentTypes.includes(type)
+      ? currentTypes.filter((t) => t !== type)
+      : [...currentTypes, type];
+    setValue("eventTypes", newTypes);
+    console.log("Updated eventTypes:", newTypes);
   };
+
+  const handleAmenityChange = (amenity: string) => {
+    const currentAmenities = selectedAmenities;
+    const newAmenities = currentAmenities.includes(amenity)
+      ? currentAmenities.filter((a) => a !== amenity)
+      : [...currentAmenities, amenity];
+    setValue("amenities", newAmenities);
+    console.log("Updated amenities:", newAmenities);
+  };
+
   const validateImage = (file: File) => {
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
     const maxSize = 5 * 1024 * 1024; // 5MB
-
     if (!validTypes.includes(file.type)) {
       throw new Error("Only JPG, PNG, and WEBP images are allowed");
     }
-
     if (file.size > maxSize) {
       throw new Error("Image size must be less than 5MB");
     }
   };
 
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      try {
-        const filesArray = Array.from(e.target.files);
-        filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3);
-        setImages(newImages);
-        setValue("images", newImages);
-      } catch (error) {
-        setError(
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message)
-            : "An error occurred while uploading the image."
-        );
-      }
+    if (!e.target.files) return;
+    try {
+      const filesArray = Array.from(e.target.files);
+      filesArray.forEach(validateImage);
+      const newFiles = [...images, ...filesArray].slice(0, 3);
+      setImages(newFiles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid file");
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (e.dataTransfer?.files) {
-      try {
-        const filesArray = Array.from(e.dataTransfer.files);
-        filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3);
-        setImages(newImages);
-        setValue("images", newImages);
-      } catch (error) {
-        setError(
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message)
-            : "An error occurred while uploading the image."
-        );
-      }
+    setIsDragging(false);
+    if (!e.dataTransfer?.files) return;
+    try {
+      const filesArray = Array.from(e.dataTransfer.files);
+      filesArray.forEach(validateImage);
+      const newFiles = [...images, ...filesArray].slice(0, 3);
+      setImages(newFiles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid file");
     }
-  };
-  const handleAmenityChange = (amenity: string) => {
-    const currentAmenities = selectedAmenities;
-    setValue(
-      "amenities",
-      currentAmenities.includes(amenity)
-        ? currentAmenities.filter((a) => a !== amenity)
-        : [...currentAmenities, amenity]
-    );
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
-  const handleImageRemove = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setValue(
-      "images",
-      images.filter((_, i) => i !== index)
-    );
-  };
+
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -229,14 +210,27 @@ export default function AddEventCenter() {
     e.stopPropagation();
     setIsDragging(false);
   };
+
+  const handleImageRemove = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const onSubmit = async (data: FormData) => {
+    console.log("Form Data:", data);
+    console.log("Form Errors:", errors);
+    console.log(
+      "isCreating:",
+      isCreating,
+      "isUploadingImages:",
+      isUploadingImages
+    );
     try {
       const requestData: CreateEventCenterRequest = {
         serviceProviderId: data.serviceProviderId,
         name: data.name,
         eventTypes: data.eventTypes,
-        depositAmount: data.depositAmount,
-        totalAmount: data.totalAmount,
+        discountPercentage: data.discountPercentage,
+        depositPercentage: data.depositPercentage,
         description: data.description,
         pricingPerSlot: data.pricingPerSlot,
         sittingCapacity: data.sittingCapacity,
@@ -254,70 +248,52 @@ export default function AddEventCenter() {
       };
 
       const eventCenter = await createEventCenter(requestData).unwrap();
+      console.log("Event Center Created:", eventCenter);
 
-      // Upload images if provided
-      if (images.length > 0) {
-      try {
-        console.log("Uploading images:", images);
-        const uploadResponse = await uploadEventCenterImages({
+      if (images.length > 0 && eventCenter?.id) {
+        await uploadEventCenterImages({
           eventCenterId: eventCenter.id,
-          images: images,
+          images,
         }).unwrap();
-        console.log("Image upload response:", uploadResponse);
-        setSuccess("Event center created with images successfully!");
-      } catch (uploadError) {
-        setError("Event center created but image upload failed. You can add images later.");
-        console.error("Image upload error:", uploadError);
-      }
-    } else {
-      setSuccess("Event center created successfully!");
-    }
-      setSuccess("Event center created successfully!");
-      setTimeout(() => {
-        router.push("/eventServiceManagement/manage-event-center");
-      }, 2000);
-      console.log("Files to upload:", images);
-      console.log("Event Center ID:", eventCenter.id);
-    } catch (err) {
-      function hasStatus(err: unknown): err is { status: number } {
-        return (
-          typeof err === "object" &&
-          err !== null &&
-          "status" in err &&
-          typeof (err as { status?: unknown }).status === "number"
-        );
+        console.log("Images Uploaded");
       }
 
-      if (hasStatus(err)) {
-        if (err.status === 401) {
-          setError("You are not authorized. Please log in again.");
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          localStorage.removeItem("token_expiry");
-          localStorage.removeItem("user_id");
-          sessionStorage.removeItem("access_token");
-          sessionStorage.removeItem("refresh_token");
-          sessionStorage.removeItem("user_id");
-          router.push("/login");
-        } else {
-          setError("Failed to create event center. Please try again.");
-          console.error(err);
-        }
+      setSuccess("Event center created successfully!");
+      router.push("/eventServiceManagement/manage-event-center");
+    } catch (err: unknown) {
+      console.error("Submission Error:", err);
+
+      if (err && typeof err === "object" && "data" in err) {
+        const e = err as { data?: { message?: string } };
+        setError(
+          e.data?.message || "Failed to create event center. Please try again."
+        );
       } else {
-        setError("An unexpected error occurred. Please try again.");
-        console.error(err);
+        setError("Failed to create event center. Please try again.");
       }
     }
   };
+
+  useEffect(() => {
+    if (images.length < 1) {
+      setPreviews([]);
+      return;
+    }
+    const objectUrls = images.map((file) => URL.createObjectURL(file));
+    setPreviews(objectUrls);
+    return () => {
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [images]);
+
   useEffect(() => {
     return () => {
-      // Clean up object URLs
       images.forEach((file) => {
         URL.revokeObjectURL(URL.createObjectURL(file));
       });
     };
   }, [images]);
-  // Show loading state while checking user authentication
+
   if (isUserLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -335,28 +311,32 @@ export default function AddEventCenter() {
       <div className="md:ml-[280px]">
         <Header setIsSidebarOpen={setIsSidebarOpen} />
         <main className="md:p-10 p-4">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Add Event Center
-            </h1>
-            <div className="flex gap-2">
-              <Link href="/eventServiceManagement/eventServiceDashboard">
-                <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
-                  Cancel
-                </button>
-              </Link>
-              <button
-                type="submit"
-                form="eventCenterForm"
-                disabled={isCreating || isUploadingImages}
-                className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isCreating || isUploadingImages ? "Publishing..." : "Publish"}
-              </button>
-            </div>
-          </div>
-
           <form id="eventCenterForm" onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="md:text-xl text-md font-bold text-gray-950">
+                Add Event Center
+              </h1>
+              <div className="flex gap-2">
+                <Link href="/eventServiceManagement/eventServiceDashboard">
+                  <button
+                    type="button"
+                    className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                </Link>
+                <button
+                  type="submit"
+                  disabled={isCreating || isUploadingImages}
+                  className="px-4 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {isCreating || isUploadingImages
+                    ? "Publishing..."
+                    : "Publish"}
+                </button>
+              </div>
+            </div>
+
             <div className="bg-white p-8">
               <h3 className="text-md font-semibold text-gray-900 mb-4">
                 Information
@@ -511,33 +491,33 @@ export default function AddEventCenter() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Deposit Amount
+                    Discount Percentage
                   </label>
                   <input
                     type="number"
-                    {...register("depositAmount", { valueAsNumber: true })}
+                    {...register("discountPercentage", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter deposit amount"
+                    placeholder="Enter discount percentage"
                   />
-                  {errors.depositAmount && (
+                  {errors.discountPercentage && (
                     <p className="text-xs text-red-500 mt-1">
-                      {errors.depositAmount.message}
+                      {errors.discountPercentage.message}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Total Amount
+                    Deposit Percentage
                   </label>
                   <input
                     type="number"
-                    {...register("totalAmount", { valueAsNumber: true })}
+                    {...register("depositPercentage", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter total amount"
+                    placeholder="Enter deposit percentage"
                   />
-                  {errors.totalAmount && (
+                  {errors.depositPercentage && (
                     <p className="text-xs text-red-500 mt-1">
-                      {errors.totalAmount.message}
+                      {errors.depositPercentage.message}
                     </p>
                   )}
                 </div>
@@ -746,41 +726,37 @@ export default function AddEventCenter() {
                     }`}
                     disabled={images.length >= 3}
                   >
-                   Add Image
+                    Add Image
                   </button>
                   <p className="text-xs text-gray-500 mt-2">
                     {images.length >= 3
                       ? "Maximum 3 images reached"
                       : "Or drag and drop files (PNG, JPG, max 5MB each)"}
                   </p>
-                  {images.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {images.map((image, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(image)}
-                            alt={`Uploaded ${index}`}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleImageRemove(index)}
-                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                      {errors.images && (
-                        <p className="text-xs text-red-500 mt-1">
-                          {errors.images.message}
-                        </p>
-                      )}
+                  {previews.map((preview, index) => (
+                    <div key={index} className="relative mb-4">
+                      <img
+                        src={preview}
+                        alt={`Uploaded ${index}`}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleImageRemove(index)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                      >
+                        ✕
+                      </button>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
+            {Object.keys(errors).length > 0 && (
+              <p className="text-xs text-red-500 mt-4 px-8">
+                Please fix the form errors before submitting.
+              </p>
+            )}
           </form>
         </main>
       </div>

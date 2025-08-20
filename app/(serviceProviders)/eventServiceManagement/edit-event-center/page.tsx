@@ -33,8 +33,8 @@ const schema = z.object({
   serviceProviderId: z.string().uuid("Invalid service provider ID"),
   name: z.string().min(1, "Event center name is required"),
   eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
-  depositAmount: z.number().min(0, "Deposit amount must be non-negative"),
-  totalAmount: z.number().min(0, "Total amount must be non-negative"),
+  discountPercentage: z.number().min(0).max(100).optional(),
+  depositPercentage: z.number().min(0).max(100),
   description: z.string().min(1, "Description is required"),
   pricingPerSlot: z.number().min(0, "Pricing per slot must be non-negative"),
   sittingCapacity: z.number().min(1, "Sitting capacity must be at least 1"),
@@ -112,8 +112,8 @@ export default function EditEventCenter() {
         serviceProviderId: eventCenter.serviceProviderId,
         name: eventCenter.name,
         eventTypes: eventCenter.eventTypes,
-        depositAmount: eventCenter.depositAmount,
-        totalAmount: eventCenter.totalAmount || 0,
+        discountPercentage: eventCenter.discountPercentage,
+        depositPercentage: eventCenter.depositPercentage,
         description: eventCenter.description,
         pricingPerSlot: eventCenter.pricingPerSlot,
         sittingCapacity: eventCenter.sittingCapacity,
@@ -546,33 +546,33 @@ export default function EditEventCenter() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Deposit Amount
+                    Discount Percentage
                   </label>
                   <input
                     type="number"
-                    {...register("depositAmount", { valueAsNumber: true })}
+                    {...register("discountPercentage", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter deposit amount"
+                    placeholder="Enter discount percentage"
                   />
-                  {errors.depositAmount && (
+                  {errors.discountPercentage && (
                     <p className="text-xs text-red-500 mt-1">
-                      {errors.depositAmount.message}
+                      {errors.discountPercentage.message}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Total Amount
+                    Deposit Percentage
                   </label>
                   <input
                     type="number"
-                    {...register("totalAmount", { valueAsNumber: true })}
+                    {...register("depositPercentage", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter total amount"
+                    placeholder="Enter deposit percentage"
                   />
-                  {errors.totalAmount && (
+                  {errors.depositPercentage && (
                     <p className="text-xs text-red-500 mt-1">
-                      {errors.totalAmount.message}
+                      {errors.depositPercentage.message}
                     </p>
                   )}
                 </div>

@@ -263,16 +263,17 @@ export default function EventCenterDetails() {
                       : ""
                   }`}
                 />
-                <DetailRow
-                  label="Postal Code"
-                  value={eventCenter.postal}
-                />
+                <DetailRow label="Postal Code" value={eventCenter.postal} />
                 <DetailRow label="Created At" value={formattedDate} />
               </div>
               <div className="space-y-3">
                 <DetailRow
-                  label="Deposit"
-                  value={`$${eventCenter.depositAmount.toLocaleString()}`}
+                  label="Deposit Percentage"
+                  value={`${eventCenter.depositPercentage}%`}
+                />
+                <DetailRow
+                  label="Discount Percentage"
+                  value={`${eventCenter.discountPercentage}%`}
                 />
                 <DetailRow
                   label="Pricing Per Slot"

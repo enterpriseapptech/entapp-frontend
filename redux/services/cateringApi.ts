@@ -11,7 +11,8 @@ export interface Catering {
   name: string;
   serviceProviderId: string;
   tagLine: string;
-  depositAmount: number;
+  depositPercentage: number;
+  discountPercentage: number;
   startPrice: number;
   minCapacity: number;
   maxCapacity: number;
@@ -24,8 +25,6 @@ export interface Catering {
   streetAddress: string;
   streetAddress2: string | null;
   city: string;
-  state: string;
-  country: string;
   location: string[];
   postal: string;
   status: string;
@@ -36,7 +35,7 @@ export interface Catering {
   updatedBy: string | null;
   deletedAt: string | null;
   deletedBy: string | null;
-  rating?: number;
+  rating: number | null;
   paymentRequired: boolean;
   contact: string | null;
   eventTypes: string[];
@@ -53,7 +52,8 @@ export interface CreateCateringRequest {
   eventTypes: string[];
   location: string[];
   tagLine: string;
-  depositAmount: number;
+  depositPercentage: number;
+  discountPercentage: number;
   startPrice: number;
   minCapacity: number;
   maxCapacity: number;
@@ -65,8 +65,6 @@ export interface CreateCateringRequest {
   streetAddress: string;
   streetAddress2?: string;
   city: string;
-  state: string;
-  country: string;
   postal: string;
 }
 

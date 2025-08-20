@@ -26,7 +26,8 @@ interface EventCenterTableData {
   date: string;
   status: string;
   ratings: number;
-  depositAmount: string;
+  discountPercentage: string;
+  depositPercentage: string;
   bookingType: string;
   paymentStatus: string;
   bookingStatus: string;
@@ -196,7 +197,8 @@ export default function ManageEventCenter() {
       }),
       status: center.status,
       ratings: center.rating || 0,
-      depositAmount: `$${(center.depositAmount || 0).toLocaleString()}`,
+      discountPercentage: `${center.discountPercentage || 0}%`,
+      depositPercentage: `${center.depositPercentage || 0}%`,
       bookingType: center.venueLayout || "N/A",
       paymentStatus: center.paymentRequired ? "Pending" : "Paid",
       bookingStatus: center.status === "ACTIVE" ? "Confirmed" : "Pending",
@@ -248,7 +250,8 @@ export default function ManageEventCenter() {
       center.location.toLowerCase().includes(query) ||
       center.date.toLowerCase().includes(query) ||
       center.status.toLowerCase().includes(query) ||
-      center.depositAmount.toLowerCase().includes(query) ||
+      center.discountPercentage.toLowerCase().includes(query) ||
+      center.depositPercentage.toLowerCase().includes(query) ||
       center.bookingType.toLowerCase().includes(query) ||
       center.paymentStatus.toLowerCase().includes(query) ||
       center.bookingStatus.toLowerCase().includes(query) ||
@@ -350,8 +353,9 @@ export default function ManageEventCenter() {
         center.location
       )}&date=${encodeURIComponent(center.date)}&status=${encodeURIComponent(
         center.status
-      )}&ratings=${center.ratings}&depositAmount=${encodeURIComponent(
-        center.depositAmount
+      )}&ratings=${center.ratings}&discountPercentage=${encodeURIComponent(
+        center.discountPercentage
+      )}&depositPercentage=${encodeURIComponent(center.depositPercentage)}
       )}&bookingType=${encodeURIComponent(
         center.bookingType
       )}&paymentStatus=${encodeURIComponent(
@@ -836,7 +840,10 @@ export default function ManageEventCenter() {
                       Ratings
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Deposit Amount
+                      Deposit %
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
+                      Deposit %
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Actions
@@ -851,7 +858,7 @@ export default function ManageEventCenter() {
                       onClick={() => handleViewEventCenter(center)}
                     >
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                         {(currentPage - 1) * itemsPerPage + index + 1}
+                        {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {center.name}
@@ -891,9 +898,13 @@ export default function ManageEventCenter() {
                           ))}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {center.depositAmount}
+                      <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                        {center.discountPercentage}
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                        {center.depositPercentage}
+                      </td>
+
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <div className="flex gap-2">
                           <button

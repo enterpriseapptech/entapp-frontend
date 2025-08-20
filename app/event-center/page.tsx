@@ -14,7 +14,9 @@ export default function EventCenters() {
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [capacityRange, setCapacityRange] = useState<[number, number]>([0, 20000]);
+  const [capacityRange, setCapacityRange] = useState<[number, number]>([
+    0, 20000,
+  ]);
   const [location, setLocation] = useState<string>("Nigeria");
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -35,7 +37,7 @@ export default function EventCenters() {
 
   useEffect(() => {
     if (error) {
-      console.error('Error fetching event centers:', error);
+      console.error("Error fetching event centers:", error);
     }
   }, [error]);
 
@@ -48,20 +50,37 @@ export default function EventCenters() {
 
   // Map API data to the format expected by the Card component
   const eventCenters =
-    data?.data?.map((venue) => ({
-      id: venue.id,
-      name: venue.name || "Event Hall",
-      imageSrc: venue.images?.[0] || "/placeholder-image.png",
-      label: "Featured",
-      title: venue.description
-        ? venue.description.slice(0, 50) + "..."
-        : "No description available",
-      location: venue.city ? `${venue.city}, Nigeria` : "Unknown location",
-      price: `₦${venue.depositAmount?.toLocaleString() || "0"}`,
-      eventType: venue.eventTypes[0] || "General Event",
-      capacity: venue.sittingCapacity || 0,
-      rawPrice: venue.depositAmount || 0,
-    })) ?? [];
+    data?.data?.map((venue) => {
+      return {
+        id: venue.id,
+        name: venue.name || "Event Hall",
+        imageSrc:
+          venue.images && venue.images.length > 0
+            ? venue.images[0]
+            : "/placeholder-image.png",
+        // ✅ updated label logic
+        label:
+          venue.discountPercentage && venue.discountPercentage > 0
+            ? `Discount ${venue.discountPercentage}%`
+            : venue.paymentRequired
+            ? "Payment Required"
+            : "Featured",
+        // ✅ show description preview
+        title: venue.description
+          ? venue.description.slice(0, 50) + "..."
+          : "No description available",
+        location: venue.city ? `${venue.city}, Nigeria` : "Unknown location",
+        // ✅ show deposit percentage if available
+        price: venue.depositPercentage
+          ? `${venue.depositPercentage}% deposit`
+          : "Contact for pricing",
+        eventType: venue.eventTypes[0] || "General Event",
+        capacity: venue.sittingCapacity || 0,
+        rating: venue.rating, // ✅ now included from API
+        rawPrice: venue.pricingPerSlot, // ✅ keep raw price for range filtering
+      };
+    }) ?? [];
+
 
   // Helper function to determine if a capacity value is within the selected range
   const isCapacitySelected = (value: number) => {
@@ -102,23 +121,23 @@ export default function EventCenters() {
   const filteredEventCenters = eventCenters.filter((center) => {
     const matchesEventType =
       selectedEventTypes.length === 0 ||
-      selectedEventTypes.some(type => 
+      selectedEventTypes.some((type) =>
         center.eventType.toLowerCase().includes(type.toLowerCase())
       );
-    
+
     const matchesCapacity =
       center.capacity >= capacityRange[0] &&
       center.capacity <= capacityRange[1];
-    
-    const matchesPrice =
-      center.rawPrice >= priceRange[0] && 
-      center.rawPrice <= priceRange[1];
-    
-    const matchesLocation = location === "Nigeria" || 
+
+    // const matchesPrice =
+    //   center.rawPrice >= priceRange[0] && center.rawPrice <= priceRange[1];
+
+    const matchesLocation =
+      location === "Nigeria" ||
       center.location.toLowerCase().includes(location.toLowerCase());
-    
+
     return (
-      matchesEventType && matchesCapacity && matchesPrice && matchesLocation
+      matchesEventType && matchesCapacity && matchesLocation
     );
   });
 
@@ -137,7 +156,10 @@ export default function EventCenters() {
   });
 
   // Add Capacity filter if not default
-  if (capacityRange[0] !== defaultCapacityRange[0] || capacityRange[1] !== defaultCapacityRange[1]) {
+  if (
+    capacityRange[0] !== defaultCapacityRange[0] ||
+    capacityRange[1] !== defaultCapacityRange[1]
+  ) {
     const capacityLabel =
       capacityRange[0] === capacityRange[1]
         ? `${capacityRange[0].toLocaleString()}`

@@ -21,16 +21,28 @@ import {
 import Notification from "../../../../components/ui/Notification";
 
 const cuisineOptions = ["Italian", "Mexican", "Indian", "Chinese", "American"];
-const dishTypeOptions = ["Vegetarian", "Non-Vegetarian", "Vegan", "Gluten-Free"];
+const dishTypeOptions = [
+  "Vegetarian",
+  "Non-Vegetarian",
+  "Vegan",
+  "Gluten-Free",
+];
 const eventTypeOptions = ["Wedding", "Conference", "Birthday", "Party"];
 
 const schema = z.object({
   serviceProviderId: z.string().uuid("Invalid service provider ID"),
   name: z.string().min(1, "Catering service name is required"),
   eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
-  location: z.array(z.string().uuid()).min(1, "At least one location is required"),
+  location: z
+    .array(z.string().uuid())
+    .min(1, "At least one location is required"),
   tagLine: z.string().min(1, "Tagline is required"),
-  depositAmount: z.number().min(0, "Deposit amount must be non-negative"),
+  depositPercentage: z
+    .number()
+    .min(0, "Deposit percentage must be non-negative"),
+  discountPercentage: z
+    .number()
+    .min(0, "Discount percentage must be non-negative"),
   startPrice: z.number().min(0, "Start price must be non-negative"),
   minCapacity: z.number().min(1, "Minimum capacity must be at least 1"),
   maxCapacity: z.number().min(1, "Maximum capacity must be at least 1"),
@@ -42,13 +54,11 @@ const schema = z.object({
   streetAddress: z.string().min(1, "Street address is required"),
   streetAddress2: z.string().optional(),
   city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  country: z.string().min(1, "Country is required"),
   postal: z.string().min(1, "Postal code is required"),
-  status: z.enum(["ACTIVE", "INACTIVE"], {
-    errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
-  }),
- images: z.array(z.instanceof(File)).max(3, "Maximum 3 images allowed").optional(),
+  images: z
+    .array(z.instanceof(File))
+    .max(3, "Maximum 3 images allowed")
+    .optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -63,8 +73,10 @@ export default function AddCatering() {
   const [newLocation, setNewLocation] = useState("");
   const router = useRouter();
 
-  const [createCatering, { isLoading: isCreating }] = useCreateCateringMutation();
-  const [uploadCateringImages, { isLoading: isUploadingImages }] = useUploadCateringImagesMutation();
+  const [createCatering, { isLoading: isCreating }] =
+    useCreateCateringMutation();
+  const [uploadCateringImages, { isLoading: isUploadingImages }] =
+    useUploadCateringImagesMutation();
 
   // Check authentication
   const userId =
@@ -91,7 +103,8 @@ export default function AddCatering() {
       eventTypes: [],
       location: [],
       tagLine: "",
-      depositAmount: 0,
+      depositPercentage: 0,
+      discountPercentage: 0,
       startPrice: 0,
       minCapacity: 0,
       maxCapacity: 0,
@@ -103,10 +116,7 @@ export default function AddCatering() {
       streetAddress: "",
       streetAddress2: "",
       city: "",
-      state: "",
-      country: "",
       postal: "",
-      status: "ACTIVE",
       images: [],
     },
   });
@@ -276,7 +286,9 @@ export default function AddCatering() {
           }).unwrap();
           setSuccess("Catering service created with images successfully!");
         } catch (uploadError) {
-          setError("Catering service created but image upload failed. You can add images later.");
+          setError(
+            "Catering service created but image upload failed. You can add images later."
+          );
           console.error("Image upload error:", uploadError);
         }
       } else {
@@ -460,36 +472,6 @@ export default function AddCatering() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    State
-                  </label>
-                  <input
-                    {...register("state")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter state"
-                  />
-                  {errors.state && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.state.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Country
-                  </label>
-                  <input
-                    {...register("country")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter country"
-                  />
-                  {errors.country && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.country.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
                     Postal Code
                   </label>
                   <input
@@ -504,21 +486,21 @@ export default function AddCatering() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Deposit Amount
-                  </label>
+                  <label>Deposit Percentage</label>
                   <input
                     type="number"
-                    {...register("depositAmount", { valueAsNumber: true })}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter deposit amount"
+                    {...register("depositPercentage", { valueAsNumber: true })}
                   />
-                  {errors.depositAmount && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.depositAmount.message}
-                    </p>
-                  )}
                 </div>
+
+                <div>
+                  <label>Discount Percentage</label>
+                  <input
+                    type="number"
+                    {...register("discountPercentage", { valueAsNumber: true })}
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
                     Starting Price
@@ -564,23 +546,6 @@ export default function AddCatering() {
                   {errors.maxCapacity && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.maxCapacity.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-900 mb-1">
-                    Status
-                  </label>
-                  <select
-                    {...register("status")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                  </select>
-                  {errors.status && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.status.message}
                     </p>
                   )}
                 </div>
@@ -751,7 +716,9 @@ export default function AddCatering() {
                           onChange={() => handleDishTypeChange(dishType)}
                           className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <span className="text-xs text-gray-600">{dishType}</span>
+                        <span className="text-xs text-gray-600">
+                          {dishType}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -845,7 +812,7 @@ export default function AddCatering() {
                     }`}
                     disabled={images.length >= 3}
                   >
-                   Add Image
+                    Add Image
                   </button>
                   <p className="text-xs text-gray-500 mt-2">
                     {images.length >= 3
