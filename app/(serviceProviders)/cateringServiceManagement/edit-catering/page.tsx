@@ -30,7 +30,8 @@ const schema = z.object({
   eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
   location: z.array(z.string().uuid("Invalid location ID")).min(1, "At least one location is required"),
   tagLine: z.string().min(1, "Tagline is required"),
-  depositAmount: z.number().min(0, "Deposit amount must be non-negative"),
+  depositPercentage: z.number().min(0, "Deposit percentage must be non-negative").max(100, "Deposit percentage cannot exceed 100"),
+  discountPercentage: z.number().min(0, "Discount percentage must be non-negative").max(100, "Discount percentage cannot exceed 100"),
   startPrice: z.number().min(0, "Start price must be non-negative"),
   minCapacity: z.number().min(1, "Minimum capacity must be at least 1"),
   maxCapacity: z.number().min(1, "Maximum capacity must be at least 1"),
@@ -46,7 +47,13 @@ const schema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"], {
     errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
   }),
+  isFeatured: z.boolean(),
+  contact: z.string().nullable(),
+  rating: z.number().min(0).max(5).nullable(),
   images: z.array(z.any()).max(3, "Maximum 3 images allowed").optional(),
+}).refine((data) => data.maxCapacity >= data.minCapacity, {
+  message: "Maximum capacity must be greater than or equal to minimum capacity",
+  path: ["maxCapacity"],
 });
 
 type FormData = z.infer<typeof schema>;
@@ -97,7 +104,8 @@ export default function EditCateringService() {
         eventTypes: cateringService.eventTypes,
         location: cateringService.location,
         tagLine: cateringService.tagLine,
-        depositAmount: cateringService.depositAmount,
+        depositPercentage: cateringService.depositPercentage,
+        discountPercentage: cateringService.discountPercentage,
         startPrice: cateringService.startPrice,
         minCapacity: cateringService.minCapacity,
         maxCapacity: cateringService.maxCapacity,
@@ -111,6 +119,9 @@ export default function EditCateringService() {
         city: cateringService.city,
         postal: cateringService.postal,
         status: cateringService.status as "ACTIVE" | "INACTIVE",
+        isFeatured: cateringService.isFeatured,
+        contact: cateringService.contact || null,
+        rating: cateringService.rating || null,
       });
     }
   }, [cateringService, reset]);
@@ -413,17 +424,33 @@ export default function EditCateringService() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Deposit Amount
+                    Deposit Percentage
                   </label>
                   <input
                     type="number"
-                    {...register("depositAmount", { valueAsNumber: true })}
+                    {...register("depositPercentage", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter deposit amount"
+                    placeholder="Enter deposit percentage (0-100)"
                   />
-                  {errors.depositAmount && (
+                  {errors.depositPercentage && (
                     <p className="text-xs text-red-500 mt-1">
-                      {errors.depositAmount.message}
+                      {errors.depositPercentage.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Discount Percentage
+                  </label>
+                  <input
+                    type="number"
+                    {...register("discountPercentage", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter discount percentage (0-100)"
+                  />
+                  {errors.discountPercentage && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.discountPercentage.message}
                     </p>
                   )}
                 </div>
@@ -451,7 +478,7 @@ export default function EditCateringService() {
                     type="number"
                     {...register("minCapacity", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter minimum capacity"
+                    placeholder="Minimum number of guests we can serve"
                   />
                   {errors.minCapacity && (
                     <p className="text-xs text-red-500 mt-1">
@@ -467,7 +494,7 @@ export default function EditCateringService() {
                     type="number"
                     {...register("maxCapacity", { valueAsNumber: true })}
                     className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter maximum capacity"
+                    placeholder="Maximum number of guests we can serve"
                   />
                   {errors.maxCapacity && (
                     <p className="text-xs text-red-500 mt-1">
@@ -544,6 +571,55 @@ export default function EditCateringService() {
                   {errors.status && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.status.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Featured
+                  </label>
+                  <select
+                    {...register("isFeatured")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                  {errors.isFeatured && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.isFeatured.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Contact
+                  </label>
+                  <input
+                    {...register("contact")}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter contact info (optional)"
+                  />
+                  {errors.contact && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.contact.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Rating
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    {...register("rating", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter rating (0-5, optional)"
+                  />
+                  {errors.rating && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.rating.message}
                     </p>
                   )}
                 </div>

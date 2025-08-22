@@ -142,15 +142,16 @@ export default function CateringServicesAllPost() {
         (service.maxCapacity >= orderSizeRange[0] &&
           service.maxCapacity <= orderSizeRange[1]);
 
-      const servicePrice = service.depositAmount;
+      const servicePrice = service.startPrice;
       const matchesPrice =
         servicePrice >= priceRange[0] && servicePrice <= priceRange[1];
 
       const matchesLocation =
         location === "" ||
-        service.country.toLowerCase().includes(location.toLowerCase()) ||
         service.city.toLowerCase().includes(location.toLowerCase()) ||
-        service.state.toLowerCase().includes(location.toLowerCase());
+        service.location.some((loc) =>
+          loc.toLowerCase().includes(location.toLowerCase())
+        );
 
       return (
         matchesCuisineType &&
@@ -159,19 +160,27 @@ export default function CateringServicesAllPost() {
         matchesLocation
       );
     })
-    .map((service) => ({
-      id: service.id,
-      name: "Catering Service",
-      imageSrc: service.images[0] || "/catering.png",
-      label: "Featured",
-      title: service.tagLine,
-      location: `${service.city}, ${service.state}, ${service.country}`,
-      price: `₦${service.depositAmount.toLocaleString()}`,
-      cuisineType: service.cuisine[0] || "Unknown",
-      orderSize: service.maxCapacity,
-    }));
+    .map((service) => {
+      // Calculate deposit amount after discount
+      const discounted =
+        service.startPrice * (1 - (service.discountPercentage ?? 0) / 100);
+      const depositAmount = discounted * (service.depositPercentage / 100);
 
-  const activeFilters = [];
+      return {
+        id: service.id,
+        name: service.name,
+        imageSrc: service.images[0] || "/catering.png",
+        label: service.isFeatured ? "Featured" : "",
+        title: service.tagLine,
+        location: service.city,
+        pricingPerSlot: service.startPrice,
+        discountPercentage: service.discountPercentage,
+        depositPercentage: service.depositPercentage,
+        price: `₦${depositAmount.toLocaleString()}`, 
+      };
+    });
+
+  const activeFilters: { label: string; onRemove: () => void }[] = [];
   selectedCuisineTypes.forEach((cuisineType) => {
     activeFilters.push({
       label: cuisineType,
@@ -191,7 +200,7 @@ export default function CateringServicesAllPost() {
       label: orderSizeLabel,
       onRemove: () => {
         setSelectedOrderSizes([]);
-        setOrderSizeRange([0, 5000]);
+        setOrderSizeRange([defaultOrderSizeRange[0], defaultOrderSizeRange[1]]);
       },
     });
   }
@@ -238,7 +247,6 @@ export default function CateringServicesAllPost() {
         heading="Catering Services"
         subheading=""
       />
-
       <div className="flex flex-col lg:flex-row">
         <aside
           className={`w-full lg:w-64 bg-white p-6 border-r border-gray-200 lg:sticky lg:top-0 lg:min-h-[calc(100vh-400px)] lg:overflow-y-auto transition-transform duration-300 ${
@@ -261,7 +269,6 @@ export default function CateringServicesAllPost() {
             </button>
           </div>
           <hr className="border-gray-200 mb-4" />
-
           <div className="mb-4">
             <h4 className="text-sm font-medium mb-2 text-gray-700">
               Cuisine Type
@@ -329,9 +336,7 @@ export default function CateringServicesAllPost() {
               </li>
             </ul>
           </div>
-
           <hr className="border-gray-200 mb-4" />
-
           <div className="mb-4">
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-medium mb-2 text-gray-700">
@@ -353,9 +358,7 @@ export default function CateringServicesAllPost() {
               prefix="₦"
             />
           </div>
-
           <hr className="border-gray-200 mb-4" />
-
           <div className="mb-4">
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-medium mb-2 text-gray-700">
@@ -415,9 +418,7 @@ export default function CateringServicesAllPost() {
               />
             </div>
           </div>
-
           <hr className="border-gray-200 mb-4" />
-
           <div>
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-medium mb-2 text-gray-700">
@@ -442,28 +443,27 @@ export default function CateringServicesAllPost() {
             </select>
           </div>
         </aside>
-
         <main className="flex-1 py-6 bg-gray-50 overflow-x-auto p-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex justify-between items-center">
-              <div
-                className={`flex items-center bg-[#F5F5F8] text-[#000000] text-sm font-bold p-2 rounded-sm gap-20 cursor-pointer mb-2 ${
-                  isSidebarOpen ? "hidden" : "block"
-                }`}
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <h2>Filters</h2>
-                <Image
-                  src="/openFilter.png"
-                  alt="openFilter.png"
-                  width={10}
-                  height={10}
-                  className="h-2 w-2"
-                  unoptimized
-                />
-              </div>
+            <div className="flex justify-between items-center mb-4">
+              {!isSidebarOpen && (
+                <div
+                  className="flex items-center bg-[#F5F5F8] text-[#000000] text-sm font-bold p-2 rounded-sm gap-20 cursor-pointer"
+                  onClick={() => setIsSidebarOpen(true)}
+                >
+                  <h2>Filters</h2>
+                  <Image
+                    src="/openFilter.png"
+                    alt="openFilter.png"
+                    width={10}
+                    height={10}
+                    className="h-2 w-2"
+                    unoptimized
+                  />
+                </div>
+              )}
               {activeFilters.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2">
                   {activeFilters.map((filter, index) => (
                     <div
                       key={index}
@@ -483,7 +483,7 @@ export default function CateringServicesAllPost() {
                   ))}
                 </div>
               )}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-600 font-bold">Sort by</span>
                 <Image
                   src="/dropDown.png"
@@ -495,14 +495,12 @@ export default function CateringServicesAllPost() {
                 />
               </div>
             </div>
-
             <hr className="w-full mb-4" />
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-gray-800">
                 Showing results for {displayCuisineTypes} Catering Services
               </h3>
             </div>
-
             {isLoading ? (
               loadingSkeletons
             ) : error || !data?.data?.length ? (
@@ -522,6 +520,9 @@ export default function CateringServicesAllPost() {
                         title={service.title}
                         location={service.location}
                         price={service.price}
+                        pricingPerSlot={service.pricingPerSlot}
+                        discountPercentage={service.discountPercentage}
+                        depositPercentage={service.depositPercentage}
                       />
                     </Link>
                   ))
@@ -532,7 +533,6 @@ export default function CateringServicesAllPost() {
                 )}
               </div>
             )}
-
             <div className="flex justify-between items-center mt-6 space-x-2 mx-auto md:p-8 p-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}

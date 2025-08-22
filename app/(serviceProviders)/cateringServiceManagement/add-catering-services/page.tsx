@@ -36,7 +36,7 @@ const schema = z.object({
   location: z
     .array(z.string().uuid())
     .min(1, "At least one location is required"),
-  tagLine: z.string().min(1, "Tagline is required"),
+  tagLine: z.string().min(1, "TagLattice is required"),
   depositPercentage: z
     .number()
     .min(0, "Deposit percentage must be non-negative"),
@@ -66,6 +66,7 @@ type FormData = z.infer<typeof schema>;
 export default function AddCatering() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -206,53 +207,36 @@ export default function AddCatering() {
   };
 
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      try {
-        const filesArray = Array.from(e.target.files);
-        filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3);
-        setImages(newImages);
-        setValue("images", newImages);
-      } catch (error) {
-        setError(
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message)
-            : "An error occurred while uploading the image."
-        );
-      }
+    if (!e.target.files) return;
+    try {
+      const filesArray = Array.from(e.target.files);
+      filesArray.forEach(validateImage);
+      const newFiles = [...images, ...filesArray].slice(0, 3);
+      setImages(newFiles);
+      setValue("images", newFiles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid file");
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (e.dataTransfer?.files) {
-      try {
-        const filesArray = Array.from(e.dataTransfer.files);
-        filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3);
-        setImages(newImages);
-        setValue("images", newImages);
-      } catch (error) {
-        setError(
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message)
-            : "An error occurred while uploading the image."
-        );
-      }
+    setIsDragging(false);
+    if (!e.dataTransfer?.files) return;
+    try {
+      const filesArray = Array.from(e.dataTransfer.files);
+      filesArray.forEach(validateImage);
+      const newFiles = [...images, ...filesArray].slice(0, 3);
+      setImages(newFiles);
+      setValue("images", newFiles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid file");
     }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-  };
-
-  const handleImageRemove = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setValue(
-      "images",
-      images.filter((_, i) => i !== index)
-    );
   };
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
@@ -267,6 +251,11 @@ export default function AddCatering() {
     setIsDragging(false);
   };
 
+  const handleImageRemove = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setValue("images", images.filter((_, i) => i !== index));
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       const requestData = {
@@ -277,7 +266,6 @@ export default function AddCatering() {
 
       const catering = await createCatering(requestData).unwrap();
 
-      // Upload images if provided
       if (images.length > 0) {
         try {
           await uploadCateringImages({
@@ -330,12 +318,16 @@ export default function AddCatering() {
     }
   };
 
+  // Consolidated useEffect for managing image previews
   useEffect(() => {
+    // Clean up previous previews
+    previews.forEach((url) => URL.revokeObjectURL(url));
+    // Generate new previews
+    const newPreviews = images.map((file) => URL.createObjectURL(file));
+    setPreviews(newPreviews);
+    // Cleanup on unmount or when images change
     return () => {
-      // Clean up object URLs
-      images.forEach((file) => {
-        URL.revokeObjectURL(URL.createObjectURL(file));
-      });
+      newPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [images]);
 
@@ -486,21 +478,37 @@ export default function AddCatering() {
                   )}
                 </div>
                 <div>
-                  <label>Deposit Percentage</label>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Deposit Percentage
+                  </label>
                   <input
                     type="number"
                     {...register("depositPercentage", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter deposit percentage"
                   />
+                  {errors.depositPercentage && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.depositPercentage.message}
+                    </p>
+                  )}
                 </div>
-
                 <div>
-                  <label>Discount Percentage</label>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    Discount Percentage
+                  </label>
                   <input
                     type="number"
                     {...register("discountPercentage", { valueAsNumber: true })}
+                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Enter discount percentage"
                   />
+                  {errors.discountPercentage && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.discountPercentage.message}
+                    </p>
+                  )}
                 </div>
-
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
                     Starting Price
@@ -716,9 +724,7 @@ export default function AddCatering() {
                           onChange={() => handleDishTypeChange(dishType)}
                           className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <span className="text-xs text-gray-600">
-                          {dishType}
-                        </span>
+                        <span className="text-xs text-gray-600">{dishType}</span>
                       </label>
                     ))}
                   </div>
@@ -784,9 +790,7 @@ export default function AddCatering() {
                 </h3>
                 <div
                   className={`border border-dashed rounded-md p-6 text-center ${
-                    isDragging
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300"
+                    isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
                   }`}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -804,9 +808,7 @@ export default function AddCatering() {
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      document.getElementById("fileInput")?.click()
-                    }
+                    onClick={() => document.getElementById("fileInput")?.click()}
                     className={`px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100 ${
                       images.length >= 3 ? "opacity-50 cursor-not-allowed" : ""
                     }`}
@@ -819,12 +821,12 @@ export default function AddCatering() {
                       ? "Maximum 3 images reached"
                       : "Or drag and drop files (PNG, JPG, max 5MB each)"}
                   </p>
-                  {images.length > 0 && (
+                  {previews.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {images.map((image, index) => (
+                      {previews.map((preview, index) => (
                         <div key={index} className="relative">
                           <img
-                            src={URL.createObjectURL(image)}
+                            src={preview}
                             alt={`Uploaded ${index}`}
                             className="w-16 h-16 object-cover rounded"
                           />
@@ -832,7 +834,7 @@ export default function AddCatering() {
                             type="button"
                             onClick={() => handleImageRemove(index)}
                             className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                          >
+                            >
                             ✕
                           </button>
                         </div>

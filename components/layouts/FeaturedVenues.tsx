@@ -1,3 +1,4 @@
+"use client";
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -36,17 +37,38 @@ export default function FeaturedVenues({ heading }: FeaturedProps) {
       </p>
     </div>
   );
+  function calculateDepositAmount(
+    pricingPerSlot: number,
+    discountPercentage: number,
+    depositPercentage: number
+  ) {
+    const discounted = pricingPerSlot * (1 - (discountPercentage ?? 0) / 100);
+    const deposit = discounted * (depositPercentage / 100);
+    return Math.round(deposit * 100) / 100;
+  }
 
   // Map API data to the format expected by the Card component
-  const featuredVenues = data?.data?.map((venue) => ({
-    id: venue.id,
-    imageSrc: venue.images[0] || "/placeholder-image.png",
-    label: "Featured",
-    title: venue.description,
-    location: `${venue.city}`,
-    price: `₦${venue.depositAmount.toLocaleString()}`,
-    name: "Event Hall",
-  })) ?? [];
+  const featuredVenues =
+    data?.data?.map((venue) => {
+      const depositAmount = calculateDepositAmount(
+        venue.pricingPerSlot,
+        venue.discountPercentage,
+        venue.depositPercentage
+      );
+
+      return {
+        id: venue.id,
+        imageSrc: venue.images[0] || "/placeholder-image.png",
+        label: "Featured",
+        title: venue.description,
+        location: `${venue.city}`,
+        price: `₦${depositAmount.toLocaleString()}`, // now showing deposit amount
+        name: venue.name,
+        pricingPerSlot: venue.pricingPerSlot,
+        discountPercentage: venue.discountPercentage,
+        depositPercentage: venue.depositPercentage,
+      };
+    }) ?? [];
 
   return (
     <section className="py-20 bg-gray-50">
@@ -83,6 +105,9 @@ export default function FeaturedVenues({ heading }: FeaturedProps) {
                   location={venue.location}
                   price={venue.price}
                   name={venue.name}
+                  pricingPerSlot={venue.pricingPerSlot}
+                  discountPercentage={venue.discountPercentage}
+                  depositPercentage={venue.depositPercentage}
                 />
               </Link>
             ))}

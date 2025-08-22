@@ -11,32 +11,7 @@ import Footer from "@/components/layouts/Footer";
 import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
 import DatePicker from "@/components/ui/DatePicker";
-
-export interface EventCenter {
-  id: string;
-  serviceProviderId: string;
-  name: string;
-  eventTypes: string[];
-  depositAmount: number;
-  totalAmount?: number;
-  description: string;
-  pricingPerSlot: number;
-  sittingCapacity: number;
-  venueLayout: string;
-  amenities: string[];
-  images: string[];
-  termsOfUse: string;
-  cancellationPolicy: string;
-  streetAddress: string;
-  streetAddress2: string | null;
-  city: string;
-  location: string;
-  postal: string;
-  status: string;
-  rating?: number;
-  paymentRequired: boolean;
-  contact: string;
-}
+import { EventCenter } from "@/redux/services/eventsApi";
 
 interface BookingData {
   date: string;
@@ -45,10 +20,20 @@ interface BookingData {
   price: number;
 }
 
+// Utility function to calculate deposit amount
+function calculateDepositAmount(
+  pricingPerSlot: number,
+  discountPercentage: number,
+  depositPercentage: number
+) {
+  const discounted = pricingPerSlot * (1 - (discountPercentage ?? 0) / 100);
+  const deposit = discounted * (depositPercentage / 100);
+  return Math.round(deposit * 100) / 100;
+}
+
 export default function EventCenterDetails() {
   const params = useParams();
   const { id } = params as { id: string };
-  // const router = useRouter();
 
   const { data: eventCenterData, isLoading, error } = useGetEventCenterByIdQuery(id);
 
@@ -58,8 +43,8 @@ export default function EventCenterDetails() {
         serviceProviderId: eventCenterData.serviceProviderId,
         name: eventCenterData.name,
         eventTypes: eventCenterData.eventTypes,
-        depositAmount: eventCenterData.depositAmount,
-        totalAmount: eventCenterData.totalAmount,
+        discountPercentage: eventCenterData.discountPercentage,
+        depositPercentage: eventCenterData.depositPercentage,
         description: eventCenterData.description,
         pricingPerSlot: eventCenterData.pricingPerSlot,
         sittingCapacity: eventCenterData.sittingCapacity,
@@ -77,6 +62,10 @@ export default function EventCenterDetails() {
         rating: eventCenterData.rating,
         paymentRequired: eventCenterData.paymentRequired,
         contact: eventCenterData.contact,
+        createdAt: eventCenterData.createdAt,
+        updatedAt: eventCenterData.updatedAt,
+        deletedAt: eventCenterData.deletedAt,
+        deletedBy: eventCenterData.deletedBy,
       }
     : undefined;
 
@@ -149,10 +138,7 @@ export default function EventCenterDetails() {
 
   const handleBook = (bookingData: BookingData) => {
     setLastBooking(bookingData);
-    console.log('Booking confirmed:', bookingData);
-    // router.push(
-    //   `/payment?date=${bookingData.date}&time=${bookingData.time}&guests=&totalCost=${bookingData.price}&eventTitle=${eventCenter!.name}`
-    // );
+    console.log("Booking confirmed:", bookingData);
   };
 
   if (isLoading) {
@@ -204,6 +190,13 @@ export default function EventCenterDetails() {
     );
   }
 
+  // Calculate deposit amount
+  const depositAmount = calculateDepositAmount(
+    eventCenter.pricingPerSlot,
+    eventCenter.discountPercentage,
+    eventCenter.depositPercentage
+  );
+
   return (
     <main className="min-h-screen bg-white">
       <HeroWithNavbar
@@ -244,7 +237,7 @@ export default function EventCenterDetails() {
               width={800}
               height={400}
               className="w-full h-80 object-cover rounded-lg"
-              unoptimized={!images[currentImageIndex].startsWith('/')}
+              unoptimized={!images[currentImageIndex].startsWith("/")}
             />
             <button
               onClick={handlePrevImage}
@@ -307,7 +300,10 @@ export default function EventCenterDetails() {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {eventCenter.eventTypes.map((type, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                  >
                     {type}
                   </span>
                 ))}
@@ -320,19 +316,32 @@ export default function EventCenterDetails() {
               <div className="flex gap-6">
                 {eventCenter.amenities.map((amenity, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    {amenity === "WIFI" && <Wifi className="w-4 h-4 text-gray-600" />}
+                    {amenity === "WIFI" && (
+                      <Wifi className="w-4 h-4 text-gray-600" />
+                    )}
                     {amenity === "PACKINGSPACE" && (
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v-4a4 4 0 014-4h0a4 4 0 014 4v4m-8 0h8m-8 0H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2h-3m-8 0v4a1 1 0 001 1h6a1 1 0 001-1v-4" />
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 14v-4a4 4 0 014-4h0a4 4 0 014 4v4m-8 0h8m-8 0H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2h-3m-8 0v4a1 1 0 001 1h6a1 1 0 001-1v-4"
+                        />
                       </svg>
                     )}
-                    {amenity === "SECURITY" && <Shield className="w-4 h-4 text-gray-600" />}
+                    {amenity === "SECURITY" && (
+                      <Shield className="w-4 h-4 text-gray-600" />
+                    )}
                     <span className="text-gray-600 text-sm">{amenity}</span>
                   </div>
                 ))}
               </div>
             </div>
-
             <div>
               <h3 className="text-md font-semibold text-gray-800 mb-1">
                 Location
@@ -360,11 +369,11 @@ export default function EventCenterDetails() {
                 </svg>
                 <span className="text-gray-600 text-sm">
                   {eventCenter.streetAddress}
-                  {eventCenter.streetAddress2 && `, ${eventCenter.streetAddress2}`}, {eventCenter.location}
+                  {eventCenter.streetAddress2 && `, ${eventCenter.streetAddress2}`}
+                  {eventCenter.city && `, ${eventCenter.city}`}
                 </span>
               </div>
             </div>
-
             <div className="pb-10">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
                 Capacity
@@ -393,13 +402,8 @@ export default function EventCenterDetails() {
               </h3>
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 text-sm">
-                  Deposit: ₦{eventCenter.depositAmount.toLocaleString()}
+                  Deposit: {eventCenter.depositPercentage}% of slot price
                 </span>
-                {eventCenter.totalAmount && (
-                  <span className="text-gray-600 text-sm">
-                    | Total: ₦{eventCenter.totalAmount.toLocaleString()}
-                  </span>
-                )}
                 <span className="text-gray-600 text-sm">
                   | Per slot: ₦{eventCenter.pricingPerSlot.toLocaleString()}
                 </span>
@@ -476,13 +480,35 @@ export default function EventCenterDetails() {
 
             <div className="border border-gray-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-900 mb-2">Pricing</h3>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Starting from</span>
-                <span className="text-2xl font-bold text-[#0047AB]">
-                  ₦{eventCenter.depositAmount.toLocaleString()}
-                </span>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center text-gray-700">
+                  <span className="font-medium">Pricing per slot:</span>
+                  <span className="font-semibold text-gray-900">
+                    ₦{eventCenter.pricingPerSlot.toLocaleString()}
+                  </span>
+                </div>
+                {eventCenter.discountPercentage !== undefined && (
+                  <div className="flex justify-between items-center text-gray-700">
+                    <span className="font-medium">Discount:</span>
+                    <span className="font-semibold text-green-600">
+                      {eventCenter.discountPercentage}%
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-gray-700">
+                  <span className="font-medium">Deposit percentage:</span>
+                  <span className="font-semibold text-gray-900">
+                    {eventCenter.depositPercentage}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                  <span className="font-bold text-base text-gray-800">Deposit Amount:</span>
+                  <span className="font-bold text-lg text-[#0047AB]">
+                    ₦{depositAmount.toLocaleString()}
+                  </span>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-3">
                 Final price depends on event duration and guest count
               </p>
             </div>
@@ -573,7 +599,7 @@ export default function EventCenterDetails() {
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
         onBook={handleBook}
-        startPrice={eventCenter.depositAmount}
+        startPrice={eventCenter.pricingPerSlot}
       />
 
       <hr className="mb-4 mt-4 mx-30" />

@@ -106,6 +106,7 @@ export default function CateringServiceDetails() {
       setError("Failed to create time slots. Please try again.");
     }
   };
+
   const handleOpenDeleteModal = (slotId: string) => {
     setSelectedSlotId(slotId);
     setShowDeleteModal(true);
@@ -182,6 +183,11 @@ export default function CateringServiceDetails() {
   );
 
   const formattedCuisine = cateringService.cuisine.join(", ");
+  const formattedLocation = `${cateringService.city}, ${cateringService.location.join(", ")}`;
+  const formattedDishTypes = cateringService.dishTypes.join(", ");
+  const formattedEventTypes = cateringService.eventTypes.join(", ");
+  const formattedContact = cateringService.contact || "N/A";
+  const formattedIsFeatured = cateringService.isFeatured ? "Yes" : "No";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -199,6 +205,7 @@ export default function CateringServiceDetails() {
               {cateringService.tagLine}
             </h1>
             <p className="text-sm text-gray-500">ID: {cateringService.id}</p>
+            <p className="text-sm text-gray-500">Name: {cateringService.name}</p>
           </div>
 
           <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
@@ -215,7 +222,7 @@ export default function CateringServiceDetails() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <div className="space-y-3">
                 <DetailRow
                   label="Description"
@@ -223,7 +230,7 @@ export default function CateringServiceDetails() {
                 />
                 <DetailRow
                   label="Location"
-                  value={`${cateringService.city}, ${cateringService.state}`}
+                  value={formattedLocation}
                 />
                 <DetailRow
                   label="Street"
@@ -235,21 +242,34 @@ export default function CateringServiceDetails() {
                 />
                 <DetailRow label="Postal Code" value={cateringService.postal} />
                 <DetailRow label="Created At" value={formattedDate} />
+                <DetailRow
+                  label="Event Types"
+                  value={formattedEventTypes}
+                />
               </div>
               <div className="space-y-3">
                 <DetailRow
-                  label="Deposit"
-                  value={`$${cateringService.depositAmount.toLocaleString()}`}
+                  label="Deposit Percentage"
+                  value={`${cateringService.depositPercentage}%`}
                 />
                 <DetailRow
                   label="Start Price"
                   value={`$${cateringService.startPrice.toFixed(2)}`}
                 />
                 <DetailRow
-                  label="Capacity"
-                  value={`${cateringService.minCapacity} - ${cateringService.maxCapacity}`}
+                  label="Minimum Capacity"
+                  value={`${cateringService.minCapacity} (Minimum number of guests we can serve)`}
+                />
+                <DetailRow
+                  label="Maximum Capacity"
+                  value={`${cateringService.maxCapacity} (Maximum number of guests we can serve)`}
                 />
                 <DetailRow label="Cuisine" value={formattedCuisine} />
+                <DetailRow label="Dish Types" value={formattedDishTypes} />
+                <DetailRow label="Contact" value={formattedContact} />
+                <DetailRow label="Featured" value={formattedIsFeatured} />
+                <DetailRow label="Terms of Use" value={cateringService.termsOfUse} />
+                <DetailRow label="Cancellation Policy" value={cateringService.cancellationPolicy} />
               </div>
             </div>
           </div>
@@ -268,13 +288,13 @@ export default function CateringServiceDetails() {
               <p className="text-sm text-gray-500">No time slots found.</p>
             ) : (
               <table className="w-full text-left">
-                <thead className="bg-gray-100  text-xs uppercase">
+                <thead className="bg-gray-100 text-xs uppercase">
                   <tr>
                     <th className="px-4 py-2 text-black">Date</th>
                     <th className="px-4 py-2 text-black">Start</th>
                     <th className="px-4 py-2 text-black">End</th>
                     <th className="px-4 py-2 text-black">Status</th>
-                    {/* <th className="px-4 py-2 text-black">Created At</th> */}
+                    <th className="px-4 py-2 text-black">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -283,7 +303,6 @@ export default function CateringServiceDetails() {
                     .map((slot) => (
                       <tr key={slot.id} className="border-b">
                         <td className="px-4 py-2 text-gray-600">
-                          {" "}
                           {new Date(slot.startTime).toLocaleDateString(
                             "en-GB",
                             {
@@ -304,10 +323,9 @@ export default function CateringServiceDetails() {
                             Available
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-gray-600 flex items-center justify-between">
-                          {/* {new Date(slot.createdAt).toLocaleDateString("en-CA")} */}
+                        <td className="px-4 py-2 text-gray-600">
                           <Trash2
-                            className="h-4 w-4 text-red-500 cursor-pointer ml-4"
+                            className="h-4 w-4 text-red-500 cursor-pointer"
                             onClick={() => handleOpenDeleteModal(slot.id)}
                           />
                         </td>
@@ -458,7 +476,7 @@ export default function CateringServiceDetails() {
   );
 }
 
-// ✅ Reusable row for service details
+// Reusable row for service details
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
   <div className="flex items-center">
     <p className="w-32 text-sm font-medium text-gray-500">{label}</p>

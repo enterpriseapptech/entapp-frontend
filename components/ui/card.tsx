@@ -7,38 +7,59 @@ interface CardProps {
   label: string;
   title: string;
   location: string;
-  price: string;
-  rating?: number; 
+  price: string; // Deposit Amount (₦)
+  rating?: number;
+  pricingPerSlot?: number;
+  discountPercentage?: number;
+  depositPercentage?: number;
 }
 
-const Card: React.FC<CardProps> = ({ imageSrc, label, title, location, price, rating, name }) => {
+const Card: React.FC<CardProps> = ({
+  imageSrc,
+  label,
+  title,
+  location,
+  price,
+  rating,
+  name,
+  pricingPerSlot,
+  discountPercentage,
+  depositPercentage,
+}) => {
   return (
-    <div className="bg-white rounded-sm overflow-hidden shadow-md group">
+    <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+      {/* Top Image with Label */}
       <div className="relative">
         <div className="absolute top-4 left-4 z-10">
-          <span className="bg-[#0047AB] text-white px-3 py-1 rounded-full text-sm font-medium">
+          <span className="bg-[#0047AB] text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
             {label}
           </span>
         </div>
         <Image
           src={imageSrc}
           alt={title}
-          width={100}
-          height={100}
-          className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          width={400} // Increased width for better quality
+          height={250} // Adjust height to maintain aspect ratio
+          className="h-52 w-full object-cover transition-transform duration-300 group-hover:scale-105"
           unoptimized
         />
       </div>
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-md font-md text-sm text-[#0047AB] mb-2">{name}</h3>
-          {/* Conditionally render the rating if provided */}
+
+      {/* Card Content */}
+      <div className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{name}</h3>
+            <p className="text-gray-600 text-sm mt-1">{title}</p>
+          </div>
           {rating !== undefined && (
-            <div className="flex items-center mb-2">
-              {[...Array(rating)].map((_, i) => (
+            <div className="flex items-center space-x-0.5 ml-4 flex-shrink-0">
+              {[...Array(5)].map((_, i) => (
                 <svg
                   key={i}
-                  className="w-4 h-4 text-yellow-400 fill-current"
+                  className={`w-4 h-4 ${
+                    i < rating ? "text-yellow-400" : "text-gray-300"
+                  } fill-current`}
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                 >
@@ -48,10 +69,35 @@ const Card: React.FC<CardProps> = ({ imageSrc, label, title, location, price, ra
             </div>
           )}
         </div>
-        <h3 className="text-md font-sm text-sm text-[#081127]">{title}</h3>
-        <p className="text-gray-400 text-sm mb-2">{location}</p>
-        
-        <p className="text-md font-bold text-gray-600">{price}</p>
+        <p className="text-gray-500 text-xs mt-1">{location}</p>
+
+        <hr className="my-4 border-gray-200" />
+
+        {/* Breakdown Section */}
+        <div className="space-y-2 text-sm">
+          {pricingPerSlot !== undefined && (
+            <div className="flex justify-between items-center text-gray-700">
+              <span className="font-medium">Pricing per slot:</span>
+              <span className="font-semibold text-gray-900">₦{pricingPerSlot.toLocaleString()}</span>
+            </div>
+          )}
+          {discountPercentage !== undefined && (
+            <div className="flex justify-between items-center text-gray-700">
+              <span className="font-medium">Discount:</span>
+              <span className="font-semibold text-green-600">{discountPercentage}%</span>
+            </div>
+          )}
+          {depositPercentage !== undefined && (
+            <div className="flex justify-between items-center text-gray-700">
+              <span className="font-medium">Deposit percentage:</span>
+              <span className="font-semibold text-gray-900">{depositPercentage}%</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+            <span className="font-bold text-base text-gray-800">Deposit Amount:</span>
+            <span className="font-bold text-lg text-[#0047AB]">{price}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

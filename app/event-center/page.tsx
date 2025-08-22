@@ -49,38 +49,37 @@ export default function EventCenters() {
   const handleLocationChange = () => setIsLocationOpen(false);
 
   // Map API data to the format expected by the Card component
-  const eventCenters =
-    data?.data?.map((venue) => {
-      return {
-        id: venue.id,
-        name: venue.name || "Event Hall",
-        imageSrc:
-          venue.images && venue.images.length > 0
-            ? venue.images[0]
-            : "/placeholder-image.png",
-        // ✅ updated label logic
-        label:
-          venue.discountPercentage && venue.discountPercentage > 0
-            ? `Discount ${venue.discountPercentage}%`
-            : venue.paymentRequired
-            ? "Payment Required"
-            : "Featured",
-        // ✅ show description preview
-        title: venue.description
-          ? venue.description.slice(0, 50) + "..."
-          : "No description available",
-        location: venue.city ? `${venue.city}, Nigeria` : "Unknown location",
-        // ✅ show deposit percentage if available
-        price: venue.depositPercentage
-          ? `${venue.depositPercentage}% deposit`
-          : "Contact for pricing",
-        eventType: venue.eventTypes[0] || "General Event",
-        capacity: venue.sittingCapacity || 0,
-        rating: venue.rating, // ✅ now included from API
-        rawPrice: venue.pricingPerSlot, // ✅ keep raw price for range filtering
-      };
-    }) ?? [];
-
+  // const eventCenters =
+  //   data?.data?.map((venue) => {
+  //     return {
+  //       id: venue.id,
+  //       name: venue.name || "Event Hall",
+  //       imageSrc:
+  //         venue.images && venue.images.length > 0
+  //           ? venue.images[0]
+  //           : "/placeholder-image.png",
+  //       // ✅ updated label logic
+  //       label:
+  //         venue.discountPercentage && venue.discountPercentage > 0
+  //           ? `Discount ${venue.discountPercentage}%`
+  //           : venue.paymentRequired
+  //           ? "Payment Required"
+  //           : "Featured",
+  //       // ✅ show description preview
+  //       title: venue.description
+  //         ? venue.description.slice(0, 50) + "..."
+  //         : "No description available",
+  //       location: venue.city ? `${venue.city}, Nigeria` : "Unknown location",
+  //       // ✅ show deposit percentage if available
+  //       price: venue.depositPercentage
+  //         ? `${venue.depositPercentage}% deposit`
+  //         : "Contact for pricing",
+  //       eventType: venue.eventTypes[0] || "General Event",
+  //       capacity: venue.sittingCapacity || 0,
+  //       rating: venue.rating, // ✅ now included from API
+  //       rawPrice: venue.pricingPerSlot, // ✅ keep raw price for range filtering
+  //     };
+  //   }) ?? [];
 
   // Helper function to determine if a capacity value is within the selected range
   const isCapacitySelected = (value: number) => {
@@ -118,28 +117,62 @@ export default function EventCenters() {
   };
 
   // Filter event centers based on selected filters
-  const filteredEventCenters = eventCenters.filter((center) => {
-    const matchesEventType =
-      selectedEventTypes.length === 0 ||
-      selectedEventTypes.some((type) =>
-        center.eventType.toLowerCase().includes(type.toLowerCase())
+  const filteredEventCenters = (data?.data ?? [])
+    .filter((center) => {
+      const matchesEventType =
+        selectedEventTypes.length === 0 ||
+        selectedEventTypes.some((type) =>
+          center.eventTypes
+            .map((t) => t.toLowerCase())
+            .includes(type.toLowerCase())
+        );
+
+      const matchesCapacity =
+        center.sittingCapacity >= capacityRange[0] &&
+        center.sittingCapacity <= capacityRange[1];
+
+      const discountedPrice =
+        center.pricingPerSlot * (1 - (center.discountPercentage ?? 0) / 100);
+      const depositAmount = discountedPrice * (center.depositPercentage / 100);
+
+      const matchesPrice =
+        depositAmount >= priceRange[0] && depositAmount <= priceRange[1];
+
+      const matchesLocation =
+        location === "Nigeria" ||
+        center.city.toLowerCase().includes(location.toLowerCase()) ||
+        center.location.toLowerCase().includes(location.toLowerCase());
+
+      return (
+        matchesEventType && matchesCapacity && matchesPrice && matchesLocation
       );
+    })
+    .map((center) => {
+      const discountedPrice =
+        center.pricingPerSlot * (1 - (center.discountPercentage ?? 0) / 100);
+      const depositAmount = discountedPrice * (center.depositPercentage / 100);
 
-    const matchesCapacity =
-      center.capacity >= capacityRange[0] &&
-      center.capacity <= capacityRange[1];
-
-    // const matchesPrice =
-    //   center.rawPrice >= priceRange[0] && center.rawPrice <= priceRange[1];
-
-    const matchesLocation =
-      location === "Nigeria" ||
-      center.location.toLowerCase().includes(location.toLowerCase());
-
-    return (
-      matchesEventType && matchesCapacity && matchesLocation
-    );
-  });
+      return {
+        id: center.id,
+        name: center.name,
+        imageSrc: center.images[0] || "/placeholder-image.png",
+        label:
+          center.discountPercentage && center.discountPercentage > 0
+            ? `Discount ${center.discountPercentage}%`
+            : center.paymentRequired
+            ? "Payment Required"
+            : "Featured",
+        title: center.description?.slice(0, 50) + "...",
+        location: center.city ? `${center.city}, Nigeria` : "Unknown location",
+        pricingPerSlot: center.pricingPerSlot,
+        discountPercentage: center.discountPercentage,
+        depositPercentage: center.depositPercentage,
+        price: `₦${depositAmount.toLocaleString()}`,
+        eventType: center.eventTypes[0] || "General Event",
+        capacity: center.sittingCapacity,
+        rating: center.rating,
+      };
+    });
 
   // Determine active filters for display as tags
   const activeFilters = [];
@@ -510,8 +543,9 @@ export default function EventCenters() {
                       title={center.title}
                       location={center.location}
                       price={center.price}
-                      // eventType={center.eventType}
-                      // capacity={center.capacity}
+                      pricingPerSlot={center.pricingPerSlot}
+                      discountPercentage={center.discountPercentage}
+                      depositPercentage={center.depositPercentage}
                     />
                   </Link>
                 ))}

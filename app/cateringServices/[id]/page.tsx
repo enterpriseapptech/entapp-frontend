@@ -3,9 +3,7 @@ import Link from "next/link";
 import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
-// import { Calendar, Wifi, Shield, User, FileText, Ban } from "lucide-react";
 import { FileText, Ban } from "lucide-react";
-// import { useParams, useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
@@ -20,13 +18,8 @@ interface CateringService {
   tagLine: string;
   description: string;
   images: string[];
-  streetAddress: string;
-  streetAddress2: string | null;
   city: string;
-  state: string;
-  country: string;
   location: string[];
-  postal: string;
   startPrice: number;
   cuisine: string[];
   dishTypes: string[];
@@ -35,11 +28,14 @@ interface CateringService {
   termsOfUse: string;
   cancellationPolicy: string;
   status: string;
-  rating?: number;
+  rating?: number | null;
   paymentRequired: boolean;
   contact: string | null;
   eventTypes: string[];
+  discountPercentage: number;
+  depositPercentage: number;
 }
+
 interface BookingData {
   date: string;
   time: string;
@@ -47,11 +43,20 @@ interface BookingData {
   price: number;
 }
 
+// Utility function to calculate deposit amount
+function calculateDepositAmount(
+  startPrice: number,
+  discountPercentage: number,
+  depositPercentage: number
+) {
+  const discounted = startPrice * (1 - (discountPercentage ?? 0) / 100);
+  const deposit = discounted * (depositPercentage / 100);
+  return Math.round(deposit * 100) / 100;
+}
 
 export default function CateringServiceDetails() {
   const params = useParams();
   const { id } = params as { id: string };
-  // const router = useRouter();
 
   const { data: cateringData, isLoading, error } = useGetCateringByIdQuery(id);
 
@@ -65,13 +70,8 @@ export default function CateringServiceDetails() {
         images: cateringData.images.length
           ? cateringData.images
           : ["/catering.png"],
-        streetAddress: cateringData.streetAddress,
-        streetAddress2: cateringData.streetAddress2,
         city: cateringData.city,
-        state: cateringData.state,
-        country: cateringData.country,
         location: cateringData.location,
-        postal: cateringData.postal,
         startPrice: cateringData.startPrice,
         cuisine: cateringData.cuisine,
         dishTypes: cateringData.dishTypes,
@@ -84,15 +84,14 @@ export default function CateringServiceDetails() {
         paymentRequired: cateringData.paymentRequired,
         contact: cateringData.contact,
         eventTypes: cateringData.eventTypes,
+        discountPercentage: cateringData.discountPercentage,
+        depositPercentage: cateringData.depositPercentage,
       }
     : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  // const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
-  // const [isMoreThanOneDay, setIsMoreThanOneDay] = useState(false);
-  // const [numberOfGuests, setNumberOfGuests] = useState<string>("");
 
   const images = cateringService?.images || ["/catering.png"];
 
@@ -160,37 +159,9 @@ export default function CateringServiceDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  // const handleAddDate = () => {
-  //   setSelectedDates([...selectedDates, ""]);
-  // };
-
-  // const handleDateChange = (index: number, date: string) => {
-  //   const updatedDates = [...selectedDates];
-  //   updatedDates[index] = date;
-  //   setSelectedDates(updatedDates);
-  // };
-
-  // const handleRemoveDate = (index: number) => {
-  //   const updatedDates = selectedDates.filter((_, i) => i !== index);
-  //   setSelectedDates(updatedDates);
-  // };
-
   const handleBook = (bookingData: BookingData) => {
     setLastBooking(bookingData);
-    console.log('Booking confirmed:', bookingData);
-    // if (selectedDates.length === 0 || selectedDates.some((date) => !date)) {
-    //   alert("Please select all dates.");
-    //   return;
-    // }
-    // if (!numberOfGuests) {
-    //   alert("Please select the number of guests.");
-    //   return;
-    // }
-    // router.push(
-    //   `/payment?dates=${selectedDates.join(",")}&time=12:00 pm&totalCost=${
-    //     cateringService!.startPrice
-    //   }&serviceTitle=${cateringService!.name}`
-    // );
+    console.log("Booking confirmed:", bookingData);
   };
 
   // Loading state
@@ -244,6 +215,13 @@ export default function CateringServiceDetails() {
     );
   }
 
+  // Calculate deposit amount
+  const depositAmount = calculateDepositAmount(
+    cateringService.startPrice,
+    cateringService.discountPercentage,
+    cateringService.depositPercentage
+  );
+
   return (
     <main className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -279,6 +257,11 @@ export default function CateringServiceDetails() {
           {/* Catering Service Title */}
           <h1 className="md:text-4xl text-2xl font-bold text-gray-900 mb-4">
             {cateringService.name}
+            {cateringService.rating != null && (
+              <span className="ml-2 text-sm text-gray-600">
+                ({cateringService.rating}/5)
+              </span>
+            )}
           </h1>
           <p className="text-gray-600 mb-8">{cateringService.description}</p>
 
@@ -428,50 +411,10 @@ export default function CateringServiceDetails() {
                   />
                 </svg>
                 <span className="text-gray-600 text-sm">
-                  {cateringService.streetAddress}
-                  {cateringService.streetAddress2 &&
-                    `, ${cateringService.streetAddress2}`}
-                  , {cateringService.city}, {cateringService.state},{" "}
-                  {cateringService.country}
+                  {cateringService.city}
                 </span>
               </div>
             </div>
-
-            {/* Amenities */}
-            {/* <div>
-              <h3 className="text-md font-semibold text-gray-800 mb-1 mt-2">
-                Amenities
-              </h3>
-              <div className="flex gap-6">
-                {cateringService.amenities?.map((amenity, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    {amenity === "WIFI" && (
-                      <Wifi className="w-4 h-4 text-gray-600" />
-                    )}
-                    {amenity === "PACKINGSPACE" && (
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M8 14v-4a4 4 0 014-4h0a4 4 0 014 4v4m-8 0h8m-8 0H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2h-3m-8 0v4a1 1 0 001 1h6a1 1 0 001-1v-4"
-                        />
-                      </svg>
-                    )}
-                    {amenity === "SECURITY" && (
-                      <Shield className="w-4 h-4 text-gray-600" />
-                    )}
-                    <span className="text-gray-600 text-sm">{amenity}</span>
-                  </div>
-                ))}
-              </div>
-            </div> */}
 
             {/* Capacity */}
             <div className="pb-10">
@@ -578,13 +521,35 @@ export default function CateringServiceDetails() {
 
             <div className="border border-gray-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-900 mb-2">Pricing</h3>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Starting from</span>
-                <span className="text-2xl font-bold text-[#0047AB]">
-                  ₦{cateringService.startPrice.toLocaleString()}
-                </span>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center text-gray-700">
+                  <span className="font-medium">Starting from:</span>
+                  <span className="font-semibold text-gray-900">
+                    ₦{cateringService.startPrice.toLocaleString()}
+                  </span>
+                </div>
+                {cateringService.discountPercentage !== undefined && (
+                  <div className="flex justify-between items-center text-gray-700">
+                    <span className="font-medium">Discount:</span>
+                    <span className="font-semibold text-green-600">
+                      {cateringService.discountPercentage}%
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-gray-700">
+                  <span className="font-medium">Deposit percentage:</span>
+                  <span className="font-semibold text-gray-900">
+                    {cateringService.depositPercentage}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                  <span className="font-bold text-base text-gray-800">Deposit Amount:</span>
+                  <span className="font-bold text-lg text-[#0047AB]">
+                    ₦{depositAmount.toLocaleString()}
+                  </span>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-3">
                 Final price depends on menu selection and guest count
               </p>
             </div>
@@ -620,7 +585,7 @@ export default function CateringServiceDetails() {
                 Need help with your booking?
               </p>
               <p className="text-sm font-medium text-[#0047AB]">
-                {cateringService.contact}
+                {cateringService.contact || "Contact not available"}
               </p>
             </div>
           </div>
@@ -655,6 +620,7 @@ export default function CateringServiceDetails() {
           </p>
         </aside>
       </div>
+
       {/* Date Picker Modal */}
       <DatePicker
         isOpen={isDatePickerOpen}

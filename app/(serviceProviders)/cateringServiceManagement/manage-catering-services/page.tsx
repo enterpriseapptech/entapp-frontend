@@ -25,7 +25,7 @@ interface CateringTableData {
   date: string;
   status: string;
   ratings: number;
-  depositAmount: string;
+  startPrice: string;
   cuisine: string;
   minCapacity: string;
   maxCapacity: string;
@@ -182,7 +182,7 @@ export default function ManageCatering() {
     cateringData?.data?.map((service) => ({
       id: service.id,
       name: service.name || service.tagLine || "Catering Service",
-      location: `${service.city}, ${service.state}`,
+      location: `${service.city}, ${service.location.join(", ")}`,
       date: new Date(service.createdAt).toLocaleString("en-US", {
         month: "short",
         day: "numeric",
@@ -193,7 +193,7 @@ export default function ManageCatering() {
       }),
       status: service.status,
       ratings: service.rating || 0,
-      depositAmount: `$${(service.depositAmount || 0).toLocaleString()}`,
+      startPrice: `$${service.startPrice.toLocaleString()}`,
       cuisine: service.cuisine?.join(", ") || "N/A",
       minCapacity: service.minCapacity?.toString() || "N/A",
       maxCapacity: service.maxCapacity?.toString() || "N/A",
@@ -205,9 +205,9 @@ export default function ManageCatering() {
   const uniqueLocations = [...new Set(cateringServices.map((service) => service.location))];
   const uniqueStatuses = [...new Set(cateringServices.map((service) => service.status))];
   const uniqueRatings = [...new Set(cateringServices.map((service) => service.ratings))].sort((a, b) => a - b);
-  const uniqueCuisines = [...new Set(cateringServices.flatMap(service => service.cuisine.split(", ")))];
-  const uniqueCapacities = [...new Set(cateringServices.map(service => `${service.minCapacity}-${service.maxCapacity}`))];
-  const uniqueDishTypes = [...new Set(cateringServices.flatMap(service => service.dishTypes.split(", ")))];
+  const uniqueCuisines = [...new Set(cateringServices.flatMap((service) => service.cuisine.split(", ")))];
+  const uniqueCapacities = [...new Set(cateringServices.map((service) => `${service.minCapacity}-${service.maxCapacity}`))];
+  const uniqueDishTypes = [...new Set(cateringServices.flatMap((service) => service.dishTypes.split(", ")))];
 
   // Apply filters to the data
   const filteredCateringServices = cateringServices.filter((service) => {
@@ -231,7 +231,7 @@ export default function ManageCatering() {
       service.location.toLowerCase().includes(query) ||
       service.date.toLowerCase().includes(query) ||
       service.status.toLowerCase().includes(query) ||
-      service.depositAmount.toLowerCase().includes(query) ||
+      service.startPrice.toLowerCase().includes(query) ||
       service.cuisine.toLowerCase().includes(query) ||
       service.minCapacity.toLowerCase().includes(query) ||
       service.maxCapacity.toLowerCase().includes(query) ||
@@ -332,8 +332,8 @@ export default function ManageCatering() {
         service.location
       )}&date=${encodeURIComponent(service.date)}&status=${encodeURIComponent(
         service.status
-      )}&ratings=${service.ratings}&depositAmount=${encodeURIComponent(
-        service.depositAmount
+      )}&ratings=${service.ratings}&startPrice=${encodeURIComponent(
+        service.startPrice
       )}&cuisine=${encodeURIComponent(
         service.cuisine
       )}&minCapacity=${encodeURIComponent(
@@ -810,7 +810,7 @@ export default function ManageCatering() {
                       Ratings
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Deposit Amount
+                      Start Price
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Actions
@@ -866,7 +866,7 @@ export default function ManageCatering() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {service.depositAmount}
+                        {service.startPrice}
                       </td>
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <div className="flex gap-2">

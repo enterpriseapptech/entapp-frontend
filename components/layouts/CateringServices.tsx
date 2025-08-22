@@ -1,3 +1,4 @@
+"use client";
 import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -9,7 +10,9 @@ interface CateringServicesProps {
   heading?: string;
 }
 
-export default function CateringServices({ heading = "Boosting Company Culture, One Meal at a Time" }: CateringServicesProps) {
+export default function CateringServices({
+  heading = "Boosting Company Culture, One Meal at a Time",
+}: CateringServicesProps) {
   const router = useRouter();
 
   const { data, isLoading, error } = useGetCateringsQuery({
@@ -38,15 +41,27 @@ export default function CateringServices({ heading = "Boosting Company Culture, 
   );
 
   // Map API data to the format expected by the Card component
-  const featuredCateringServices = data?.data?.map((service) => ({
-    id: service.id,
-    imageSrc: service.images[0] || "/catering.png",
-    label: "Featured",
-    title: service.tagLine,
-    location: `${service.city}, ${service.state}, ${service.country}`,
-    price: `₦${service.depositAmount.toLocaleString()}`,
-    name: "Catering Service",
-  })) ?? [];
+  const featuredCateringServices =
+    data?.data?.map((service) => {
+      // Calculate deposit amount after discount
+      const discounted =
+        service.startPrice * (1 - (service.discountPercentage ?? 0) / 100);
+      const depositAmount = discounted * (service.depositPercentage / 100);
+
+      return {
+        id: service.id,
+        imageSrc: service.images[0] || "/catering.png",
+        label: service.isFeatured ? "Featured" : "",
+        title: service.tagLine,
+        location: service.city,
+        price: `₦${depositAmount.toLocaleString()}`, // final deposit amount
+        name: service.name,
+        pricingPerSlot: service.startPrice,
+        discountPercentage: service.discountPercentage,
+        depositPercentage: service.depositPercentage,
+        rating: service.rating ?? 4,
+      };
+    }) ?? [];
 
   return (
     <section className="py-20">
@@ -83,6 +98,9 @@ export default function CateringServices({ heading = "Boosting Company Culture, 
                   location={service.location}
                   price={service.price}
                   name={service.name}
+                  pricingPerSlot={service.pricingPerSlot}
+                  discountPercentage={service.discountPercentage}
+                  depositPercentage={service.depositPercentage}
                 />
               </Link>
             ))}
