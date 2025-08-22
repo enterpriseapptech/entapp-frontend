@@ -58,11 +58,11 @@ export default function FeaturedVenues({ heading }: FeaturedProps) {
 
       return {
         id: venue.id,
-        imageSrc: venue.images[0] || "/placeholder-image.png",
+        imageSrc: venue.images[0] || "/event.png",
         label: "Featured",
         title: venue.description,
         location: `${venue.city}`,
-        price: `₦${depositAmount.toLocaleString()}`, // now showing deposit amount
+        price: `₦${depositAmount.toLocaleString()}`,
         name: venue.name,
         pricingPerSlot: venue.pricingPerSlot,
         discountPercentage: venue.discountPercentage,

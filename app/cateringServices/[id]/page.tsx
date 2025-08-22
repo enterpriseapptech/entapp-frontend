@@ -6,11 +6,12 @@ import { useState } from "react";
 import { FileText, Ban } from "lucide-react";
 import { useParams } from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
-import FeaturedVenues from "@/components/layouts/FeaturedVenues";
+// import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
 import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
 import DatePicker from "@/components/ui/DatePicker";
+import CateringServices from "@/components/layouts/CateringServices";
 
 interface CateringService {
   id: string;
@@ -495,10 +496,10 @@ export default function CateringServiceDetails() {
         </div>
 
         {/* Right Section: Booking Form */}
-        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-lg sticky top-6 h-[750px]">
+        <aside className="lg:w-[350px] bg-white p-6 rounded-lg shadow-lg sticky top-6 h-[900px]">
           <div className="text-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Book Your Event
+              Book Your Catering
             </h2>
             <p className="text-gray-600 text-sm">
               Reserve our premium catering service for your special occasion
@@ -543,7 +544,9 @@ export default function CateringServiceDetails() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                  <span className="font-bold text-base text-gray-800">Deposit Amount:</span>
+                  <span className="font-bold text-base text-gray-800">
+                    Deposit Amount:
+                  </span>
                   <span className="font-bold text-lg text-[#0047AB]">
                     ₦{depositAmount.toLocaleString()}
                   </span>
@@ -556,11 +559,17 @@ export default function CateringServiceDetails() {
           </div>
 
           {/* Book Button */}
-          <button
+          {/* <button
             onClick={() => setIsDatePickerOpen(true)}
             className="w-full bg-[#0047AB] text-white py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
             Choose Date & Time
+          </button> */}
+          <button
+            onClick={() => console.log("Request Quote clicked")}
+            className="w-full mt-3 bg-green-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+          >
+            Request Quote
           </button>
 
           {/* Last Booking Display */}
@@ -639,7 +648,7 @@ export default function CateringServiceDetails() {
         setCurrentPage={setCurrentReviewPage}
       />
       <hr className="mb-4 mt-4 mx-30" />
-      <FeaturedVenues heading="Featured Catering Services" />
+      <CateringServices />
       <Footer />
     </main>
   );
