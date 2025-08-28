@@ -176,7 +176,7 @@ export default function CateringServicesAllPost() {
         pricingPerSlot: service.startPrice,
         discountPercentage: service.discountPercentage,
         depositPercentage: service.depositPercentage,
-        price: `₦${depositAmount.toLocaleString()}`, 
+        price: `₦${depositAmount.toLocaleString()}`,
       };
     });
 
@@ -519,7 +519,6 @@ export default function CateringServicesAllPost() {
                         label={service.label}
                         title={service.title}
                         location={service.location}
-                        price={service.price}
                         pricingPerSlot={service.pricingPerSlot}
                         discountPercentage={service.discountPercentage}
                         depositPercentage={service.depositPercentage}

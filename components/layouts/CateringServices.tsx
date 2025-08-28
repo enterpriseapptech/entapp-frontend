@@ -96,7 +96,6 @@ export default function CateringServices({
                   label={service.label}
                   title={service.title}
                   location={service.location}
-                  price={service.price}
                   name={service.name}
                   pricingPerSlot={service.pricingPerSlot}
                   discountPercentage={service.discountPercentage}

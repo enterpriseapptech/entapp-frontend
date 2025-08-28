@@ -21,21 +21,25 @@ interface BookingData {
 }
 
 // Utility function to calculate deposit amount
-function calculateDepositAmount(
-  pricingPerSlot: number,
-  discountPercentage: number,
-  depositPercentage: number
-) {
-  const discounted = pricingPerSlot * (1 - (discountPercentage ?? 0) / 100);
-  const deposit = discounted * (depositPercentage / 100);
-  return Math.round(deposit * 100) / 100;
-}
+// function calculateDepositAmount(
+//   pricingPerSlot: number,
+//   discountPercentage: number,
+//   depositPercentage: number
+// ) {
+//   const discounted = pricingPerSlot * (1 - (discountPercentage ?? 0) / 100);
+//   const deposit = discounted * (depositPercentage / 100);
+//   return Math.round(deposit * 100) / 100;
+// }
 
 export default function EventCenterDetails() {
   const params = useParams();
   const { id } = params as { id: string };
 
-  const { data: eventCenterData, isLoading, error } = useGetEventCenterByIdQuery(id);
+  const {
+    data: eventCenterData,
+    isLoading,
+    error,
+  } = useGetEventCenterByIdQuery(id);
 
   const eventCenter: EventCenter | undefined = eventCenterData
     ? {
@@ -50,7 +54,9 @@ export default function EventCenterDetails() {
         sittingCapacity: eventCenterData.sittingCapacity,
         venueLayout: eventCenterData.venueLayout,
         amenities: eventCenterData.amenities,
-        images: eventCenterData.images.length ? eventCenterData.images : ["/placeholder-image.png"],
+        images: eventCenterData.images.length
+          ? eventCenterData.images
+          : ["/placeholder-image.png"],
         termsOfUse: eventCenterData.termsOfUse,
         cancellationPolicy: eventCenterData.cancellationPolicy,
         streetAddress: eventCenterData.streetAddress,
@@ -126,7 +132,9 @@ export default function EventCenterDetails() {
   const handleNextReview = () =>
     setCurrentReviewPage((prev) => (prev + 1) % totalReviewPages);
   const handlePrevReview = () =>
-    setCurrentReviewPage((prev) => (prev - 1 + totalReviewPages) % totalReviewPages);
+    setCurrentReviewPage(
+      (prev) => (prev - 1 + totalReviewPages) % totalReviewPages
+    );
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -191,11 +199,11 @@ export default function EventCenterDetails() {
   }
 
   // Calculate deposit amount
-  const depositAmount = calculateDepositAmount(
-    eventCenter.pricingPerSlot,
-    eventCenter.discountPercentage,
-    eventCenter.depositPercentage
-  );
+  // const depositAmount = calculateDepositAmount(
+  //   eventCenter.pricingPerSlot,
+  //   eventCenter.discountPercentage,
+  //   eventCenter.depositPercentage
+  // );
 
   return (
     <main className="min-h-screen bg-white">
@@ -369,7 +377,8 @@ export default function EventCenterDetails() {
                 </svg>
                 <span className="text-gray-600 text-sm">
                   {eventCenter.streetAddress}
-                  {eventCenter.streetAddress2 && `, ${eventCenter.streetAddress2}`}
+                  {eventCenter.streetAddress2 &&
+                    `, ${eventCenter.streetAddress2}`}
                   {eventCenter.city && `, ${eventCenter.city}`}
                 </span>
               </div>
@@ -393,7 +402,9 @@ export default function EventCenterDetails() {
                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span className="text-gray-600">{eventCenter.sittingCapacity}</span>
+                <span className="text-gray-600">
+                  {eventCenter.sittingCapacity}
+                </span>
               </div>
             </div>
             <div>
@@ -414,7 +425,9 @@ export default function EventCenterDetails() {
                 Venue Layout
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-gray-600 text-sm">{eventCenter.venueLayout}</span>
+                <span className="text-gray-600 text-sm">
+                  {eventCenter.venueLayout}
+                </span>
               </div>
             </div>
             <div>
@@ -423,7 +436,9 @@ export default function EventCenterDetails() {
               </h3>
               <div className="flex items-center gap-2">
                 <BadgeCheck className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">{eventCenter.status}</span>
+                <span className="text-gray-600 text-sm">
+                  {eventCenter.status}
+                </span>
               </div>
             </div>
             <div>
@@ -432,7 +447,9 @@ export default function EventCenterDetails() {
               </h3>
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">{eventCenter.termsOfUse}</span>
+                <span className="text-gray-600 text-sm">
+                  {eventCenter.termsOfUse}
+                </span>
               </div>
             </div>
             <div>
@@ -441,7 +458,9 @@ export default function EventCenterDetails() {
               </h3>
               <div className="flex items-center gap-2">
                 <Ban className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 text-sm">{eventCenter.cancellationPolicy}</span>
+                <span className="text-gray-600 text-sm">
+                  {eventCenter.cancellationPolicy}
+                </span>
               </div>
             </div>
             <div>
@@ -501,15 +520,10 @@ export default function EventCenterDetails() {
                     {eventCenter.depositPercentage}%
                   </span>
                 </div>
-                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                  <span className="font-bold text-base text-gray-800">Deposit Amount:</span>
-                  <span className="font-bold text-lg text-[#0047AB]">
-                    ₦{depositAmount.toLocaleString()}
-                  </span>
-                </div>
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200"></div>
               </div>
               <p className="text-xs text-gray-500 mt-3">
-                Final price depends on event duration and guest count
+                Final price depends on the slot and additional services chosen.
               </p>
             </div>
           </div>
@@ -595,7 +609,8 @@ export default function EventCenterDetails() {
           </div>
 
           <p className="text-xs text-gray-500 mt-4 text-center">
-            Secure booking • Flexible cancellation • Professional service guaranteed
+            Secure booking • Flexible cancellation • Professional service
+            guaranteed
           </p>
         </aside>
       </div>
@@ -604,9 +619,13 @@ export default function EventCenterDetails() {
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
         onBook={handleBook}
+        serviceId={eventCenter.id}
+        serviceName={eventCenter.name}
         startPrice={eventCenter.pricingPerSlot}
+        discountPercentage={eventCenter.discountPercentage}
+        depositPercentage={eventCenter.depositPercentage}
+        serviceType="EVENTCENTER"
       />
-
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews
         reviews={reviews}

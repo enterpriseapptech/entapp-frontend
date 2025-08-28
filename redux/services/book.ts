@@ -1,20 +1,29 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+// -------- REQUEST --------
 export interface CreateBookingRequest {
   customerId: string;
+  serviceId: string;
   timeslotId: string[];
   serviceType: "EVENTCENTER" | "CATERING";
-  totalBeforeDiscount: number;
+  subTotal: number;
   discount: number;
-  totalAfterDiscount: number;
-  bookingDates: string[];
+  total: number;
+  items: { item: string; amount: number }[];
+  billingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postal: string;
+  };
+  dueDate: string; // ISO string
   isTermsAccepted: boolean;
   isCancellationPolicyAccepted: boolean;
   isLiabilityWaiverSigned: boolean;
-  source: "WEB" | string;
+  source: "WEB" | "MOBILE" | string;
   serviceNotes: string;
   customerNotes: string;
-  serviceId: string;
   eventName: string;
   eventTheme: string;
   eventType: string;
@@ -23,37 +32,34 @@ export interface CreateBookingRequest {
   specialRequirements: string[];
 }
 
+// -------- RESPONSE --------
 export interface CreateBookingResponse {
   id: string;
-  customerId: string;
-  confirmedBy: string | null;
-  confirmedAt: string | null;
-  servicebookingId: string | null;
-  serviceType: "EVENTCENTER" | "CATERING";
-  totalBeforeDiscount: number;
+  userId: string;
+  bookingId: string;
+  items: { item: string; amount: number }[];
+  subTotal: number;
   discount: number;
-  totalAfterDiscount: number;
-  paymentStatus: "UNPAID" | "PAID" | string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" | string;
-  bookingDates: string[];
-  isTermsAccepted: boolean;
-  isCancellationPolicyAccepted: boolean;
-  isLiabilityWaiverSigned: boolean;
-  bookingReference: string;
-  source: "WEB" | string;
-  serviceNotes: string | null;
-  customerNotes: string | null;
-  rescheduledBy: string | null;
-  rescheduledAt: string | null;
-  previousDates: string[];
-  canceledAt: string | null;
-  cancelationReason: string | null;
+  total: number;
+  amountDue: string;
+  currency: string;
+  note: string | null;
+  billingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postal: string;
+  };
+  status: "PENDING" | "BOOKED" | "RESERVED" | "POSTPONED" | "CANCELED" | string;
+  dueDate: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
   deletedBy: string | null;
 }
 
+// -------- LIST RESPONSE --------
 export interface GetBookingsByServiceProviderResponse {
   count: number;
   data: CreateBookingResponse[];
@@ -65,6 +71,7 @@ export interface GetBookingsByServiceProviderQueryParams {
   offset?: number;
 }
 
+// -------- API SLICE --------
 export const bookingApi = createApi({
   reducerPath: "bookingApi",
   baseQuery: fetchBaseQuery({
@@ -81,9 +88,12 @@ export const bookingApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    createBooking: builder.mutation<CreateBookingResponse, CreateBookingRequest>({
+    createBooking: builder.mutation<
+      CreateBookingResponse,
+      CreateBookingRequest
+    >({
       query: (payload) => ({
-        url: "/booking/create",
+        url: "/booking",
         method: "POST",
         body: payload,
         headers: {
@@ -108,4 +118,7 @@ export const bookingApi = createApi({
   }),
 });
 
-export const { useCreateBookingMutation, useGetBookingsByServiceProviderQuery } = bookingApi;
+export const {
+  useCreateBookingMutation,
+  useGetBookingsByServiceProviderQuery,
+} = bookingApi;

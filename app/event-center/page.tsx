@@ -542,7 +542,6 @@ export default function EventCenters() {
                       label={center.label}
                       title={center.title}
                       location={center.location}
-                      price={center.price}
                       pricingPerSlot={center.pricingPerSlot}
                       discountPercentage={center.discountPercentage}
                       depositPercentage={center.depositPercentage}

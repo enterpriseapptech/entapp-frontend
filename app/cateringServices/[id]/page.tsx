@@ -10,7 +10,7 @@ import CustomerReviews from "@/components/layouts/CustomerReviews";
 import Footer from "@/components/layouts/Footer";
 import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
-import DatePicker from "@/components/ui/DatePicker";
+// import DatePicker from "@/components/ui/DatePicker";
 import CateringServices from "@/components/layouts/CateringServices";
 
 interface CateringService {
@@ -37,23 +37,23 @@ interface CateringService {
   depositPercentage: number;
 }
 
-interface BookingData {
-  date: string;
-  time: string;
-  guests: number;
-  price: number;
-}
+// interface BookingData {
+//   date: string;
+//   time: string;
+//   guests: number;
+//   price: number;
+// }
 
 // Utility function to calculate deposit amount
-function calculateDepositAmount(
-  startPrice: number,
-  discountPercentage: number,
-  depositPercentage: number
-) {
-  const discounted = startPrice * (1 - (discountPercentage ?? 0) / 100);
-  const deposit = discounted * (depositPercentage / 100);
-  return Math.round(deposit * 100) / 100;
-}
+// function calculateDepositAmount(
+//   startPrice: number,
+//   discountPercentage: number,
+//   depositPercentage: number
+// ) {
+//   const discounted = startPrice * (1 - (discountPercentage ?? 0) / 100);
+//   const deposit = discounted * (depositPercentage / 100);
+//   return Math.round(deposit * 100) / 100;
+// }
 
 export default function CateringServiceDetails() {
   const params = useParams();
@@ -91,8 +91,8 @@ export default function CateringServiceDetails() {
     : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
+  // const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  // const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
 
   const images = cateringService?.images || ["/catering.png"];
 
@@ -160,10 +160,10 @@ export default function CateringServiceDetails() {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const handleBook = (bookingData: BookingData) => {
-    setLastBooking(bookingData);
-    console.log("Booking confirmed:", bookingData);
-  };
+  // const handleBook = (bookingData: BookingData) => {
+  //   setLastBooking(bookingData);
+  //   console.log("Booking confirmed:", bookingData);
+  // };
 
   // Loading state
   if (isLoading) {
@@ -217,11 +217,11 @@ export default function CateringServiceDetails() {
   }
 
   // Calculate deposit amount
-  const depositAmount = calculateDepositAmount(
-    cateringService.startPrice,
-    cateringService.discountPercentage,
-    cateringService.depositPercentage
-  );
+  // const depositAmount = calculateDepositAmount(
+  //   cateringService.startPrice,
+  //   cateringService.discountPercentage,
+  //   cateringService.depositPercentage
+  // );
 
   return (
     <main className="min-h-screen bg-white">
@@ -543,49 +543,28 @@ export default function CateringServiceDetails() {
                     {cateringService.depositPercentage}%
                   </span>
                 </div>
-                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                {/* <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
                   <span className="font-bold text-base text-gray-800">
                     Deposit Amount:
                   </span>
                   <span className="font-bold text-lg text-[#0047AB]">
                     ₦{depositAmount.toLocaleString()}
                   </span>
-                </div>
+                </div> */}
               </div>
               <p className="text-xs text-gray-500 mt-3">
-                Final price depends on menu selection and guest count
+                Final price depends on the services chosen.
               </p>
             </div>
           </div>
 
           {/* Book Button */}
-          {/* <button
-            onClick={() => setIsDatePickerOpen(true)}
-            className="w-full bg-[#0047AB] text-white py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
-          >
-            Choose Date & Time
-          </button> */}
           <button
             onClick={() => console.log("Request Quote clicked")}
             className="w-full mt-3 bg-green-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
             Request Quote
           </button>
-
-          {/* Last Booking Display */}
-          {lastBooking && (
-            <div className="mt-6 border border-green-200 bg-green-50 rounded-lg p-4">
-              <h3 className="font-semibold text-green-900 mb-2">
-                Latest Booking
-              </h3>
-              <div className="space-y-1 text-sm text-green-800">
-                <p>Date: {new Date(lastBooking.date).toLocaleDateString()}</p>
-                <p>Time: {lastBooking.time}</p>
-                <p>Guests: {lastBooking.guests}</p>
-                <p>Price: ₦{lastBooking.price.toLocaleString()}</p>
-              </div>
-            </div>
-          )}
 
           {/* Contact Info */}
           <div className="mt-6 pt-4 border-t border-gray-200">
@@ -629,14 +608,6 @@ export default function CateringServiceDetails() {
           </p>
         </aside>
       </div>
-
-      {/* Date Picker Modal */}
-      <DatePicker
-        isOpen={isDatePickerOpen}
-        onClose={() => setIsDatePickerOpen(false)}
-        onBook={handleBook}
-        startPrice={cateringService.startPrice}
-      />
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews
         reviews={reviews}

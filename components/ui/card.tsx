@@ -7,7 +7,7 @@ interface CardProps {
   label: string;
   title: string;
   location: string;
-  price: string; // Deposit Amount (₦)
+
   rating?: number;
   pricingPerSlot?: number;
   discountPercentage?: number;
@@ -19,7 +19,6 @@ const Card: React.FC<CardProps> = ({
   label,
   title,
   location,
-  price,
   rating,
   name,
   pricingPerSlot,
@@ -49,7 +48,9 @@ const Card: React.FC<CardProps> = ({
       <div className="p-5">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{name}</h3>
+            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
+              {name}
+            </h3>
             <p className="text-gray-600 text-sm mt-1">{title}</p>
           </div>
           {rating !== undefined && (
@@ -78,25 +79,27 @@ const Card: React.FC<CardProps> = ({
           {pricingPerSlot !== undefined && (
             <div className="flex justify-between items-center text-gray-700">
               <span className="font-medium">Pricing per slot:</span>
-              <span className="font-semibold text-gray-900">₦{pricingPerSlot.toLocaleString()}</span>
+              <span className="font-semibold text-gray-900">
+                ₦{pricingPerSlot.toLocaleString()}
+              </span>
             </div>
           )}
           {discountPercentage !== undefined && (
             <div className="flex justify-between items-center text-gray-700">
               <span className="font-medium">Discount:</span>
-              <span className="font-semibold text-green-600">{discountPercentage}%</span>
+              <span className="font-semibold text-green-600">
+                {discountPercentage}%
+              </span>
             </div>
           )}
           {depositPercentage !== undefined && (
             <div className="flex justify-between items-center text-gray-700">
               <span className="font-medium">Deposit percentage:</span>
-              <span className="font-semibold text-gray-900">{depositPercentage}%</span>
+              <span className="font-semibold text-gray-900">
+                {depositPercentage}%
+              </span>
             </div>
           )}
-          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-            <span className="font-bold text-base text-gray-800">Deposit Amount:</span>
-            <span className="font-bold text-lg text-[#0047AB]">{price}</span>
-          </div>
         </div>
       </div>
     </div>
