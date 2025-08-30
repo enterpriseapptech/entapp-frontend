@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { JSX, useState } from "react";
 import { X, CheckCircle, Calendar, MapPin, FileText } from "lucide-react";
 import { useGetTimeSlotsByServiceProviderQuery } from "@/redux/services/timeslot";
 import { useCreateBookingMutation } from "@/redux/services/book";
@@ -320,11 +320,14 @@ const DatePicker: React.FC<DatePickerProps> = ({
             {step === 3 && "Billing Information"}
             {step === 4 && "Review & Confirm"}
             {step === 5 && "Booking Confirmed!"}
-          </h2>
+          </h2>xxxx
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-800 mr-4">
-              Step {step} of 4
-            </span>
+            {step < 5 && (
+              <span className="text-sm font-medium text-gray-800 mr-4">
+                Step {step} of 4
+              </span>
+            )}
+
             <button
               onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-full"
@@ -362,24 +365,62 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   {/* Date Selection */}
                   <div className="text-gray-600">
                     <h3 className="font-medium mb-3">Available Dates</h3>
-                    <div className="grid grid-cols-3 gap-3 mb-6">
-                      {availableDates.map((date) => (
-                        <button
-                          key={date}
-                          onClick={() => setSelectedDate(date)}
-                          className={`p-3 border rounded-lg text-center ${
-                            selectedDate === date
-                              ? "border-blue-600 bg-blue-50 text-blue-700"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          {new Date(date).toLocaleDateString("en-US", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </button>
-                      ))}
+
+                    {/* Calendar-like grid */}
+                    <div className="grid grid-cols-7 gap-2 text-sm">
+                      {(() => {
+                        const today = new Date();
+                        const start = new Date(
+                          today.getFullYear(),
+                          today.getMonth(),
+                          1
+                        ); // start of month
+                        const end = new Date(
+                          today.getFullYear(),
+                          today.getMonth() + 1,
+                          0
+                        ); // end of month
+
+                        const days: JSX.Element[] = [];
+                        for (
+                          let d = start;
+                          d <= end;
+                          d.setDate(d.getDate() + 1)
+                        ) {
+                          const isoDate = d.toISOString().split("T")[0];
+                          const isAvailable = availableDates.includes(isoDate);
+                          const isSelected = selectedDate === isoDate;
+
+                          days.push(
+                            <button
+                              key={isoDate}
+                              onClick={() =>
+                                isAvailable && setSelectedDate(isoDate)
+                              }
+                              disabled={!isAvailable}
+                              className={`relative p-2 rounded-lg w-10 h-10 flex items-center justify-center
+              ${isSelected ? "bg-blue-600 text-white" : ""}
+              ${
+                !isAvailable
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "hover:bg-blue-50"
+              }
+            `}
+                            >
+                              {d.getDate()}
+                              {/* dot indicator for available days */}
+                              {isAvailable && (
+                                <span
+                                  className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${
+                                    isSelected ? "bg-white" : "bg-blue-600"
+                                  }`}
+                                ></span>
+                              )}
+                            </button>
+                          );
+                        }
+                        return days;
+                      })()}
                     </div>
                   </div>
 

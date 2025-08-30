@@ -43,9 +43,9 @@ const LoadingSpinner = () => {
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 border-4 border-t-[#0047AB] border-gray-200 rounded-full animate-spin"></div>
         </div>
-        <p className="mt-4 text-sm font-medium text-gray-700">
+        {/* <p className="mt-4 text-sm font-medium text-gray-700">
           Loading Event Centers...
-        </p>
+        </p> */}
       </div>
     </div>
   );
@@ -840,10 +840,10 @@ export default function ManageEventCenter() {
                       Ratings
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Deposit %
+                      Discount Percentage %
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Deposit %
+                      Deposit  %
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Actions

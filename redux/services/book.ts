@@ -58,13 +58,47 @@ export interface CreateBookingResponse {
   deletedAt: string | null;
   deletedBy: string | null;
 }
+export interface BookingEntity {
+  id: string;
+  requestQuoteId: string | null;
+  customerId: string;
+  confirmedBy: string | null;
+  confirmedAt: string | null;
+  servicebookingId: string | null;
+  serviceId: string;
+  serviceProvider: string;
+  serviceType: "EVENTCENTER" | "CATERING" | string;
+  subTotal: number;
+  discount: number;
+  total: number;
+  invoice: [];
+  paymentStatus: "UNPAID" | "PAID" | string;
+  status: "PENDING" | "BOOKED" | "RESERVED" | "POSTPONED" | "CANCELED" | string;
+  isTermsAccepted: boolean;
+  isCancellationPolicyAccepted: boolean;
+  isLiabilityWaiverSigned: boolean;
+  bookingReference: string;
+  source: "WEB" | "MOBILE" | string;
+  serviceNotes: string;
+  customerNotes: string;
+  rescheduledBy: string | null;
+  rescheduledAt: string | null;
+  previousDates: string[];
+  cancelledBy: string | null;
+  canceledAt: string | null;
+  cancelationReason: string | null;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
 
 // -------- LIST RESPONSE --------
 export interface GetBookingsByServiceProviderResponse {
   count: number;
-  data: CreateBookingResponse[];
+  data: BookingEntity[];
 }
-
 export interface GetBookingsByServiceProviderQueryParams {
   serviceProvider: string;
   limit?: number;

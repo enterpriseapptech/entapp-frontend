@@ -389,23 +389,24 @@ export default function EventCenterDetails() {
                   {bookingsData.data.map((booking) => (
                     <tr key={booking.id} className="border-b">
                       <td className="px-4 py-2 text-gray-600">
-                        {new Date(booking.bookingDates[0]).toLocaleDateString(
-                          "en-GB",
-                          {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}
+                        {new Date(
+                          booking.confirmedAt || booking.createdAt
+                        ).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </td>
                       <td className="px-4 py-2 text-gray-600">
                         <span
                           className={`text-xs font-medium ${
                             booking.status === "PENDING"
                               ? "text-yellow-600"
-                              : booking.status === "CONFIRMED"
+                              : booking.status === "BOOKED"
                               ? "text-green-600"
-                              : "text-red-600"
+                              : booking.status === "CANCELED"
+                              ? "text-red-600"
+                              : "text-gray-600"
                           }`}
                         >
                           {booking.status}
@@ -415,7 +416,7 @@ export default function EventCenterDetails() {
                         {booking.bookingReference}
                       </td>
                       <td className="px-4 py-2 text-gray-600">
-                        ₦{booking.totalAfterDiscount.toLocaleString()}
+                        ₦{booking.total.toLocaleString()}
                       </td>
                     </tr>
                   ))}
