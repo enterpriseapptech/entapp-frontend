@@ -12,6 +12,7 @@ import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
 // import DatePicker from "@/components/ui/DatePicker";
 import CateringServices from "@/components/layouts/CateringServices";
+import QuoteRequest from "@/components/ui/QuoteRequest";
 
 interface CateringService {
   id: string;
@@ -91,6 +92,7 @@ export default function CateringServiceDetails() {
     : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isQuoteRequestOpen, setIsQuoteRequestOpen] = useState(false);
   // const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   // const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
 
@@ -560,7 +562,7 @@ export default function CateringServiceDetails() {
 
           {/* Book Button */}
           <button
-            onClick={() => console.log("Request Quote clicked")}
+            onClick={() => setIsQuoteRequestOpen(true)}
             className="w-full mt-3 bg-green-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
             Request Quote
@@ -608,6 +610,13 @@ export default function CateringServiceDetails() {
           </p>
         </aside>
       </div>
+      <QuoteRequest
+        isOpen={isQuoteRequestOpen}
+        onClose={() => setIsQuoteRequestOpen(false)}
+        serviceId={cateringService.id}
+        serviceName={cateringService.name}
+        serviceType="CATERING"
+      />
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews
         reviews={reviews}

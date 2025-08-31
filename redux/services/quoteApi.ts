@@ -12,7 +12,7 @@ export interface RequestQuotePayload {
   customerId: string;
   serviceId: string;
   timeslotId: string[];
-  serviceType: "CATERING" | "EVENTCENTERS"; 
+  serviceType: "CATERING" | "EVENTCENTERS";
   budget: string;
   billingAddress: BillingAddress;
   isTermsAccepted: boolean;

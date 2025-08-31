@@ -79,6 +79,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   >([]);
   const [serviceNotes, setServiceNotes] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Billing address states
   const [street, setStreet] = useState("");
@@ -158,6 +159,17 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const total = subTotal - discount;
   const depositAmount = Math.round((total * depositPercentage) / 100);
   const amountDue = payDepositOnly ? depositAmount : total;
+  const handlePrevMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+    );
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+    );
+  };
 
   const handleTimeSlotSelect = (timeSlotId: string) => {
     const selectedSlot = availableTimeSlots.find((s) => s.id === timeSlotId);
@@ -320,7 +332,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             {step === 3 && "Billing Information"}
             {step === 4 && "Review & Confirm"}
             {step === 5 && "Booking Confirmed!"}
-          </h2>xxxx
+          </h2>
           <div className="flex items-center">
             {step < 5 && (
               <span className="text-sm font-medium text-gray-800 mr-4">
@@ -363,23 +375,42 @@ const DatePicker: React.FC<DatePickerProps> = ({
               ) : (
                 <>
                   {/* Date Selection */}
+                  <div className="flex items-center justify-between mb-3 text-gray-600">
+                    <button
+                      onClick={handlePrevMonth}
+                      className="px-3 py-1 border rounded hover:bg-gray-100"
+                    >
+                      Prev
+                    </button>
+                    <span className="font-medium">
+                      {currentMonth.toLocaleString("default", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <button
+                      onClick={handleNextMonth}
+                      className="px-3 py-1 border rounded hover:bg-gray-100"
+                    >
+                      Next
+                    </button>
+                  </div>
                   <div className="text-gray-600">
                     <h3 className="font-medium mb-3">Available Dates</h3>
 
                     {/* Calendar-like grid */}
                     <div className="grid grid-cols-7 gap-2 text-sm">
                       {(() => {
-                        const today = new Date();
                         const start = new Date(
-                          today.getFullYear(),
-                          today.getMonth(),
+                          currentMonth.getFullYear(),
+                          currentMonth.getMonth(),
                           1
-                        ); // start of month
+                        );
                         const end = new Date(
-                          today.getFullYear(),
-                          today.getMonth() + 1,
+                          currentMonth.getFullYear(),
+                          currentMonth.getMonth() + 1,
                           0
-                        ); // end of month
+                        );
 
                         const days: JSX.Element[] = [];
                         for (

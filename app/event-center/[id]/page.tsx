@@ -12,6 +12,7 @@ import CardSkeleton from "@/components/ui/card-skeleton";
 import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
 import DatePicker from "@/components/ui/DatePicker";
 import { EventCenter } from "@/redux/services/eventsApi";
+import QuoteRequest from "@/components/ui/QuoteRequest";
 
 interface BookingData {
   date: string;
@@ -78,6 +79,7 @@ export default function EventCenterDetails() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [lastBooking, setLastBooking] = useState<BookingData | null>(null);
+  const [isQuoteRequestOpen, setIsQuoteRequestOpen] = useState(false);
 
   const images = eventCenter?.images || ["/placeholder-image.png"];
 
@@ -535,7 +537,7 @@ export default function EventCenterDetails() {
             Choose Date & Time
           </button>
           <button
-            onClick={() => console.log("Request Quote clicked")}
+            onClick={() => setIsQuoteRequestOpen(true)}
             className="w-full mt-3 bg-green-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
             Request Quote
@@ -626,6 +628,14 @@ export default function EventCenterDetails() {
         depositPercentage={eventCenter.depositPercentage}
         serviceType="EVENTCENTER"
       />
+      <QuoteRequest
+        isOpen={isQuoteRequestOpen}
+        onClose={() => setIsQuoteRequestOpen(false)}
+        serviceId={eventCenter.id}
+        serviceName={eventCenter.name}
+        serviceType="EVENTCENTER"
+      />
+
       <hr className="mb-4 mt-4 mx-30" />
       <CustomerReviews
         reviews={reviews}
