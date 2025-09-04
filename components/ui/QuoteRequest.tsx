@@ -203,7 +203,7 @@ const QuoteRequest: React.FC<QuoteRequestProps> = ({
       const payload = {
         customerId: userId,
         serviceId,
-        serviceType: serviceType as "CATERING" | "EVENTCENTERS",
+        serviceType: serviceType as "CATERING" | "EVENTCENTER",
         timeslotId: selectedTimeSlotIds,
         budget,
         billingAddress: {
