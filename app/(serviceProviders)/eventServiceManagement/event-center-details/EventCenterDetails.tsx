@@ -12,7 +12,6 @@ import {
 } from "../../../../redux/services/timeslot";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import { useDeleteTimeSlotMutation } from "../../../../redux/services/timeslot";
-import { useGetBookingsByServiceProviderQuery } from "../../../../redux/services/book";
 import Notification from "../../../../components/ui/Notification";
 
 const LoadingSpinner = () => {
@@ -66,19 +65,6 @@ export default function EventCenterDetails() {
       offset: 0,
     },
     { skip: !id }
-  );
-
-  const {
-    data: bookingsData,
-    isLoading: isBookingsLoading,
-    error: bookingsError,
-  } = useGetBookingsByServiceProviderQuery(
-    {
-      serviceProvider: eventCenter?.id || "",
-      limit: 10,
-      offset: 0,
-    },
-    { skip: !eventCenter || isEventCenterLoading }
   );
 
   const [createTimeSlots, { isLoading: isCreating }] =
@@ -359,67 +345,6 @@ export default function EventCenterDetails() {
                         </td>
                       </tr>
                     ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Bookings */}
-          <div className="bg-white shadow-lg rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Bookings</h2>
-            </div>
-            {isBookingsLoading ? (
-              <p className="text-sm text-gray-500">Loading bookings...</p>
-            ) : bookingsError ? (
-              <p className="text-sm text-red-500">Error loading bookings.</p>
-            ) : !bookingsData?.data.length ? (
-              <p className="text-sm text-gray-500">No bookings found.</p>
-            ) : (
-              <table className="w-full text-left">
-                <thead className="bg-gray-100 text-xs uppercase">
-                  <tr>
-                    <th className="px-4 py-2 text-black">Date</th>
-                    <th className="px-4 py-2 text-black">Status</th>
-                    <th className="px-4 py-2 text-black">Booking Reference</th>
-                    <th className="px-4 py-2 text-black">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookingsData.data.map((booking) => (
-                    <tr key={booking.id} className="border-b">
-                      <td className="px-4 py-2 text-gray-600">
-                        {new Date(
-                          booking.confirmedAt || booking.createdAt
-                        ).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td className="px-4 py-2 text-gray-600">
-                        <span
-                          className={`text-xs font-medium ${
-                            booking.status === "PENDING"
-                              ? "text-yellow-600"
-                              : booking.status === "BOOKED"
-                              ? "text-green-600"
-                              : booking.status === "CANCELED"
-                              ? "text-red-600"
-                              : "text-gray-600"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-gray-600">
-                        {booking.bookingReference}
-                      </td>
-                      <td className="px-4 py-2 text-gray-600">
-                        ₦{booking.total.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             )}
