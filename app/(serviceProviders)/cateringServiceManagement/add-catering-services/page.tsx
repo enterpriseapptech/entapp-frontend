@@ -72,6 +72,7 @@ export default function AddCatering() {
   const [isDragging, setIsDragging] = useState(false);
   const [locations, setLocations] = useState<string[]>([]);
   const [newLocation, setNewLocation] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
   const [createCatering, { isLoading: isCreating }] =
@@ -80,8 +81,13 @@ export default function AddCatering() {
     useUploadCateringImagesMutation();
 
   // Check authentication
-  const userId =
-    localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUserId =
+        localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+      setUserId(storedUserId);
+    }
+  }, []);
   const {
     data: user,
     isLoading: isUserLoading,
@@ -89,6 +95,7 @@ export default function AddCatering() {
   } = useGetUserByIdQuery(userId!, {
     skip: !userId,
   });
+  
 
   const {
     register,
