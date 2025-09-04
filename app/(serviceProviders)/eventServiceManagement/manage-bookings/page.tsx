@@ -6,6 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import { useGetBookingsByServiceProviderQuery } from "@/redux/services/book";
+import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/eventsApi";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 type FilterType = "bookingType" | "venue" | "caterer" | "dateAndTime" | "status" | "paymentStatus";
 
@@ -40,11 +43,58 @@ export default function ManageBookings() {
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [clickedFilter, setClickedFilter] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [serviceProviderId, setServiceProviderId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Detect if the device is mobile based on window width
+  // Get current user ID from localStorage or sessionStorage
+  useEffect(() => {
+    const user_id = localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    setUserId(user_id);
+  }, []);
+
+  const { data: userData } = useGetUserByIdQuery(userId || "", {
+    skip: !userId,
+  });
+
+  // Extract service provider ID from user data
+  useEffect(() => {
+    if (userData?.serviceProvider?.id) {
+      setServiceProviderId(userData.serviceProvider.id);
+    }
+  }, [userData]);
+
+  // Fetch event centers for this service provider
+  const { data: eventCentersData, isLoading: isLoadingEventCenters } =
+    useGetEventCentersByServiceProviderQuery(
+      {
+        serviceProviderId: serviceProviderId || "",
+        limit: 10,
+        offset: 0,
+      },
+      { skip: !serviceProviderId }
+    );
+
+  // Get the first event center ID to use for fetching bookings
+  useEffect(() => {
+    if (eventCentersData?.data && eventCentersData.data.length > 0) {
+      setSelectedServiceId(eventCentersData.data[0].id);
+    }
+  }, [eventCentersData]);
+
+  // Fetch bookings using the service ID
+  const {
+    data: bookingsData,
+    isLoading: isLoadingBookings,
+    error,
+  } = useGetBookingsByServiceProviderQuery(
+    { serviceId: selectedServiceId || "", limit: 100, offset: 0 },
+    { skip: !selectedServiceId }
+  );
+
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768); // Tailwind's `md` breakpoint
+      setIsMobile(window.innerWidth < 768);
     };
 
     handleResize();
@@ -52,69 +102,26 @@ export default function ManageBookings() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Updated data to match the 7-column structure in the image
-  const bookings = [
-    {
-      bookingId: "BK-10234",
-      name: "Jonnel Doe",
-      bookingType: "Event Hall",
-      venue: "Grand Ballroom",
-      caterer: "Taste Catering",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      status: "Pending",
-      paymentStatus: "Paid",
-    },
-    {
-      bookingId: "BK-10234",
-      name: "Jonnel Doe",
-      bookingType: "Catering",
-      venue: "Skyline Venue",
-      caterer: "Taste Catering",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      status: "Confirmed",
-      paymentStatus: "Pending",
-    },
-    {
-      bookingId: "BK-10234",
-      name: "Jonnel Doe",
-      bookingType: "Event Center",
-      venue: "Event Center",
-      caterer: "Taste Catering",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      status: "In Progress",
-      paymentStatus: "Paid",
-    },
-    {
-      bookingId: "BK-10234",
-      name: "Jonnel Doe",
-      bookingType: "Event Center",
-      venue: "Event Center",
-      caterer: "Taste Catering",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      status: "Completed",
-      paymentStatus: "Pending",
-    },
-    {
-      bookingId: "BK-10234",
-      name: "Jonnel Doe",
-      bookingType: "Event Center",
-      venue: "Event Center",
-      caterer: "Taste Catering",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      status: "Confirmed",
-      paymentStatus: "Paid",
-    },
-    {
-      bookingId: "BK-10234",
-      name: "Jonnel Doe",
-      bookingType: "Event Center",
-      venue: "Event Center",
-      caterer: "Taste Catering",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      status: "Cancelled",
-      paymentStatus: "Refunded",
-    },
-  ];
+  // Transform API data to match the UI structure
+  const bookings =
+    bookingsData?.data?.map((booking) => ({
+      id: booking.id,
+      bookingId: booking.bookingReference || booking.id,
+      name: "Customer Name", // You might need to fetch customer data separately
+      bookingType: booking.serviceType,
+      venue: "Venue Name", // You might need to fetch venue data separately
+      caterer: "Caterer Name", // You might need to fetch caterer data separately
+      dateAndTime: new Date(booking.createdAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      status: booking.status,
+      paymentStatus: booking.paymentStatus,
+    })) || [];
 
   // Extract unique values for each filter category
   const uniqueBookingTypes = [...new Set(bookings.map((booking) => booking.bookingType))];
@@ -234,6 +241,7 @@ export default function ManageBookings() {
 
   // Handle navigation to the details page
   type Booking = {
+    id: string;
     bookingId: string;
     name: string;
     bookingType: string;
@@ -246,7 +254,9 @@ export default function ManageBookings() {
 
   const handleViewBooking = (booking: Booking) => {
     router.push(
-      `/admin/booking-details?bookingId=${encodeURIComponent(
+      `/eventServiceManagement/manage-bookings-details?bookingId=${encodeURIComponent(
+        booking.id
+      )}&displayId=${encodeURIComponent(
         booking.bookingId
       )}&name=${encodeURIComponent(booking.name)}&bookingType=${encodeURIComponent(
         booking.bookingType
@@ -257,6 +267,49 @@ export default function ManageBookings() {
       )}&paymentStatus=${encodeURIComponent(booking.paymentStatus)}`
     );
   };
+
+  // Show loading if either event centers or bookings are loading
+  const isLoading = isLoadingEventCenters || isLoadingBookings;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-gray-600">Loading bookings...</div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-red-600">
+                Error loading bookings. Please try again.
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -277,6 +330,22 @@ export default function ManageBookings() {
             <h1 className="md:text-xl text-md font-bold text-gray-950">
               Manage Bookings
             </h1>
+            {/* {eventCentersData?.data && eventCentersData.data.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Service:</span>
+                <select
+                  className="border border-gray-200 rounded-md px-3 py-1 text-sm"
+                  value={selectedServiceId}
+                  onChange={(e) => setSelectedServiceId(e.target.value)}
+                >
+                  {eventCentersData.data.map((center) => (
+                    <option key={center.id} value={center.id}>
+                      {center.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )} */}
             <div className="flex gap-2">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
                 <Image
@@ -646,122 +715,135 @@ export default function ManageBookings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedBookings.map((booking, index) => (
-                    <tr
-                      key={index}
-                      className="border-t hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleViewBooking(booking)}
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {booking.bookingId}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {booking.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {booking.bookingType}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {booking.venue}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {booking.dateAndTime}
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            booking.status === "Pending"
-                              ? "bg-orange-50 text-orange-700"
-                              : booking.status === "Confirmed"
-                              ? "bg-green-50 text-green-700"
-                              : booking.status === "In Progress"
-                              ? "bg-blue-50 text-blue-700"
-                              : booking.status === "Completed"
-                              ? "bg-purple-50 text-purple-700"
-                              : booking.status === "Cancelled"
-                              ? "bg-red-50 text-red-700"
-                              : "bg-gray-50 text-gray-700"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            booking.paymentStatus === "Paid"
-                              ? "bg-green-50 text-green-700"
-                              : booking.paymentStatus === "Pending"
-                              ? "bg-orange-50 text-orange-700"
-                              : booking.paymentStatus === "Refunded"
-                              ? "bg-red-50 text-red-700"
-                              : "bg-gray-50 text-gray-700"
-                          }`}
-                        >
-                          {booking.paymentStatus}
-                        </span>
+                  {paginatedBookings.length > 0 ? (
+                    paginatedBookings.map((booking, index) => (
+                      <tr
+                        key={index}
+                        className="border-t hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleViewBooking(booking)}
+                      >
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.bookingId}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.bookingType}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.venue}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {booking.dateAndTime}
+                        </td>
+                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              booking.status === "PENDING"
+                                ? "bg-orange-50 text-orange-700"
+                                : booking.status === "BOOKED" || booking.status === "CONFIRMED"
+                                ? "bg-green-50 text-green-700"
+                                : booking.status === "IN_PROGRESS"
+                                ? "bg-blue-50 text-blue-700"
+                                : booking.status === "COMPLETED"
+                                ? "bg-purple-50 text-purple-700"
+                                : booking.status === "CANCELLED"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            {booking.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              booking.paymentStatus === "PAID"
+                                ? "bg-green-50 text-green-700"
+                                : booking.paymentStatus === "PENDING"
+                                ? "bg-orange-50 text-orange-700"
+                                : booking.paymentStatus === "REFUNDED"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            {booking.paymentStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        No bookings found
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
-              >
-                <Image
-                  src="/leftArrow.png"
-                  alt="Previous"
-                  width={10}
-                  height={10}
-                  className="w-4 h-4"
-                  unoptimized
-                />
-                <span>Previous</span>
-              </button>
-              <div className="flex gap-2 flex-wrap justify-center">
-                {getPageNumbers().map((page, index) => (
-                  <button
-                    key={index}
-                    onClick={() =>
-                      typeof page === "number" && setCurrentPage(page)
-                    }
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      page === currentPage
-                        ? "bg-blue-600 text-white"
-                        : typeof page === "number"
-                        ? "text-gray-600 hover:bg-gray-100"
-                        : "text-gray-600 cursor-default"
-                    }`}
-                    disabled={typeof page !== "number"}
-                  >
-                    {page}
-                  </button>
-                ))}
+            {searchedBookings.length > 0 && (
+              <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Image
+                    src="/leftArrow.png"
+                    alt="Previous"
+                    width={10}
+                    height={10}
+                    className="w-4 h-4"
+                    unoptimized
+                  />
+                  <span>Previous</span>
+                </button>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {getPageNumbers().map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() =>
+                        typeof page === "number" && setCurrentPage(page)
+                      }
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        page === currentPage
+                          ? "bg-blue-600 text-white"
+                          : typeof page === "number"
+                          ? "text-gray-600 hover:bg-gray-100"
+                          : "text-gray-600 cursor-default"
+                      }`}
+                      disabled={typeof page !== "number"}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <span>Next</span>
+                  <Image
+                    src="/rightArrow.png"
+                    alt="Next"
+                    width={10}
+                    height={10}
+                    className="w-4 h-4"
+                    unoptimized
+                  />
+                </button>
               </div>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
-              >
-                <span>Next</span>
-                <Image
-                  src="/rightArrow.png"
-                  alt="Next"
-                  width={10}
-                  height={10}
-                  className="w-4 h-4"
-                  unoptimized
-                />
-              </button>
-            </div>
+            )}
           </div>
         </main>
       </div>

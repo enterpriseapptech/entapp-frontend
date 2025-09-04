@@ -5,7 +5,9 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
-
+import { useGetQuotesByServiceIdQuery } from "@/redux/services/quoteApi";
+import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/eventsApi";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 type FilterType =
   | "bookingType"
@@ -42,6 +44,58 @@ export default function QuoteRequests() {
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [clickedFilter, setClickedFilter] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
+    null
+  );
+  const [serviceProviderId, setServiceProviderId] = useState<string | null>(
+    null
+  );
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get current user ID from localStorage or sessionStorage
+  useEffect(() => {
+    const user_id =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    setUserId(user_id);
+  }, []);
+  const { data: userData } = useGetUserByIdQuery(userId || "", {
+    skip: !userId,
+  });
+
+  // Extract service provider ID from user data
+  useEffect(() => {
+    if (userData?.serviceProvider?.id) {
+      setServiceProviderId(userData.serviceProvider.id);
+    }
+  }, [userData]);
+
+  // Fetch event centers for this service provider
+  const { data: eventCentersData, isLoading: isLoadingEventCenters } =
+    useGetEventCentersByServiceProviderQuery(
+      {
+        serviceProviderId: serviceProviderId || "",
+        limit: 10,
+        offset: 0,
+      },
+      { skip: !serviceProviderId }
+    );
+
+  // Get the first event center ID to use for fetching quotes
+  useEffect(() => {
+    if (eventCentersData?.data && eventCentersData.data.length > 0) {
+      setSelectedServiceId(eventCentersData.data[0].id);
+    }
+  }, [eventCentersData]);
+
+  // Fetch quotes using the service ID
+  const {
+    data: quotesData,
+    isLoading: isLoadingQuotes,
+    error,
+  } = useGetQuotesByServiceIdQuery(
+    { serviceId: selectedServiceId || "", limit: 100, offset: 0 },
+    { skip: !selectedServiceId } // Skip query if no service ID is available
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -53,56 +107,25 @@ export default function QuoteRequests() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const quotes = [
-    {
-      requestId: "QR-2024-001",
-      customerName: "Jonnel Doe",
-      customerEmail: "jonneldoe@email.com",
-      eventType: "Wedding",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      invoiceStatus: "Sent",
-    },
-    {
-      requestId: "QR-2024-002",
-      customerName: "Jonnel Doe",
-      customerEmail: "jonneldoe@email.com",
-      eventType: "Birthday Party",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      invoiceStatus: "Pending",
-    },
-    {
-      requestId: "QR-2024-003",
-      customerName: "Jonnel Doe",
-      customerEmail: "jonneldoe@email.com",
-      eventType: "Wedding",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      invoiceStatus: "Sent",
-    },
-    {
-      requestId: "QR-2024-004",
-      customerName: "Jonnel Doe",
-      customerEmail: "jonneldoe@email.com",
-      eventType: "Birthday Party",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      invoiceStatus: "Pending",
-    },
-    {
-      requestId: "QR-2024-005",
-      customerName: "Jonnel Doe",
-      customerEmail: "jonneldoe@email.com",
-      eventType: "Wedding",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      invoiceStatus: "Sent",
-    },
-    {
-      requestId: "QR-2024-006",
-      customerName: "Jonnel Doe",
-      customerEmail: "jonneldoe@email.com",
-      eventType: "Birthday Party",
-      dateAndTime: "Feb 2, 2025, 5:00 PM",
-      invoiceStatus: "Pending",
-    },
-  ];
+  // Transform API data to match the UI structure
+  // Transform API data to match the UI structure
+  const quotes =
+    quotesData?.data?.map((quote) => ({
+      id: quote.id, // The actual ID for API calls
+      displayId: quote.quoteReference || quote.id, // For display in UI
+      customerName: "Customer Name",
+      customerEmail: "customer@email.com",
+      eventType: quote.serviceType,
+      dateAndTime: new Date(quote.createdAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      invoiceStatus: quote.status === "SENT" ? "Sent" : "Pending",
+    })) || [];
 
   const uniqueEventTypes = [...new Set(quotes.map((quote) => quote.eventType))];
   const uniqueCustomerNames = [
@@ -133,7 +156,6 @@ export default function QuoteRequests() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      quote.requestId.toLowerCase().includes(query) ||
       quote.customerName.toLowerCase().includes(query) ||
       quote.customerEmail.toLowerCase().includes(query) ||
       quote.eventType.toLowerCase().includes(query) ||
@@ -215,18 +237,18 @@ export default function QuoteRequests() {
   };
 
   type Quote = {
-    requestId: string;
+    id: string;
+    displayId: string;
     customerName: string;
     customerEmail: string;
     eventType: string;
     dateAndTime: string;
     invoiceStatus: string;
   };
-
   const handleViewQuote = (quote: Quote) => {
     router.push(
       `/eventServiceManagement/manage-quotes-details?requestId=${encodeURIComponent(
-        quote.requestId
+        quote.id // Pass the actual ID for the API call
       )}&customerName=${encodeURIComponent(
         quote.customerName
       )}&customerEmail=${encodeURIComponent(
@@ -238,6 +260,70 @@ export default function QuoteRequests() {
       )}&invoiceStatus=${encodeURIComponent(quote.invoiceStatus)}`
     );
   };
+
+  // Show loading if either event centers or quotes are loading
+  const isLoading = isLoadingEventCenters || isLoadingQuotes;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-gray-600">Loading quotes...</div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-red-600">
+                Error loading quotes. Please try again.
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedServiceId) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-gray-600">
+                No event centers found. Please create an event center first.
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -254,6 +340,22 @@ export default function QuoteRequests() {
             <h1 className="md:text-xl text-md font-bold text-gray-950">
               Quote Request List
             </h1>
+            {eventCentersData?.data && eventCentersData.data.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Service:</span>
+                <select
+                  className="border border-gray-200 rounded-md px-3 py-1 text-sm"
+                  value={selectedServiceId}
+                  onChange={(e) => setSelectedServiceId(e.target.value)}
+                >
+                  {eventCentersData.data.map((center) => (
+                    <option key={center.id} value={center.id}>
+                      {center.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border bg-white shadow">
@@ -546,104 +648,119 @@ export default function QuoteRequests() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedQuotes.map((quote, index) => (
-                    <tr key={index} className="border-t hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {quote.requestId}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {quote.customerName}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {quote.customerEmail}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {quote.eventType}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        {quote.dateAndTime}
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            quote.invoiceStatus === "Sent"
-                              ? "bg-green-50 text-green-700"
-                              : quote.invoiceStatus === "Pending"
-                              ? "bg-orange-50 text-orange-700"
-                              : "bg-gray-50 text-gray-700"
-                          }`}
-                        >
-                          {quote.invoiceStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap">
-                        <button
-                          onClick={() => handleViewQuote(quote)}
-                          className="text-blue-600 hover:underline cursor-pointer"
-                        >
-                          View
-                        </button>
+                  {paginatedQuotes.length > 0 ? (
+                    paginatedQuotes.map((quote, index) => (
+                      <tr key={index} className="border-t hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {quote.displayId}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {quote.customerName}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {quote.customerEmail}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {quote.eventType}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {quote.dateAndTime}
+                        </td>
+                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              quote.invoiceStatus === "Sent"
+                                ? "bg-green-50 text-green-700"
+                                : quote.invoiceStatus === "Pending"
+                                ? "bg-orange-50 text-orange-700"
+                                : "bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            {quote.invoiceStatus}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                          <button
+                            onClick={() => handleViewQuote(quote)}
+                            className="text-blue-600 hover:underline cursor-pointer"
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        No quotes found
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
-              >
-                <Image
-                  src="/leftArrow.png"
-                  alt="Previous"
-                  width={10}
-                  height={10}
-                  className="w-4 h-4"
-                  unoptimized
-                />
-                <span>Previous</span>
-              </button>
-              <div className="flex gap-2 flex-wrap justify-center">
-                {getPageNumbers().map((page, index) => (
-                  <button
-                    key={index}
-                    onClick={() =>
-                      typeof page === "number" && setCurrentPage(page)
-                    }
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      page === currentPage
-                        ? "bg-blue-600 text-white"
-                        : typeof page === "number"
-                        ? "text-gray-600 hover:bg-gray-100"
-                        : "text-gray-600 cursor-default"
-                    }`}
-                    disabled={typeof page !== "number"}
-                  >
-                    {page}
-                  </button>
-                ))}
+            {searchedQuotes.length > 0 && (
+              <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Image
+                    src="/leftArrow.png"
+                    alt="Previous"
+                    width={10}
+                    height={10}
+                    className="w-4 h-4"
+                    unoptimized
+                  />
+                  <span>Previous</span>
+                </button>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {getPageNumbers().map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() =>
+                        typeof page === "number" && setCurrentPage(page)
+                      }
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        page === currentPage
+                          ? "bg-blue-600 text-white"
+                          : typeof page === "number"
+                          ? "text-gray-600 hover:bg-gray-100"
+                          : "text-gray-600 cursor-default"
+                      }`}
+                      disabled={typeof page !== "number"}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <span>Next</span>
+                  <Image
+                    src="/rightArrow.png"
+                    alt="Next"
+                    width={10}
+                    height={10}
+                    className="w-4 h-4"
+                    unoptimized
+                  />
+                </button>
               </div>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 border rounded-md border-gray-200 px-3 py-1 text-sm text-gray-600 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
-              >
-                <span>Next</span>
-                <Image
-                  src="/rightArrow.png"
-                  alt="Next"
-                  width={10}
-                  height={10}
-                  className="w-4 h-4"
-                  unoptimized
-                />
-              </button>
-            </div>
+            )}
           </div>
         </main>
       </div>

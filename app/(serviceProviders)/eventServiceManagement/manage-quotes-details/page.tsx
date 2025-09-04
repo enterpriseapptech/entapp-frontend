@@ -5,41 +5,98 @@ import Image from "next/image";
 import Header from "@/components/layouts/Header";
 import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
 import GenerateInvoiceModal from "@/components/layouts/GenerateInvoiceModal";
+import { useGetQuoteByIdQuery } from "@/redux/services/quoteApi";
 
 export default function QuoteDetails() {
   const searchParams = useSearchParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [quote, setQuote] = useState({
-    requestId: "",
-    customerName: "",
-    customerEmail: "",
-    eventType: "",
-    dateAndTime: "",
-    invoiceStatus: "",
+
+  const requestId = searchParams.get("requestId") || "";
+
+  // Fetch quote details using the API
+  const { data: quoteData, isLoading, error } = useGetQuoteByIdQuery(requestId, {
+    skip: !requestId,
   });
 
-  useEffect(() => {
-    const requestId = searchParams.get("requestId") || "";
-    const customerName = searchParams.get("customerName") || "";
-    const customerEmail = searchParams.get("customerEmail") || "";
-    const eventType = searchParams.get("eventType") || "";
-    const dateAndTime = searchParams.get("dateAndTime") || "";
-    const invoiceStatus = searchParams.get("invoiceStatus") || "";
+  const [quote, setQuote] = useState({
+    requestId: "",
+    customerName: "Loading...",
+    customerEmail: "Loading...",
+    eventType: "Loading...",
+    dateAndTime: "", // store raw ISO here
+    invoiceStatus: "PENDING",
+    budget: "",
+    customerNotes: "",
+    billingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "",
+      postal: "",
+    },
+  });
 
-    setQuote({
-      requestId,
-      customerName,
-      customerEmail,
-      eventType,
-      dateAndTime,
-      invoiceStatus,
-    });
-  }, [searchParams]);
+  // Update local state when API data is available
+  useEffect(() => {
+    if (quoteData) {
+      setQuote({
+        requestId: quoteData.quoteReference || quoteData.id,
+        customerName: "Customer Name", // You'll need to fetch customer details separately
+        customerEmail: "customer@email.com", // You'll need to fetch customer details separately
+        eventType: quoteData.serviceType,
+        dateAndTime: quoteData.createdAt, // ✅ keep ISO string
+        invoiceStatus: quoteData.status,
+        budget: quoteData.budget,
+        customerNotes: quoteData.customerNotes || "No special notes provided.",
+        billingAddress: quoteData.billingAddress,
+      });
+    }
+  }, [quoteData]);
 
   const handleGenerateInvoice = () => {
     setIsInvoiceModalOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-gray-600">Loading quote details...</div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <EventServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-red-600">
+                Error loading quote details. Please try again.
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,10 +128,44 @@ export default function QuoteDetails() {
                   <h2 className="text-lg font-medium text-gray-900 mb-4">
                     Event Information
                   </h2>
-                  <div className="space-y-2 text-gray-400">
-                    <p><strong>Request ID:</strong> {quote.requestId}</p>
-                    <p><strong>Event Type:</strong> {quote.eventType}</p>
-                    <p><strong>Event Date:</strong> {quote.dateAndTime}</p>
+                  <div className="space-y-2 text-gray-600">
+                    <p>
+                      <strong>Request ID:</strong> {quote.requestId}
+                    </p>
+                    <p>
+                      <strong>Event Type:</strong> {quote.eventType}
+                    </p>
+                    <p>
+                      <strong>Event Date:</strong>{" "}
+                      {quote.dateAndTime
+                        ? new Date(quote.dateAndTime).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })
+                        : "Not provided"}
+                    </p>
+                    <p>
+                      <strong>Budget Range:</strong> {quote.budget}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ml-2 ${
+                          quote.invoiceStatus === "SENT" ||
+                          quote.invoiceStatus === "APPROVED"
+                            ? "bg-green-50 text-green-700"
+                            : quote.invoiceStatus === "PENDING"
+                            ? "bg-orange-50 text-orange-700"
+                            : "bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        {quote.invoiceStatus}
+                      </span>
+                    </p>
                   </div>
                 </div>
 
@@ -92,20 +183,30 @@ export default function QuoteDetails() {
                         className="rounded-full"
                         unoptimized
                       />
-                      <div className="text-gray-400">
-                        <p><strong>Name:</strong> {quote.customerName}</p>
-                        <p><strong>Email:</strong> {quote.customerEmail}</p>
+                      <div className="text-gray-600">
+                        <p>
+                          <strong>Name:</strong> {quote.customerName}
+                        </p>
+                        <p>
+                          <strong>Email:</strong> {quote.customerEmail}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   <div>
                     <h2 className="text-lg font-medium text-gray-900 mb-4">
-                      Request Timeline
+                      Billing Address
                     </h2>
-                    <div className="space-y-2 text-gray-400">
-                      <p><span className="text-green-400">●</span> Request Submitted: March 15, 2025</p>
-                      <p><span className="text-blue-400">●</span> Quote Generation: Pending</p>
+                    <div className="text-gray-600">
+                      <p>{quote.billingAddress.street}</p>
+                      <p>
+                        {quote.billingAddress.city}, {quote.billingAddress.state}
+                      </p>
+                      <p>
+                        {quote.billingAddress.country},{" "}
+                        {quote.billingAddress.postal}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -115,9 +216,37 @@ export default function QuoteDetails() {
                 <h2 className="text-lg font-medium text-gray-900 mb-4">
                   Special Requirements & Notes
                 </h2>
-                <p className="text-gray-600">
-                  We need full-service catering for a wedding reception. The service should include appetizers, a multi-course meal, dessert, and beverage station. Options should accommodate dietary restrictions and include both local and continental dishes. The setup must be elegant with professional staff to handle serving and cleanup.
-                </p>
+                <p className="text-gray-600">{quote.customerNotes}</p>
+              </div>
+
+              <div className="mt-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">
+                  Request Timeline
+                </h2>
+                <div className="space-y-2 text-gray-600">
+                  <p>
+                    <span className="text-green-400">●</span> Request Submitted:{" "}
+                    {new Date(quoteData?.createdAt || "").toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
+                  <p>
+                    <span className="text-blue-400">●</span> Last Updated:{" "}
+                    {new Date(quoteData?.updatedAt || "").toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

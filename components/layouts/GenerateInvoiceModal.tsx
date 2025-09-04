@@ -1,11 +1,22 @@
-import { useState } from "react";
-import { CalendarDays, X } from "lucide-react"; // Using lucide-react for calendar and close icons
+import { useState, useEffect } from "react";
+import { CalendarDays, X } from "lucide-react";
 
+interface Quote {
+  customerName: string;
+  customerEmail: string;
+  eventType: string;
+  dateAndTime: string;
+}
+interface GenerateInvoiceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialQuote?: Quote;
+}
 export default function GenerateInvoiceModal({
   isOpen,
   onClose,
   initialQuote,
-}) {
+}: GenerateInvoiceModalProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     clientName: initialQuote?.customerName || "",
@@ -32,14 +43,14 @@ export default function GenerateInvoiceModal({
   });
 
   // Calculate totals whenever relevant formData changes
-  useState(() => {
+  useEffect(() => {
     const serviceAmt = parseFloat(formData.serviceAmount) || 0;
     const discountAmt = parseFloat(formData.discountAmount) || 0;
-    const calculatedSubtotal = serviceAmt; // For simplicity, subtotal is just service amount initially
+    const calculatedSubtotal = serviceAmt;
     const calculatedDiscount = discountAmt;
-    const calculatedTax = calculatedSubtotal * 0.05; // Example 5% tax
-    const calculatedAdditional = 0; // No additional charges for now
-
+    const calculatedTax = calculatedSubtotal * 0.05;
+    const calculatedAdditional = 0;
+  
     setFormData((prev) => ({
       ...prev,
       subtotal: calculatedSubtotal,
@@ -54,13 +65,16 @@ export default function GenerateInvoiceModal({
     }));
   }, [formData.serviceAmount, formData.discountAmount]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
+  
 
   const handleNext = () => {
     setStep((prev) => prev + 1);
@@ -70,10 +84,9 @@ export default function GenerateInvoiceModal({
     setStep((prev) => prev - 1);
   };
 
-  const handleSubmit = (action) => {
+  const handleSubmit = (action: string) => {
     console.log(`Invoice Action: ${action}`, formData);
-    // In a real application, you would send this data to your backend
-    onClose(); // Close modal after submission
+    onClose();
   };
 
   if (!isOpen) return null;

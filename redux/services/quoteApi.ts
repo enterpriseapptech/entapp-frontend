@@ -12,7 +12,7 @@ export interface RequestQuotePayload {
   customerId: string;
   serviceId: string;
   timeslotId: string[];
-  serviceType: "CATERING" | "EVENTCENTERS";
+  serviceType: "CATERING" | "EVENTCENTER";
   budget: string;
   billingAddress: BillingAddress;
   isTermsAccepted: boolean;
@@ -44,6 +44,11 @@ export interface RequestQuoteResponse {
   billingAddress: BillingAddress;
 }
 
+export interface GetQuotesResponse {
+  count: number;
+  data: RequestQuoteResponse[];
+}
+
 export const quoteApi = createApi({
   reducerPath: "quoteApi",
   baseQuery: fetchBaseQuery({
@@ -69,7 +74,21 @@ export const quoteApi = createApi({
         },
       }),
     }),
+    getQuotesByServiceId: builder.query<
+      GetQuotesResponse,
+      { serviceId: string; limit?: number; offset?: number }
+    >({
+      query: ({ serviceId, limit = 10, offset = 0 }) =>
+        `/requestQuote?limit=${limit}&offset=${offset}&serviceId=${serviceId}`,
+    }),
+    getQuoteById: builder.query<RequestQuoteResponse, string>({
+      query: (id) => ({
+        url: `/requestQuote/${id}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useRequestQuoteMutation } = quoteApi;
+export const { useRequestQuoteMutation, useGetQuotesByServiceIdQuery, useGetQuoteByIdQuery } =
+  quoteApi;

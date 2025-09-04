@@ -100,7 +100,7 @@ export interface GetBookingsByServiceProviderResponse {
   data: BookingEntity[];
 }
 export interface GetBookingsByServiceProviderQueryParams {
-  serviceProvider: string;
+  serviceId: string;
   limit?: number;
   offset?: number;
 }
@@ -135,18 +135,25 @@ export const bookingApi = createApi({
         },
       }),
     }),
+
     getBookingsByServiceProvider: builder.query<
       GetBookingsByServiceProviderResponse,
       GetBookingsByServiceProviderQueryParams
     >({
-      query: ({ serviceProvider, limit = 10, offset = 0 }) => ({
+      query: ({  serviceId, limit = 10, offset = 0 }) => ({
         url: `/booking`,
         method: "GET",
         params: {
-          serviceProvider,
+          serviceId,
           limit,
           offset,
         },
+      }),
+    }),
+    getBookingById: builder.query<BookingEntity, string>({
+      query: (id) => ({
+        url: `/booking/${id}`,
+        method: "GET",
       }),
     }),
   }),
@@ -155,4 +162,5 @@ export const bookingApi = createApi({
 export const {
   useCreateBookingMutation,
   useGetBookingsByServiceProviderQuery,
+  useGetBookingByIdQuery, // ✅ new hook
 } = bookingApi;
