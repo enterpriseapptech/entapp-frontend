@@ -20,12 +20,14 @@ interface Quote {
   isLiabilityWaiverSigned: boolean;
   source: "WEB" | "MOBILE" | string;
   customerNotes: string;
+  timeslotIds: string[];
 }
 
 interface GenerateInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialQuote: Quote;
+  timeslotIds: string[];
 }
 
 enum SpecialRequirement {
@@ -37,6 +39,7 @@ export default function GenerateInvoiceModal({
   isOpen,
   onClose,
   initialQuote,
+  timeslotIds,
 }: GenerateInvoiceModalProps) {
   const [createBooking, { isLoading, error }] = useCreateBookingMutation();
   const [items, setItems] = useState([{ item: "", amount: 0 }]);
@@ -44,7 +47,6 @@ export default function GenerateInvoiceModal({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [formData, setFormData] = useState({
-    timeslotId: [""],
     subTotal: 0,
     discount: 0,
     total: 0,
@@ -59,17 +61,21 @@ export default function GenerateInvoiceModal({
   // Calculate totals whenever items or discount changes
   useEffect(() => {
     const subTotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const discountAmount = (subTotal * formData.discount) / 100;
-    const total = subTotal - discountAmount;
-
-    setFormData(prev => ({
+    const total = parseFloat(
+      (subTotal - (subTotal * (formData.discount || 0)) / 100).toFixed(2)
+    );
+    setFormData((prev) => ({
       ...prev,
       subTotal,
-      total
+      total,
     }));
   }, [items, formData.discount]);
 
-  const handleItemChange = (index: number, field: string, value: string | number) => {
+  const handleItemChange = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -86,9 +92,9 @@ export default function GenerateInvoiceModal({
   };
 
   const handleSpecialRequirementChange = (requirement: SpecialRequirement) => {
-    setSpecialRequirements(prev =>
+    setSpecialRequirements((prev) =>
       prev.includes(requirement)
-        ? prev.filter(r => r !== requirement)
+        ? prev.filter((r) => r !== requirement)
         : [...prev, requirement]
     );
   };
@@ -98,12 +104,12 @@ export default function GenerateInvoiceModal({
       const bookingData = {
         customerId: initialQuote.customerId,
         serviceId: initialQuote.serviceId,
-        timeslotId: formData.timeslotId,
+        timeslotId: timeslotIds,
         serviceType: initialQuote.serviceType,
         subTotal: formData.subTotal,
-        discount: (formData.subTotal * formData.discount) / 100,
+        discount: formData.discount,
         total: formData.total,
-        items: items.filter(item => item.item && item.amount > 0),
+        items: items.filter((item) => item.item && item.amount > 0),
         billingAddress: initialQuote.billingAddress,
         dueDate: new Date(formData.dueDate).toISOString(),
         isTermsAccepted: initialQuote.isTermsAccepted,
@@ -117,11 +123,10 @@ export default function GenerateInvoiceModal({
         eventType: initialQuote.serviceType,
         description: formData.description,
         noOfGuest: formData.noOfGuest,
-        specialRequirements
+        specialRequirements,
       };
 
       await createBooking(bookingData).unwrap();
-      onClose();
       setShowSuccessModal(true);
     } catch (err) {
       console.error("Failed to create booking:", err);
@@ -132,8 +137,7 @@ export default function GenerateInvoiceModal({
     onClose();
   };
 
-
-  if (!isOpen) return null;
+  if (!isOpen && !showSuccessModal) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -164,7 +168,9 @@ export default function GenerateInvoiceModal({
                   <input
                     type="text"
                     value={item.item}
-                    onChange={(e) => handleItemChange(index, "item", e.target.value)}
+                    onChange={(e) =>
+                      handleItemChange(index, "item", e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
                     placeholder="Item description"
                   />
@@ -177,7 +183,13 @@ export default function GenerateInvoiceModal({
                     <input
                       type="number"
                       value={item.amount}
-                      onChange={(e) => handleItemChange(index, "amount", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleItemChange(
+                          index,
+                          "amount",
+                          parseFloat(e.target.value) || 0
+                        )
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-400"
                       placeholder="0.00"
                     />
@@ -206,7 +218,9 @@ export default function GenerateInvoiceModal({
 
           {/* Discount Section */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Discount</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Discount
+            </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -215,10 +229,12 @@ export default function GenerateInvoiceModal({
                 <input
                   type="number"
                   value={formData.discount}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    discount: parseFloat(e.target.value) || 0
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      discount: parseFloat(e.target.value) || 0,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-400"
                   placeholder="0%"
                   min="0"
@@ -230,7 +246,9 @@ export default function GenerateInvoiceModal({
 
           {/* Event Details */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Event Details
+            </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -239,10 +257,12 @@ export default function GenerateInvoiceModal({
                 <input
                   type="text"
                   value={formData.eventName}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    eventName: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      eventName: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
                   placeholder="Event name"
                 />
@@ -254,10 +274,12 @@ export default function GenerateInvoiceModal({
                 <input
                   type="text"
                   value={formData.eventTheme}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    eventTheme: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      eventTheme: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
                   placeholder="Event theme"
                 />
@@ -269,10 +291,12 @@ export default function GenerateInvoiceModal({
                 <input
                   type="number"
                   value={formData.noOfGuest}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    noOfGuest: parseInt(e.target.value) || 0
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      noOfGuest: parseInt(e.target.value) || 0,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-400"
                   placeholder="Number of guests"
                   min="1"
@@ -285,10 +309,12 @@ export default function GenerateInvoiceModal({
                 <input
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    dueDate: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      dueDate: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md text-gray-400"
                 />
                 <CalendarDays className="absolute right-3 top-9 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -298,7 +324,9 @@ export default function GenerateInvoiceModal({
 
           {/* Special Requirements */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Special Requirements</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Special Requirements
+            </h3>
             <div className="space-y-2">
               {Object.values(SpecialRequirement).map((requirement) => (
                 <label key={requirement} className="flex items-center gap-2">
@@ -309,8 +337,8 @@ export default function GenerateInvoiceModal({
                     className="rounded border-gray-300"
                   />
                   <span className="text-sm text-gray-700">
-                    {requirement === SpecialRequirement.WHEELCHAIRACCESS 
-                      ? "Wheelchair Access" 
+                    {requirement === SpecialRequirement.WHEELCHAIRACCESS
+                      ? "Wheelchair Access"
                       : "Temperature Adjustment"}
                   </span>
                 </label>
@@ -323,10 +351,12 @@ export default function GenerateInvoiceModal({
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
             <textarea
               value={formData.serviceNotes}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                serviceNotes: e.target.value
-              }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  serviceNotes: e.target.value,
+                }))
+              }
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
               placeholder="Service notes..."
@@ -335,13 +365,17 @@ export default function GenerateInvoiceModal({
 
           {/* Description */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Description
+            </h3>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                description: e.target.value
-              }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
               placeholder="Event description..."
@@ -350,11 +384,15 @@ export default function GenerateInvoiceModal({
 
           {/* Summary */}
           <div className="bg-gray-50 p-4 rounded-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Invoice Summary
+            </h3>
             <div className="space-y-2 text-gray-700">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span className="font-medium">${formData.subTotal.toFixed(2)}</span>
+                <span className="font-medium">
+                  ${formData.subTotal.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Discount ({formData.discount}%):</span>
@@ -371,7 +409,10 @@ export default function GenerateInvoiceModal({
 
           {error && (
             <div className="text-red-600 text-sm">
-              Error: {error instanceof Error ? error.message : "Failed to create booking"}
+              Error:{" "}
+              {error instanceof Error
+                ? error.message
+                : "Failed to create booking"}
             </div>
           )}
         </div>
@@ -399,7 +440,9 @@ export default function GenerateInvoiceModal({
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <div className="flex flex-col items-center text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Invoice Created Successfully!</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Invoice Created Successfully!
+              </h2>
               <p className="text-gray-600 mb-6">
                 Your invoice has been generated and sent successfully.
               </p>

@@ -130,9 +130,6 @@ export const bookingApi = createApi({
         url: "/booking",
         method: "POST",
         body: payload,
-        headers: {
-          "Content-Type": "application/json",
-        },
       }),
     }),
 

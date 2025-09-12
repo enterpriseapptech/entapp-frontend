@@ -47,10 +47,12 @@ export default function QuoteDetails() {
     dateAndTime: "",
     invoiceStatus: "PENDING",
     budget: "",
+    timeslotIds: [] as string[],
   });
 
   useEffect(() => {
     if (quoteData) {
+      const timeslotIds = quoteData.requestedTimeSlots?.map(slot => slot.id) || [];
       setQuote({
         id: quoteData.id,
         customerId: quoteData.customerId,
@@ -72,6 +74,7 @@ export default function QuoteDetails() {
         dateAndTime: quoteData.createdAt,
         invoiceStatus: quoteData.status,
         budget: quoteData.budget,
+        timeslotIds: timeslotIds,
       });
     }
   }, [quoteData]);
@@ -280,6 +283,7 @@ export default function QuoteDetails() {
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}
         initialQuote={quote}
+        timeslotIds={quote.timeslotIds}
       />
     </div>
   );

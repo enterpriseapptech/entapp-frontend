@@ -7,7 +7,22 @@ export interface BillingAddress {
   country: string;
   postal: string;
 }
-
+export interface RequestedTimeSlot {
+  id: string;
+  serviceId: string;
+  serviceType: string;
+  bookingId: string | null;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+  previousBookings: [];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
 export interface RequestQuotePayload {
   customerId: string;
   serviceId: string;
@@ -42,6 +57,7 @@ export interface RequestQuoteResponse {
   deletedBy: string | null;
   billingDetails: BillingAddress;
   billingAddress: BillingAddress;
+  requestedTimeSlots: RequestedTimeSlot[];
 }
 
 export interface GetQuotesResponse {
