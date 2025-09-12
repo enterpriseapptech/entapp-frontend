@@ -1,102 +1,146 @@
+"use client";
 import { useState, useEffect } from "react";
-import { CalendarDays, X } from "lucide-react";
+import { CalendarDays, X, Plus, Trash2, CheckCircle } from "lucide-react";
+import { useCreateBookingMutation } from "@/redux/services/book";
 
 interface Quote {
-  customerName: string;
-  customerEmail: string;
-  eventType: string;
-  dateAndTime: string;
+  id: string;
+  customerId: string;
+  serviceId: string;
+  serviceType: "EVENTCENTER" | "CATERING";
+  billingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postal: string;
+  };
+  isTermsAccepted: boolean;
+  isCancellationPolicyAccepted: boolean;
+  isLiabilityWaiverSigned: boolean;
+  source: "WEB" | "MOBILE" | string;
+  customerNotes: string;
 }
+
 interface GenerateInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialQuote?: Quote;
+  initialQuote: Quote;
 }
+
+enum SpecialRequirement {
+  WHEELCHAIRACCESS = "WHEELCHAIRACCESS",
+  TEMPERATUREADJUSTMENT = "TEMPERATUREADJUSTMENT",
+}
+
 export default function GenerateInvoiceModal({
   isOpen,
   onClose,
   initialQuote,
 }: GenerateInvoiceModalProps) {
-  const [step, setStep] = useState(1);
+  const [createBooking, { isLoading, error }] = useCreateBookingMutation();
+  const [items, setItems] = useState([{ item: "", amount: 0 }]);
+  const [specialRequirements, setSpecialRequirements] = useState<string[]>([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   const [formData, setFormData] = useState({
-    clientName: initialQuote?.customerName || "",
-    emailAddress: initialQuote?.customerEmail || "",
-    billingAddress: "",
-    eventType: initialQuote?.eventType || "",
-    eventDate: initialQuote?.dateAndTime
-      ? new Date(initialQuote.dateAndTime).toISOString().split("T")[0]
-      : "", // Format date for input type="date"
-    invoiceDate: new Date().toISOString().split("T")[0], // Default to today
-    dueDate: "",
-    serviceDescription: "",
-    serviceAmount: "",
-    serviceCurrency: "USD",
-    discountDescription: "",
-    discountAmount: "",
-    discountCurrency: "USD",
-    subtotal: 0,
+    timeslotId: [""],
+    subTotal: 0,
     discount: 0,
-    tax: 0,
-    additional: 0,
     total: 0,
-    additionalNotes: "",
+    dueDate: "",
+    serviceNotes: "",
+    eventName: "",
+    eventTheme: "",
+    description: "",
+    noOfGuest: 0,
   });
 
-  // Calculate totals whenever relevant formData changes
+  // Calculate totals whenever items or discount changes
   useEffect(() => {
-    const serviceAmt = parseFloat(formData.serviceAmount) || 0;
-    const discountAmt = parseFloat(formData.discountAmount) || 0;
-    const calculatedSubtotal = serviceAmt;
-    const calculatedDiscount = discountAmt;
-    const calculatedTax = calculatedSubtotal * 0.05;
-    const calculatedAdditional = 0;
-  
-    setFormData((prev) => ({
+    const subTotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const discountAmount = (subTotal * formData.discount) / 100;
+    const total = subTotal - discountAmount;
+
+    setFormData(prev => ({
       ...prev,
-      subtotal: calculatedSubtotal,
-      discount: calculatedDiscount,
-      tax: calculatedTax,
-      additional: calculatedAdditional,
-      total:
-        calculatedSubtotal -
-        calculatedDiscount +
-        calculatedTax +
-        calculatedAdditional,
+      subTotal,
+      total
     }));
-  }, [formData.serviceAmount, formData.discountAmount]);
+  }, [items, formData.discount]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  
-
-  const handleNext = () => {
-    setStep((prev) => prev + 1);
+  const handleItemChange = (index: number, field: string, value: string | number) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setItems(newItems);
   };
 
-  const handlePrevious = () => {
-    setStep((prev) => prev - 1);
+  const addItem = () => {
+    setItems([...items, { item: "", amount: 0 }]);
   };
 
-  const handleSubmit = (action: string) => {
-    console.log(`Invoice Action: ${action}`, formData);
+  const removeItem = (index: number) => {
+    if (items.length > 1) {
+      setItems(items.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleSpecialRequirementChange = (requirement: SpecialRequirement) => {
+    setSpecialRequirements(prev =>
+      prev.includes(requirement)
+        ? prev.filter(r => r !== requirement)
+        : [...prev, requirement]
+    );
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const bookingData = {
+        customerId: initialQuote.customerId,
+        serviceId: initialQuote.serviceId,
+        timeslotId: formData.timeslotId,
+        serviceType: initialQuote.serviceType,
+        subTotal: formData.subTotal,
+        discount: (formData.subTotal * formData.discount) / 100,
+        total: formData.total,
+        items: items.filter(item => item.item && item.amount > 0),
+        billingAddress: initialQuote.billingAddress,
+        dueDate: new Date(formData.dueDate).toISOString(),
+        isTermsAccepted: initialQuote.isTermsAccepted,
+        isCancellationPolicyAccepted: initialQuote.isCancellationPolicyAccepted,
+        isLiabilityWaiverSigned: initialQuote.isLiabilityWaiverSigned,
+        source: initialQuote.source,
+        serviceNotes: formData.serviceNotes,
+        customerNotes: initialQuote.customerNotes,
+        eventName: formData.eventName,
+        eventTheme: formData.eventTheme,
+        eventType: initialQuote.serviceType,
+        description: formData.description,
+        noOfGuest: formData.noOfGuest,
+        specialRequirements
+      };
+
+      await createBooking(bookingData).unwrap();
+      onClose();
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error("Failed to create booking:", err);
+    }
+  };
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
     onClose();
   };
+
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Create Invoice</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Generate Invoice</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -105,385 +149,270 @@ export default function GenerateInvoiceModal({
             <X className="h-6 w-6" />
           </button>
         </div>
-        <p className="text-gray-300  text-center mt-2 mb-4">
-          Generate a professional invoice for your catering services
-        </p>
 
         {/* Modal Body */}
-        <div className="p-6">
-          {step === 1 && (
-            <>
-              {/* Client Information */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Client Information
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="clientName"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Client Name
+        <div className="p-6 space-y-6">
+          {/* Items Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Items</h3>
+            {items.map((item, index) => (
+              <div key={index} className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Item Description
+                  </label>
+                  <input
+                    type="text"
+                    value={item.item}
+                    onChange={(e) => handleItemChange(index, "item", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+                    placeholder="Item description"
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Amount ($)
                     </label>
                     <input
-                      type="text"
-                      name="clientName"
-                      id="clientName"
-                      value={formData.clientName}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border-gray-300 text-gray-300    rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Jon Doe"
+                      type="number"
+                      value={item.amount}
+                      onChange={(e) => handleItemChange(index, "amount", parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-400"
+                      placeholder="0.00"
                     />
                   </div>
-                  <div>
-                    <label
-                      htmlFor="eventType"
-                      className="block text-sm font-medium text-gray-700 mb-1"
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
                     >
-                      Event Type
-                    </label>
-                    <select
-                      name="eventType"
-                      id="eventType"
-                      value={formData.eventType}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select Event Type</option>
-                      <option value="Wedding">Wedding</option>
-                      <option value="Birthday">Birthday</option>
-                      <option value="Corporate">Corporate</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="emailAddress"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="emailAddress"
-                      id="emailAddress"
-                      value={formData.emailAddress}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border-gray-300 text-gray-300    rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="jonnuel@mail.com"
-                    />
-                  </div>
-                  <div className="relative">
-                    <label
-                      htmlFor="eventDate"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Event Date
-                    </label>
-                    <input
-                      type="date"
-                      name="eventDate"
-                      id="eventDate"
-                      value={formData.eventDate}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 pr-10 border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <CalendarDays className="absolute right-3 top-8 h-5 w-5 text-gray-400 pointer-events-none" />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="billingAddress"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Billing Address
-                    </label>
-                    <input
-                      type="text"
-                      name="billingAddress"
-                      id="billingAddress"
-                      value={formData.billingAddress}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="123 str"
-                    />
-                  </div>
-                  <div className="relative">
-                    <label
-                      htmlFor="invoiceDate"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Invoice Date
-                    </label>
-                    <input
-                      type="date"
-                      name="invoiceDate"
-                      id="invoiceDate"
-                      value={formData.invoiceDate}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 pr-10 border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <CalendarDays className="absolute right-3 top-8 h-5 w-5 text-gray-400 pointer-events-none" />
-                  </div>
-                  <div className="relative">
-                    <label
-                      htmlFor="dueDate"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      name="dueDate"
-                      id="dueDate"
-                      value={formData.dueDate}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 pr-10 border-gray-300 text-gray-300    rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <CalendarDays className="absolute right-3 top-8 h-5 w-5 text-gray-400 pointer-events-none" />
-                  </div>
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               </div>
+            ))}
+            <button
+              type="button"
+              onClick={addItem}
+              className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-md"
+            >
+              <Plus className="h-4 w-4" />
+              Add Item
+            </button>
+          </div>
 
-              {/* Add-on Service (optional) */}
+          {/* Discount Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Discount</h3>
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Add-on Service (optional)
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="serviceDescription"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Service Description
-                    </label>
-                    <textarea
-                      name="serviceDescription"
-                      id="serviceDescription"
-                      rows={3} // ensures 2-3 lines height
-                      value={formData.serviceDescription}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      placeholder="...enter a description here"
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1 mb-2">
-                      <label
-                        htmlFor="serviceAmount"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Amount
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 ">
-                          $
-                        </span>
-                        <input
-                          type="number"
-                          name="serviceAmount"
-                          id="serviceAmount"
-                          value={formData.serviceAmount}
-                          onChange={handleChange}
-                          className="w-full pl-7 pr-3 py-2 border-gray-300 text-gray-300    rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="200"
-                        />
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <label htmlFor="serviceCurrency" className="sr-only">
-                        Currency
-                      </label>
-                      <select
-                        name="serviceCurrency"
-                        id="serviceCurrency"
-                        value={formData.serviceCurrency}
-                        onChange={handleChange}
-                        className="px-3 py-2 border-gray-300 text-gray-300    rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 h-[42px]"
-                      >
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                        <option value="NGN">NGN</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Discount Percentage
+                </label>
+                <input
+                  type="number"
+                  value={formData.discount}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    discount: parseFloat(e.target.value) || 0
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-400"
+                  placeholder="0%"
+                  min="0"
+                  max="100"
+                />
               </div>
-            </>
-          )}
+            </div>
+          </div>
 
-          {step === 2 && (
-            <>
-              {/* Discount (optional) */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Discount (optional)
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="discountDescription"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Discount Description
-                    </label>
-                    <input
-                      type="text"
-                      name="discountDescription"
-                      id="discountDescription"
-                      value={formData.discountDescription}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border-gray-300 text-gray-300    rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="...enter a description here"
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1">
-                      <label
-                        htmlFor="discountAmount"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Amount
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 ">
-                          $
-                        </span>
-                        <input
-                          type="number"
-                          name="discountAmount"
-                          id="discountAmount"
-                          value={formData.discountAmount}
-                          onChange={handleChange}
-                          className="w-full pl-7 pr-3 py-2 border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="200"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="discountCurrency" className="sr-only">
-                        Currency
-                      </label>
-                      <select
-                        name="discountCurrency"
-                        id="discountCurrency"
-                        value={formData.discountCurrency}
-                        onChange={handleChange}
-                        className="px-3 py-2 border-gray-300 text-gray-300   text  rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 h-[42px]"
-                      >
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                        <option value="NGN">NGN</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Invoice Summary */}
-              <div className="mb-6 bg-gray-50 p-4 rounded-md">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Invoice Summary
-                </h3>
-                <div className="space-y-2 text-gray-700">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span className="font-medium">
-                      ${formData.subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Discount:</span>
-                    <span className="font-medium">
-                      -${formData.discount.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax:</span>
-                    <span className="font-medium">
-                      ${formData.tax.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Additional:</span>
-                    <span className="font-medium">
-                      ${formData.additional.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xl font-bold pt-2 border-t border-gray-200 mt-4">
-                    <span>Total:</span>
-                    <span>${formData.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Notes */}
+          {/* Event Details */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Details</h3>
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Additional Notes
-                </h3>
-                <textarea
-                  name="additionalNotes"
-                  id="additionalNotes"
-                  value={formData.additionalNotes}
-                  onChange={handleChange}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-300   rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Payment terms, special instructions, or additional details..."
-                ></textarea>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Event Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.eventName}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    eventName: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+                  placeholder="Event name"
+                />
               </div>
-            </>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Event Theme
+                </label>
+                <input
+                  type="text"
+                  value={formData.eventTheme}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    eventTheme: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+                  placeholder="Event theme"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Number of Guests
+                </label>
+                <input
+                  type="number"
+                  value={formData.noOfGuest}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    noOfGuest: parseInt(e.target.value) || 0
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-400"
+                  placeholder="Number of guests"
+                  min="1"
+                />
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    dueDate: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md text-gray-400"
+                />
+                <CalendarDays className="absolute right-3 top-9 h-5 w-5 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Special Requirements */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Special Requirements</h3>
+            <div className="space-y-2">
+              {Object.values(SpecialRequirement).map((requirement) => (
+                <label key={requirement} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={specialRequirements.includes(requirement)}
+                    onChange={() => handleSpecialRequirementChange(requirement)}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {requirement === SpecialRequirement.WHEELCHAIRACCESS 
+                      ? "Wheelchair Access" 
+                      : "Temperature Adjustment"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+            <textarea
+              value={formData.serviceNotes}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                serviceNotes: e.target.value
+              }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+              placeholder="Service notes..."
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                description: e.target.value
+              }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+              placeholder="Event description..."
+            />
+          </div>
+
+          {/* Summary */}
+          <div className="bg-gray-50 p-4 rounded-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h3>
+            <div className="space-y-2 text-gray-700">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span className="font-medium">${formData.subTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Discount ({formData.discount}%):</span>
+                <span className="font-medium">
+                  -${((formData.subTotal * formData.discount) / 100).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xl font-bold pt-2 border-t border-gray-200 mt-4">
+                <span>Total:</span>
+                <span>${formData.total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="text-red-600 text-sm">
+              Error: {error instanceof Error ? error.message : "Failed to create booking"}
+            </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-between p-6 border-t border-gray-200">
-          {step === 1 && (
-            <button
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-          )}
-          {step === 2 && (
-            <button
-              onClick={handlePrevious}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              Previous
-            </button>
-          )}
-
-          {step === 1 && (
-            <button
-              onClick={handleNext}
-              className="px-6 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-            >
-              Next
-            </button>
-          )}
-          {step === 2 && (
-            <div className="flex gap-4">
-              <button
-                onClick={() => handleSubmit("Save as Draft")}
-                className="px-6 py-2 border-gray-300  text-gray-300   rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Save as Draft
-              </button>
-              <button
-                onClick={() => handleSubmit("Send Invoice")}
-                className="px-6 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-              >
-                Send Invoice
-              </button>
-            </div>
-          )}
+        <div className="flex justify-end gap-4 p-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="px-6 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+          >
+            {isLoading ? "Creating..." : "Generate Invoice"}
+          </button>
         </div>
       </div>
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="flex flex-col items-center text-center">
+              <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Invoice Created Successfully!</h2>
+              <p className="text-gray-600 mb-6">
+                Your invoice has been generated and sent successfully.
+              </p>
+              <button
+                onClick={handleCloseSuccessModal}
+                className="px-6 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

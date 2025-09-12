@@ -195,8 +195,7 @@ export default function BookingDetails() {
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">{booking.bookingReference}</h2>
-                <p className="text-sm text-gray-500">Booking ID: {booking.id}</p>
+                <h2 className="text-lg font-semibold text-gray-900">Booking Reference: {booking.bookingReference}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 {getStatusBadge(booking.status)}
@@ -321,10 +320,6 @@ export default function BookingDetails() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Discount</span>
                     <span className="font-medium text-green-600">-${booking.discount?.toFixed(2) || "0.00"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="font-medium">$0.00</span>
                   </div>
                   <hr />
                   <div className="flex justify-between text-lg font-semibold">

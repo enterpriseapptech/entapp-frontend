@@ -11,8 +11,6 @@ import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 type FilterType =
   | "bookingType"
-  | "customerName"
-  | "customerEmail"
   | "eventType"
   | "dateAndTime"
   | "invoiceStatus";
@@ -25,15 +23,11 @@ export default function QuoteRequests() {
 
   const [filters, setFilters] = useState<{
     bookingType: string | null;
-    customerName: string | null;
-    customerEmail: string | null;
     eventType: string | null;
     dateAndTime: string | null;
     invoiceStatus: string | null;
   }>({
     bookingType: null,
-    customerName: null,
-    customerEmail: null,
     eventType: null,
     dateAndTime: null,
     invoiceStatus: null,
@@ -108,11 +102,10 @@ export default function QuoteRequests() {
   }, []);
 
   // Transform API data to match the UI structure
-  // Transform API data to match the UI structure
   const quotes =
     quotesData?.data?.map((quote) => ({
-      id: quote.id, // The actual ID for API calls
-      displayId: quote.quoteReference || quote.id, // For display in UI
+      id: quote.id,
+      displayId: quote.quoteReference || quote.id,
       customerName: "Customer Name",
       customerEmail: "customer@email.com",
       eventType: quote.serviceType,
@@ -128,12 +121,6 @@ export default function QuoteRequests() {
     })) || [];
 
   const uniqueEventTypes = [...new Set(quotes.map((quote) => quote.eventType))];
-  const uniqueCustomerNames = [
-    ...new Set(quotes.map((quote) => quote.customerName)),
-  ];
-  const uniqueCustomerEmails = [
-    ...new Set(quotes.map((quote) => quote.customerEmail)),
-  ];
   const uniqueDateAndTimes = [
     ...new Set(quotes.map((quote) => quote.dateAndTime)),
   ].sort();
@@ -144,9 +131,6 @@ export default function QuoteRequests() {
   const filteredQuotes = quotes.filter((quote) => {
     return (
       (!filters.bookingType || quote.eventType === filters.bookingType) &&
-      (!filters.customerName || quote.customerName === filters.customerName) &&
-      (!filters.customerEmail ||
-        quote.customerEmail === filters.customerEmail) &&
       (!filters.dateAndTime || quote.dateAndTime === filters.dateAndTime) &&
       (!filters.invoiceStatus || quote.invoiceStatus === filters.invoiceStatus)
     );
@@ -156,8 +140,6 @@ export default function QuoteRequests() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      quote.customerName.toLowerCase().includes(query) ||
-      quote.customerEmail.toLowerCase().includes(query) ||
       quote.eventType.toLowerCase().includes(query) ||
       quote.dateAndTime.toLowerCase().includes(query) ||
       quote.invoiceStatus.toLowerCase().includes(query)
@@ -239,8 +221,6 @@ export default function QuoteRequests() {
   type Quote = {
     id: string;
     displayId: string;
-    customerName: string;
-    customerEmail: string;
     eventType: string;
     dateAndTime: string;
     invoiceStatus: string;
@@ -248,11 +228,7 @@ export default function QuoteRequests() {
   const handleViewQuote = (quote: Quote) => {
     router.push(
       `/eventServiceManagement/manage-quotes-details?requestId=${encodeURIComponent(
-        quote.id // Pass the actual ID for the API call
-      )}&customerName=${encodeURIComponent(
-        quote.customerName
-      )}&customerEmail=${encodeURIComponent(
-        quote.customerEmail
+        quote.id
       )}&eventType=${encodeURIComponent(
         quote.eventType
       )}&dateAndTime=${encodeURIComponent(
@@ -436,92 +412,6 @@ export default function QuoteRequests() {
                           <div
                             className="relative"
                             onMouseEnter={() =>
-                              !isMobile && setHoveredFilter("customerName")
-                            }
-                            onMouseLeave={() =>
-                              !isMobile && setHoveredFilter(null)
-                            }
-                          >
-                            <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() =>
-                                isMobile && toggleSubDropdown("customerName")
-                              }
-                            >
-                              Customer Name
-                              <ChevronDown className="w-4 h-4" />
-                            </button>
-                            {(isMobile
-                              ? clickedFilter === "customerName"
-                              : hoveredFilter === "customerName") && (
-                              <div
-                                className={`absolute ${
-                                  isMobile
-                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
-                                    : "left-full top-0 bg-white"
-                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
-                              >
-                                {uniqueCustomerNames.map((name) => (
-                                  <button
-                                    key={name}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("customerName", name)
-                                    }
-                                  >
-                                    {name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div
-                            className="relative"
-                            onMouseEnter={() =>
-                              !isMobile && setHoveredFilter("customerEmail")
-                            }
-                            onMouseLeave={() =>
-                              !isMobile && setHoveredFilter(null)
-                            }
-                          >
-                            <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() =>
-                                isMobile && toggleSubDropdown("customerEmail")
-                              }
-                            >
-                              Customer Email
-                              <ChevronDown className="w-4 h-4" />
-                            </button>
-                            {(isMobile
-                              ? clickedFilter === "customerEmail"
-                              : hoveredFilter === "customerEmail") && (
-                              <div
-                                className={`absolute ${
-                                  isMobile
-                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
-                                    : "left-full top-0 bg-white"
-                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
-                              >
-                                {uniqueCustomerEmails.map((email) => (
-                                  <button
-                                    key={email}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter("customerEmail", email)
-                                    }
-                                  >
-                                    {email}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div
-                            className="relative"
-                            onMouseEnter={() =>
                               !isMobile && setHoveredFilter("dateAndTime")
                             }
                             onMouseLeave={() =>
@@ -630,12 +520,6 @@ export default function QuoteRequests() {
                       Request ID
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Customer Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Customer Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Event Type
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
@@ -652,13 +536,7 @@ export default function QuoteRequests() {
                     paginatedQuotes.map((quote, index) => (
                       <tr key={index} className="border-t hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          {quote.displayId}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          {quote.customerName}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          {quote.customerEmail}
+                          {(currentPage - 1) * itemsPerPage + index + 1}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                           {quote.eventType}

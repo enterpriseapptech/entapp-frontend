@@ -183,7 +183,8 @@ export default function CateringServiceDetails() {
   );
 
   const formattedCuisine = cateringService.cuisine.join(", ");
-  const formattedLocation = `${cateringService.city}, ${cateringService.location.join(", ")}`;
+  const formattedLocation = `${cateringService.city}`;
+  // const formattedLocation = `${cateringService.city}, ${cateringService.location.join(", ")}`;
   const formattedDishTypes = cateringService.dishTypes.join(", ");
   const formattedEventTypes = cateringService.eventTypes.join(", ");
   const formattedContact = cateringService.contact || "N/A";

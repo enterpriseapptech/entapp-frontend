@@ -182,7 +182,7 @@ export default function ManageCatering() {
     cateringData?.data?.map((service) => ({
       id: service.id,
       name: service.name || service.tagLine || "Catering Service",
-      location: `${service.city}, ${service.location.join(", ")}`,
+      location: `${service.city}`,
       date: new Date(service.createdAt).toLocaleString("en-US", {
         month: "short",
         day: "numeric",

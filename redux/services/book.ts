@@ -162,5 +162,5 @@ export const bookingApi = createApi({
 export const {
   useCreateBookingMutation,
   useGetBookingsByServiceProviderQuery,
-  useGetBookingByIdQuery, // ✅ new hook
+  useGetBookingByIdQuery,
 } = bookingApi;

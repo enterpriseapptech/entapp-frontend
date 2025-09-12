@@ -295,7 +295,7 @@ const QuoteRequest: React.FC<QuoteRequestProps> = ({
           <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
             <h2 className="text-xl font-semibold text-gray-700">
               {step === 1 && "Select Date & Time"}
-              {step === 2 && "Event Details & Budget"}
+              {step === 2 && "Details & Budget"}
               {step === 3 && "Billing Information"}
               {step === 4 && "Review Quote Request"}
               {isQuoteSubmitted && "Quote Request Submitted!"}

@@ -3,42 +3,37 @@ import { ChevronDown, X, Search } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
-import { useGetBookingsByServiceProviderQuery } from "@/redux/services/book";
-import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/eventsApi";
+import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import { useGetQuotesByServiceIdQuery } from "@/redux/services/quoteApi";
+import { useGetCateringsByServiceProviderQuery } from "@/redux/services/cateringApi";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
-type FilterType = "bookingType" | "dateAndTime" | "status" | "paymentStatus";
+type FilterType =
+  | "bookingType"
+  | "eventType"
+  | "dateAndTime"
+  | "invoiceStatus";
 
-export default function ManageBookings() {
+export default function CateringQuoteRequests() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // State for managing filters
   const [filters, setFilters] = useState<{
     bookingType: string | null;
-    venue: string | null;
-    caterer: string | null;
+    eventType: string | null;
     dateAndTime: string | null;
-    status: string | null;
-    paymentStatus: string | null;
+    invoiceStatus: string | null;
   }>({
     bookingType: null,
-    venue: null,
-    caterer: null,
+    eventType: null,
     dateAndTime: null,
-    status: null,
-    paymentStatus: null,
+    invoiceStatus: null,
   });
 
-  // State for search input
   const [searchQuery, setSearchQuery] = useState<string>("");
-
-  // State for controlling the "More filters" dropdown
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [clickedFilter, setClickedFilter] = useState<string | null>(null);
@@ -57,7 +52,6 @@ export default function ManageBookings() {
       localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
     setUserId(user_id);
   }, []);
-
   const { data: userData } = useGetUserByIdQuery(userId || "", {
     skip: !userId,
   });
@@ -69,9 +63,9 @@ export default function ManageBookings() {
     }
   }, [userData]);
 
-  // Fetch event centers for this service provider
-  const { data: eventCentersData, isLoading: isLoadingEventCenters } =
-    useGetEventCentersByServiceProviderQuery(
+  // Fetch catering services for this service provider
+  const { data: cateringsData, isLoading: isLoadingCaterings } =
+    useGetCateringsByServiceProviderQuery(
       {
         serviceProviderId: serviceProviderId || "",
         limit: 10,
@@ -80,21 +74,21 @@ export default function ManageBookings() {
       { skip: !serviceProviderId }
     );
 
-  // Get the first event center ID to use for fetching bookings
+  // Get the first catering service ID to use for fetching quotes
   useEffect(() => {
-    if (eventCentersData?.data && eventCentersData.data.length > 0) {
-      setSelectedServiceId(eventCentersData.data[0].id);
+    if (cateringsData?.data && cateringsData.data.length > 0) {
+      setSelectedServiceId(cateringsData.data[0].id);
     }
-  }, [eventCentersData]);
+  }, [cateringsData]);
 
-  // Fetch bookings using the service ID
+  // Fetch quotes using the service ID
   const {
-    data: bookingsData,
-    isLoading: isLoadingBookings,
+    data: quotesData,
+    isLoading: isLoadingQuotes,
     error,
-  } = useGetBookingsByServiceProviderQuery(
+  } = useGetQuotesByServiceIdQuery(
     { serviceId: selectedServiceId || "", limit: 100, offset: 0 },
-    { skip: !selectedServiceId }
+    { skip: !selectedServiceId } // Skip query if no service ID is available
   );
 
   useEffect(() => {
@@ -108,12 +102,14 @@ export default function ManageBookings() {
   }, []);
 
   // Transform API data to match the UI structure
-  const bookings =
-    bookingsData?.data?.map((booking) => ({
-      id: booking.id,
-      bookingId: booking.bookingReference || booking.id,
-      bookingType: booking.serviceType,
-      dateAndTime: new Date(booking.createdAt).toLocaleString("en-US", {
+  const quotes =
+    quotesData?.data?.map((quote) => ({
+      id: quote.id,
+      displayId: quote.quoteReference || quote.id,
+      customerName: "Customer Name",
+      customerEmail: "customer@email.com",
+      eventType: quote.serviceType,
+      dateAndTime: new Date(quote.createdAt).toLocaleString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -121,58 +117,41 @@ export default function ManageBookings() {
         minute: "2-digit",
         hour12: true,
       }),
-      status: booking.status,
-      paymentStatus: booking.paymentStatus,
+      invoiceStatus: quote.status === "SENT" ? "Sent" : "Pending",
     })) || [];
 
-  // Extract unique values for each filter category
-  const uniqueBookingTypes = [
-    ...new Set(bookings.map((booking) => booking.bookingType)),
-  ];
+  const uniqueEventTypes = [...new Set(quotes.map((quote) => quote.eventType))];
   const uniqueDateAndTimes = [
-    ...new Set(bookings.map((booking) => booking.dateAndTime)),
+    ...new Set(quotes.map((quote) => quote.dateAndTime)),
   ].sort();
-  const uniqueStatuses = [
-    ...new Set(bookings.map((booking) => booking.status)),
-  ];
-  const uniquePaymentStatuses = [
-    ...new Set(bookings.map((booking) => booking.paymentStatus)),
+  const uniqueInvoiceStatuses = [
+    ...new Set(quotes.map((quote) => quote.invoiceStatus)),
   ];
 
-  // Apply filters to the data
-  const filteredBookings = bookings.filter((booking) => {
+  const filteredQuotes = quotes.filter((quote) => {
     return (
-      (!filters.bookingType || booking.bookingType === filters.bookingType) &&
-      (!filters.dateAndTime || booking.dateAndTime === filters.dateAndTime) &&
-      (!filters.status || booking.status === filters.status) &&
-      (!filters.paymentStatus ||
-        booking.paymentStatus === filters.paymentStatus)
+      (!filters.bookingType || quote.eventType === filters.bookingType) &&
+      (!filters.dateAndTime || quote.dateAndTime === filters.dateAndTime) &&
+      (!filters.invoiceStatus || quote.invoiceStatus === filters.invoiceStatus)
     );
   });
 
-  // Apply search to the filtered data
-  const searchedBookings = filteredBookings.filter((booking) => {
+  const searchedQuotes = filteredQuotes.filter((quote) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      booking.bookingId.toLowerCase().includes(query) ||
-      booking.bookingType.toLowerCase().includes(query) ||
-      booking.dateAndTime.toLowerCase().includes(query) ||
-      booking.status.toLowerCase().includes(query) ||
-      booking.paymentStatus.toLowerCase().includes(query)
+      quote.eventType.toLowerCase().includes(query) ||
+      quote.dateAndTime.toLowerCase().includes(query) ||
+      quote.invoiceStatus.toLowerCase().includes(query)
     );
   });
 
-  // Calculate total pages based on searched and filtered data
-  const totalPages = Math.ceil(searchedBookings.length / itemsPerPage);
-
-  // Get the bookings for the current page
-  const paginatedBookings = searchedBookings.slice(
+  const totalPages = Math.ceil(searchedQuotes.length / itemsPerPage);
+  const paginatedQuotes = searchedQuotes.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -212,7 +191,6 @@ export default function ManageBookings() {
     return pageNumbers;
   };
 
-  // Handle filter application
   const applyFilter = (filterType: FilterType, value: string | null) => {
     setFilters((prev) => ({
       ...prev,
@@ -223,7 +201,6 @@ export default function ManageBookings() {
     setClickedFilter(null);
   };
 
-  // Handle filter removal
   const removeFilter = (filterType: FilterType) => {
     setFilters((prev) => ({
       ...prev,
@@ -232,50 +209,41 @@ export default function ManageBookings() {
     setCurrentPage(1);
   };
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
   };
 
-  // Handle sub-dropdown toggle on mobile
   const toggleSubDropdown = (filter: string) => {
     setClickedFilter((prev) => (prev === filter ? null : filter));
   };
 
-  // Handle navigation to the details page
-  type Booking = {
+  type Quote = {
     id: string;
-    bookingId: string;
-    bookingType: string;
+    displayId: string;
+    eventType: string;
     dateAndTime: string;
-    status: string;
-    paymentStatus: string;
+    invoiceStatus: string;
   };
-
-  const handleViewBooking = (booking: Booking) => {
+  const handleViewQuote = (quote: Quote) => {
     router.push(
-      `/eventServiceManagement/manage-bookings-details?bookingId=${encodeURIComponent(
-        booking.id
-      )}&displayId=${encodeURIComponent(
-        booking.bookingId
-      )}&bookingType=${encodeURIComponent(
-        booking.bookingType
+      `/cateringServiceManagement/manage-quotes-details?requestId=${encodeURIComponent(
+        quote.id
+      )}&eventType=${encodeURIComponent(
+        quote.eventType
       )}&dateAndTime=${encodeURIComponent(
-        booking.dateAndTime
-      )}&status=${encodeURIComponent(
-        booking.status
-      )}&paymentStatus=${encodeURIComponent(booking.paymentStatus)}`
+        quote.dateAndTime
+      )}&invoiceStatus=${encodeURIComponent(quote.invoiceStatus)}`
     );
   };
 
-  // Show loading if either event centers or bookings are loading
-  const isLoading = isLoadingEventCenters || isLoadingBookings;
+  // Show loading if either catering services or quotes are loading
+  const isLoading = isLoadingCaterings || isLoadingQuotes;
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <CateringServiceSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -283,7 +251,7 @@ export default function ManageBookings() {
           <Header setIsSidebarOpen={setIsSidebarOpen} />
           <main className="md:p-10 p-4">
             <div className="flex justify-center items-center h-64">
-              <div className="text-gray-600">Loading bookings...</div>
+              <div className="text-gray-600">Loading quotes...</div>
             </div>
           </main>
         </div>
@@ -294,7 +262,7 @@ export default function ManageBookings() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <CateringServiceSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -303,7 +271,28 @@ export default function ManageBookings() {
           <main className="md:p-10 p-4">
             <div className="flex justify-center items-center h-64">
               <div className="text-red-600">
-                Error loading bookings. Please try again.
+                Error loading quotes. Please try again.
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedServiceId) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <CateringServiceSideBar
+          isOpen={isSidebarOpen}
+          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="md:ml-[280px]">
+          <Header setIsSidebarOpen={setIsSidebarOpen} />
+          <main className="md:p-10 p-4">
+            <div className="flex justify-center items-center h-64">
+              <div className="text-gray-600">
+                No catering services found. Please create a catering service first.
               </div>
             </div>
           </main>
@@ -314,54 +303,38 @@ export default function ManageBookings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <EventServiceSideBar
+      <CateringServiceSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* Main Content */}
       <div className="md:ml-[280px]">
-        {/* Header */}
         <Header setIsSidebarOpen={setIsSidebarOpen} />
 
-        {/* Manage Bookings Content */}
         <main className="md:p-10 p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="md:text-xl text-md font-bold text-gray-950">
-              Manage Bookings
+              Quote Request List
             </h1>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
-                <Image
-                  width={10}
-                  height={10}
-                  alt="import"
-                  src="/import.png"
-                  className="w-5 h-5"
-                  unoptimized
-                />
-                <span>Import</span>
-              </button>
-              <Link href="/admin/add-booking">
-                <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
-                  <Image
-                    width={10}
-                    height={10}
-                    alt="add"
-                    src="/add.png"
-                    className="w-4 h-4"
-                    unoptimized
-                  />
-                  <span>Add</span>
-                </button>
-              </Link>
-            </div>
+            {cateringsData?.data && cateringsData.data.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Service:</span>
+                <select
+                  className="border border-gray-200 rounded-md px-3 py-1 text-sm"
+                  value={selectedServiceId}
+                  onChange={(e) => setSelectedServiceId(e.target.value)}
+                >
+                  {cateringsData.data.map((catering) => (
+                    <option key={catering.id} value={catering.id}>
+                      {catering.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
-          {/* Bookings Table */}
           <div className="rounded-lg border bg-white shadow">
-            {/* Filters and Search */}
             <div className="p-6">
               <div className="flex md:flex-row flex-col justify-between md:items-center items-start gap-5">
                 <div className="flex gap-2 flex-wrap">
@@ -393,11 +366,10 @@ export default function ManageBookings() {
                     {isFilterDropdownOpen && (
                       <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <div className="py-1">
-                          {/* Booking Type Filter */}
                           <div
                             className="relative"
                             onMouseEnter={() =>
-                              !isMobile && setHoveredFilter("bookingType")
+                              !isMobile && setHoveredFilter("eventType")
                             }
                             onMouseLeave={() =>
                               !isMobile && setHoveredFilter(null)
@@ -406,15 +378,15 @@ export default function ManageBookings() {
                             <button
                               className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               onClick={() =>
-                                isMobile && toggleSubDropdown("bookingType")
+                                isMobile && toggleSubDropdown("eventType")
                               }
                             >
-                              Booking Type
+                              Event Type
                               <ChevronDown className="w-4 h-4" />
                             </button>
                             {(isMobile
-                              ? clickedFilter === "bookingType"
-                              : hoveredFilter === "bookingType") && (
+                              ? clickedFilter === "eventType"
+                              : hoveredFilter === "eventType") && (
                               <div
                                 className={`absolute ${
                                   isMobile
@@ -422,7 +394,7 @@ export default function ManageBookings() {
                                     : "left-full top-0 bg-white"
                                 } w-48 border border-gray-200 rounded-lg shadow-lg`}
                               >
-                                {uniqueBookingTypes.map((type) => (
+                                {uniqueEventTypes.map((type) => (
                                   <button
                                     key={type}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -436,7 +408,7 @@ export default function ManageBookings() {
                               </div>
                             )}
                           </div>
-                          {/* Date and Time Filter */}
+
                           <div
                             className="relative"
                             onMouseEnter={() =>
@@ -480,11 +452,10 @@ export default function ManageBookings() {
                             )}
                           </div>
 
-                          {/* Status Filter */}
                           <div
                             className="relative"
                             onMouseEnter={() =>
-                              !isMobile && setHoveredFilter("status")
+                              !isMobile && setHoveredFilter("invoiceStatus")
                             }
                             onMouseLeave={() =>
                               !isMobile && setHoveredFilter(null)
@@ -493,15 +464,15 @@ export default function ManageBookings() {
                             <button
                               className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               onClick={() =>
-                                isMobile && toggleSubDropdown("status")
+                                isMobile && toggleSubDropdown("invoiceStatus")
                               }
                             >
-                              Status
+                              Invoice Status
                               <ChevronDown className="w-4 h-4" />
                             </button>
                             {(isMobile
-                              ? clickedFilter === "status"
-                              : hoveredFilter === "status") && (
+                              ? clickedFilter === "invoiceStatus"
+                              : hoveredFilter === "invoiceStatus") && (
                               <div
                                 className={`absolute ${
                                   isMobile
@@ -509,62 +480,15 @@ export default function ManageBookings() {
                                     : "left-full top-0 bg-white"
                                 } w-48 border border-gray-200 rounded-lg shadow-lg`}
                               >
-                                {uniqueStatuses.map((status) => (
+                                {uniqueInvoiceStatuses.map((status) => (
                                   <button
                                     key={status}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     onClick={() =>
-                                      applyFilter("status", status)
+                                      applyFilter("invoiceStatus", status)
                                     }
                                   >
                                     {status}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Payment Status Filter */}
-                          <div
-                            className="relative"
-                            onMouseEnter={() =>
-                              !isMobile && setHoveredFilter("paymentStatus")
-                            }
-                            onMouseLeave={() =>
-                              !isMobile && setHoveredFilter(null)
-                            }
-                          >
-                            <button
-                              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() =>
-                                isMobile && toggleSubDropdown("paymentStatus")
-                              }
-                            >
-                              Payment Status
-                              <ChevronDown className="w-4 h-4" />
-                            </button>
-                            {(isMobile
-                              ? clickedFilter === "paymentStatus"
-                              : hoveredFilter === "paymentStatus") && (
-                              <div
-                                className={`absolute ${
-                                  isMobile
-                                    ? "left-0 top-full mt-1 bg-gray-900 z-20"
-                                    : "left-full top-0 bg-white"
-                                } w-48 border border-gray-200 rounded-lg shadow-lg`}
-                              >
-                                {uniquePaymentStatuses.map((paymentStatus) => (
-                                  <button
-                                    key={paymentStatus}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    onClick={() =>
-                                      applyFilter(
-                                        "paymentStatus",
-                                        paymentStatus
-                                      )
-                                    }
-                                  >
-                                    {paymentStatus}
                                   </button>
                                 ))}
                               </div>
@@ -575,7 +499,6 @@ export default function ManageBookings() {
                     )}
                   </div>
                 </div>
-                {/* Search Input */}
                 <div className="relative w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
@@ -589,79 +512,58 @@ export default function ManageBookings() {
               </div>
             </div>
 
-            {/* Table with Horizontal Scroll */}
             <div className="overflow-x-auto">
               <table className="w-full table-auto min-w-[800px]">
                 <thead>
                   <tr className="border-t">
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Booking ID
+                      Request ID
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Booking Type
+                      Event Type
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                       Date and Time
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Status
+                      Invoice Status
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
-                      Payment Status
-                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-400 whitespace-nowrap"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedBookings.length > 0 ? (
-                    paginatedBookings.map((booking, index) => (
-                      <tr
-                        key={index}
-                        className="border-t hover:bg-gray-50 cursor-pointer"
-                        onClick={() => handleViewBooking(booking)}
-                      >
+                  {paginatedQuotes.length > 0 ? (
+                    paginatedQuotes.map((quote, index) => (
+                      <tr key={index} className="border-t hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                           {(currentPage - 1) * itemsPerPage + index + 1}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          {booking.bookingType}
+                          {quote.eventType}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          {booking.dateAndTime}
+                          {quote.dateAndTime}
                         </td>
                         <td className="px-6 py-4 text-sm whitespace-nowrap">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                              booking.status === "PENDING"
-                                ? "bg-orange-50 text-orange-700"
-                                : booking.status === "BOOKED" ||
-                                  booking.status === "CONFIRMED"
+                              quote.invoiceStatus === "Sent"
                                 ? "bg-green-50 text-green-700"
-                                : booking.status === "IN_PROGRESS"
-                                ? "bg-blue-50 text-blue-700"
-                                : booking.status === "COMPLETED"
-                                ? "bg-purple-50 text-purple-700"
-                                : booking.status === "CANCELLED"
-                                ? "bg-red-50 text-red-700"
+                                : quote.invoiceStatus === "Pending"
+                                ? "bg-orange-50 text-orange-700"
                                 : "bg-gray-50 text-gray-700"
                             }`}
                           >
-                            {booking.status}
+                            {quote.invoiceStatus}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                              booking.paymentStatus === "PAID"
-                                ? "bg-green-50 text-green-700"
-                                : booking.paymentStatus === "PENDING"
-                                ? "bg-orange-50 text-orange-700"
-                                : booking.paymentStatus === "REFUNDED"
-                                ? "bg-red-50 text-red-700"
-                                : "bg-gray-50 text-gray-700"
-                            }`}
+                          <button
+                            onClick={() => handleViewQuote(quote)}
+                            className="text-blue-600 hover:underline cursor-pointer"
                           >
-                            {booking.paymentStatus}
-                          </span>
+                            View
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -671,7 +573,7 @@ export default function ManageBookings() {
                         colSpan={7}
                         className="px-6 py-4 text-center text-sm text-gray-500"
                       >
-                        No bookings found
+                        No quotes found
                       </td>
                     </tr>
                   )}
@@ -679,8 +581,7 @@ export default function ManageBookings() {
               </table>
             </div>
 
-            {/* Pagination */}
-            {searchedBookings.length > 0 && (
+            {searchedQuotes.length > 0 && (
               <div className="flex justify-between items-center p-4 border-t md:flex-wrap gap-4">
                 <button
                   onClick={() =>

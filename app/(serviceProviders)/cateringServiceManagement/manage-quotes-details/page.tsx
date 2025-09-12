@@ -3,11 +3,39 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
 import GenerateInvoiceModal from "@/components/layouts/GenerateInvoiceModal";
 import { useGetQuoteByIdQuery } from "@/redux/services/quoteApi";
 
-export default function QuoteDetails() {
+interface BillingAddress {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postal: string;
+  }
+  
+  interface Quote {
+    id: string;
+    customerId: string;
+    serviceId: string;
+    serviceType: "CATERING" | "EVENTCENTER";
+    billingAddress: BillingAddress;
+    isTermsAccepted: boolean;
+    isCancellationPolicyAccepted: boolean;
+    isLiabilityWaiverSigned: boolean;
+    source: "WEB" | "MOBILE";
+    customerNotes: string;
+    requestId: string;
+    customerName: string;
+    customerEmail: string;
+    eventType: string;
+    dateAndTime: string;
+    invoiceStatus: string;
+    budget: string;
+  }
+  
+export default function CateringQuoteDetails() {
   const searchParams = useSearchParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
@@ -23,11 +51,11 @@ export default function QuoteDetails() {
     skip: !requestId,
   });
 
-  const [quote, setQuote] = useState({
+  const [quote, setQuote] = useState<Quote>({
     id: "",
     customerId: "",
     serviceId: "",
-    serviceType: "EVENTCENTER" as "EVENTCENTER" | "CATERING",
+    serviceType: "CATERING",
     billingAddress: {
       street: "",
       city: "",
@@ -38,7 +66,7 @@ export default function QuoteDetails() {
     isTermsAccepted: false,
     isCancellationPolicyAccepted: false,
     isLiabilityWaiverSigned: false,
-    source: "WEB" as "WEB" | "MOBILE",
+    source: "WEB",
     customerNotes: "",
     requestId: "",
     customerName: "Loading...",
@@ -49,6 +77,8 @@ export default function QuoteDetails() {
     budget: "",
   });
 
+
+  // Update local state when API data is available
   useEffect(() => {
     if (quoteData) {
       setQuote({
@@ -56,17 +86,20 @@ export default function QuoteDetails() {
         customerId: quoteData.customerId,
         serviceId: quoteData.serviceId,
         serviceType:
-          quoteData.serviceType === "EVENTCENTER" || quoteData.serviceType === "CATERING"
+          quoteData.serviceType === "CATERING" || quoteData.serviceType === "EVENTCENTER"
             ? quoteData.serviceType
-            : "EVENTCENTER",
+            : "CATERING",
         billingAddress: quoteData.billingAddress,
         isTermsAccepted: quoteData.isTermsAccepted,
         isCancellationPolicyAccepted: quoteData.isCancellationPolicyAccepted,
         isLiabilityWaiverSigned: quoteData.isLiabilityWaiverSigned,
-        source: quoteData.source === "WEB" || quoteData.source === "MOBILE" ? quoteData.source : "WEB",
+        source:
+          quoteData.source === "WEB" || quoteData.source === "MOBILE"
+            ? quoteData.source
+            : "WEB",
         customerNotes: quoteData.customerNotes || "",
         requestId: quoteData.quoteReference || quoteData.id,
-        customerName: "Customer Name",
+        customerName: "Customer Name", 
         customerEmail: "customer@email.com",
         eventType: quoteData.serviceType,
         dateAndTime: quoteData.createdAt,
@@ -76,6 +109,7 @@ export default function QuoteDetails() {
     }
   }, [quoteData]);
 
+
   const handleGenerateInvoice = () => {
     setIsInvoiceModalOpen(true);
   };
@@ -83,7 +117,7 @@ export default function QuoteDetails() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <CateringServiceSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -102,7 +136,7 @@ export default function QuoteDetails() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <CateringServiceSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -122,7 +156,7 @@ export default function QuoteDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <CateringServiceSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -135,7 +169,7 @@ export default function QuoteDetails() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="md:text-xl text-md font-bold text-gray-950">
-                  Quote Request Details
+                  Catering Quote Request Details
                 </h1>
                 <button
                   className="px-4 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 cursor-pointer"
@@ -158,7 +192,7 @@ export default function QuoteDetails() {
                       <strong>Event Type:</strong> {quote.eventType}
                     </p>
                     <p>
-                      <strong>Event Date:</strong>{" "}
+                      <strong>Request Date:</strong>{" "}
                       {quote.dateAndTime
                         ? new Date(quote.dateAndTime).toLocaleString("en-US", {
                             month: "short",
