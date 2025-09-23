@@ -71,7 +71,7 @@ export interface CreateCateringRequest {
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://13.61.137.254:8000",
+    baseUrl: "http://31.97.143.49:8000",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||
@@ -84,7 +84,10 @@ export const cateringApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getCaterings: builder.query<CateringResponse, { limit: number; offset: number }>({
+    getCaterings: builder.query<
+      CateringResponse,
+      { limit: number; offset: number }
+    >({
       query: ({ limit, offset }) => ({
         url: `/catering?limit=${limit}&offset=${offset}`,
         method: "GET",

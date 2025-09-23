@@ -52,7 +52,7 @@ export default function HeroWithNavbar({
   const navLinks = [
     { label: "Event Centers", href: "/event-center" },
     { label: "Catering Services", href: "/cateringServices" },
-    { label: "Bookings", href: "#" },
+    { label: "Quotes", href: "/quotes"},
     { label: "About Us", href: "#" },
   ];
 
@@ -189,7 +189,7 @@ export default function HeroWithNavbar({
         >
           <h1
             className="md:text-5xl text-3xl font-bold mb-2"
-            dangerouslySetInnerHTML={{ __html: heading }} // Render HTML for <br />
+            dangerouslySetInnerHTML={{ __html: heading }}
           />
           {subheading && ( // Conditionally render the subheading
             <p className="text-sm mb-12 max-w-2xl">{subheading}</p>

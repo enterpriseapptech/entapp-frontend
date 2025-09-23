@@ -71,15 +71,16 @@ export default function AddEventCenter() {
   const [uploadEventCenterImages, { isLoading: isUploadingImages }] =
     useUploadEventCenterImagesMutation();
 
-  const [userId, setUserId] = useState<string | null>(null);
+  const userId =
+    localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUserId =
-        localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
-      setUserId(storedUserId);
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (typeof window !== "undefined") {
+  //     const storedUserId =
+  //       localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+  //     setUserId(storedUserId);
+  //   }
+  // }, []);
 
   const {
     data: user,
@@ -88,7 +89,6 @@ export default function AddEventCenter() {
   } = useGetUserByIdQuery(userId!, {
     skip: !userId,
   });
-  
 
   const {
     register,

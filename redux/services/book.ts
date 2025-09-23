@@ -104,12 +104,37 @@ export interface GetBookingsByServiceProviderQueryParams {
   limit?: number;
   offset?: number;
 }
-
+export interface InvoiceEntity {
+  id: string;
+  bookingId: string;
+  invoiceReference: string;
+  items: { item: string; amount: number }[];
+  subTotal: number;
+  discount: number;
+  total: number;
+  amountDue: string;
+  currency: string;
+  status: "PENDING" | "PAID" | "CANCELED" | string;
+  dueDate: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+export interface GetInvoicesResponse {
+  count: number;
+  data: InvoiceEntity[];
+}
+export interface GetInvoicesQueryParams {
+  bookingId: string;
+  limit?: number;
+  offset?: number;
+}
 // -------- API SLICE --------
 export const bookingApi = createApi({
   reducerPath: "bookingApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://13.61.137.254:8000",
+    baseUrl: "http://31.97.143.49:8000",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||
@@ -137,7 +162,7 @@ export const bookingApi = createApi({
       GetBookingsByServiceProviderResponse,
       GetBookingsByServiceProviderQueryParams
     >({
-      query: ({  serviceId, limit = 10, offset = 0 }) => ({
+      query: ({ serviceId, limit = 10, offset = 0 }) => ({
         url: `/booking`,
         method: "GET",
         params: {
@@ -153,6 +178,34 @@ export const bookingApi = createApi({
         method: "GET",
       }),
     }),
+    initiatePayment: builder.mutation<
+      string,
+      { invoiceId: string; paymentGateWay: string }
+    >({
+      query: (payload) => ({
+        url: "/payment/initiate",
+        method: "POST",
+        body: payload,
+        responseHandler: (response) => response.text(),
+      }),
+      transformResponse: (response: string) => {
+        return response;
+      },
+    }),
+    getInvoicesByBookingId: builder.query<
+      GetInvoicesResponse,
+      GetInvoicesQueryParams
+    >({
+      query: ({ bookingId, limit = 10, offset = 0 }) => ({
+        url: `/invoice`,
+        method: "GET",
+        params: {
+          bookingId,
+          limit,
+          offset,
+        },
+      }),
+    }),
   }),
 });
 
@@ -160,4 +213,6 @@ export const {
   useCreateBookingMutation,
   useGetBookingsByServiceProviderQuery,
   useGetBookingByIdQuery,
+  useInitiatePaymentMutation,
+  useGetInvoicesByBookingIdQuery,
 } = bookingApi;

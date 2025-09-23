@@ -111,7 +111,16 @@ export interface RefreshTokenResponse {
 }
 export const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://13.61.137.254:8000" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: "http://31.97.143.49:8000",
+    prepareHeaders: (headers) => {
+      const token =
+        localStorage.getItem("access_token") ||
+        sessionStorage.getItem("access_token");
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      return headers;
+    },
+  }),
   endpoints: (builder) => ({
     createUser: builder.mutation<UserResponse, CreateUserRequest>({
       query: (body) => ({

@@ -5,6 +5,7 @@ import { useCreateBookingMutation } from "@/redux/services/book";
 import type { CreateBookingRequest } from "@/redux/services/book";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
+import PaymentModal from "./paymentModal";
 
 interface DatePickerProps {
   isOpen: boolean;
@@ -101,6 +102,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const [bookingResponse, setBookingResponse] =
     useState<BookingResponse | null>(null);
   const [paymentDate, setPaymentDate] = useState("");
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const userId =
     typeof window !== "undefined"
@@ -313,14 +318,42 @@ const DatePicker: React.FC<DatePickerProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
-  const handlePayment = () => {
-    // Implement payment logic here
-    console.log(
-      `Processing payment of ₦${bookingResponse?.amountDue} for date: ${paymentDate}`
-    );
-    // You would typically integrate with a payment gateway here
+  const handlePaymentSuccess = () => {
+    console.log("Payment completed successfully");
+    setIsPaymentModalOpen(false);
   };
+  const handlePaymentError = (error: string) => {
+    console.log(error);
+    // Keep the payment modal open to let user try again
+  };
+
+  // Open payment modal
+  const openPaymentModal = () => {
+    // setPaymentError(null);
+    setIsPaymentModalOpen(true);
+  };
+
+  // Close payment modal
+  const closePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+  };
+  // const handlePayment = () => {
+  //   // Implement payment logic here
+  //   console.log(
+  //     `Processing payment of ₦${bookingResponse?.amountDue} for date: ${paymentDate}`
+  //   );
+  //   // You would typically integrate with a payment gateway here
+  // };
+  const userEmail =
+    typeof window !== "undefined"
+      ? localStorage.getItem("user_email") ||
+        sessionStorage.getItem("user_email") ||
+        "customer@example.com"
+      : "customer@example.com";
+
+  // ... (all your existing functions remain the same)
+
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-auto">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
@@ -1052,11 +1085,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   <h4 className="font-medium mb-3">Select Payment Date</h4>
                   <input
                     type="date"
+                    value={paymentDate}
                     className="w-full p-2 border rounded mb-4"
                     onChange={(e) => setPaymentDate(e.target.value)}
                   />
                   <button
-                    onClick={handlePayment}
+                    onClick={openPaymentModal}
                     className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                   >
                     Pay ₦{bookingResponse?.amountDue?.toLocaleString()}
@@ -1067,6 +1101,19 @@ const DatePicker: React.FC<DatePickerProps> = ({
           )}
         </div>
       </div>
+      {/* Payment Modal */}
+      {bookingResponse && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={closePaymentModal}
+          amountDue={parseFloat(bookingResponse.amountDue)}
+          invoiceId={bookingResponse.id}
+          userId={userId}
+          userEmail={userEmail}
+          onPaymentSuccess={handlePaymentSuccess}
+          onPaymentError={handlePaymentError}
+        />
+      )}
     </div>
   );
 };
