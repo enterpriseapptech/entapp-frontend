@@ -6,6 +6,7 @@ import type { CreateBookingRequest } from "@/redux/services/book";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
 import PaymentModal from "./paymentModal";
+// import SuccessModal from "@/components/ui/SuccessModal";
 
 interface DatePickerProps {
   isOpen: boolean;
@@ -81,7 +82,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const [serviceNotes, setServiceNotes] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
+  // const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   // Billing address states
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
@@ -321,6 +322,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const handlePaymentSuccess = () => {
     console.log("Payment completed successfully");
     setIsPaymentModalOpen(false);
+    // setIsSuccessModalOpen(true);
   };
   const handlePaymentError = (error: string) => {
     console.log(error);
@@ -1114,6 +1116,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
           onPaymentError={handlePaymentError}
         />
       )}
+      {/* <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          handleClose();
+        }}
+      /> */}
     </div>
   );
 };

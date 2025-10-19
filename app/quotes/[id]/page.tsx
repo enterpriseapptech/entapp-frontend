@@ -22,12 +22,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import PaymentModal from "@/components/ui/paymentModal";
+import SuccessModal from "@/components/ui/SuccessModal";
 
 export default function QuoteDetailPage() {
   const params = useParams();
   const quoteId = params.id as string;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { data: quote, error, isLoading } = useGetQuoteByIdQuery(quoteId);
 
   // Fetch invoice when booking exists
@@ -55,6 +56,7 @@ export default function QuoteDetailPage() {
   const handlePaymentSuccess = () => {
     console.log("Payment completed successfully");
     setIsPaymentModalOpen(false);
+    setIsSuccessModalOpen(true);
     // You might want to refetch the invoice data here to update the status
   };
 
@@ -436,7 +438,24 @@ export default function QuoteDetailPage() {
           onPaymentError={handlePaymentError}
         />
       )}
-
+      {isSuccessModalOpen && (
+        <SuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => setIsSuccessModalOpen(false)}
+          bookingDates={[
+            quote.requestedTimeSlots?.[0]
+              ? new Date(
+                  quote.requestedTimeSlots[0].startTime
+                ).toLocaleDateString()
+              : "",
+            quote.requestedTimeSlots?.[0]
+              ? new Date(
+                  quote.requestedTimeSlots[0].endTime
+                ).toLocaleDateString()
+              : "",
+          ]}
+        />
+      )}
       <Footer />
     </main>
   );
