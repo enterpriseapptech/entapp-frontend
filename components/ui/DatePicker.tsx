@@ -6,7 +6,8 @@ import type { CreateBookingRequest } from "@/redux/services/book";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
 import PaymentModal from "./paymentModal";
-// import SuccessModal from "@/components/ui/SuccessModal";
+import SuccessModal from "@/components/ui/SuccessModal";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 interface DatePickerProps {
   isOpen: boolean;
@@ -82,7 +83,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const [serviceNotes, setServiceNotes] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  // const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   // Billing address states
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
@@ -112,6 +113,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
     typeof window !== "undefined"
       ? localStorage.getItem("user_id") || sessionStorage.getItem("user_id")
       : null;
+  const { data: currentUser } = useGetUserByIdQuery(userId!, {
+    skip: !userId,
+  });
 
   const { data: timeSlotsData, isLoading: isLoadingTimeSlots } =
     useGetTimeSlotsByServiceProviderQuery(
@@ -165,6 +169,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const total = subTotal - discount;
   const depositAmount = Math.round((total * depositPercentage) / 100);
   const amountDue = payDepositOnly ? depositAmount : total;
+
+  // Check if amount meets Stripe's minimum requirement (100 Naira)
+  const isAmountBelowStripeMinimum = amountDue < 100;
   const handlePrevMonth = () => {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
@@ -231,6 +238,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
         !isLiabilityWaiverSigned
       ) {
         setBookingError("Please accept all terms and policies to continue.");
+        return;
+      }
+
+      // Check if amount is below Stripe minimum for deposit-only payments
+      if (payDepositOnly && isAmountBelowStripeMinimum) {
+        setBookingError("Deposit amount is below the minimum payment of ₦100 required for online payments. Please pay the full amount instead.");
         return;
       }
 
@@ -316,13 +329,14 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const handleClose = () => {
     resetForm();
+    setIsSuccessModalOpen(false);
     onClose();
   };
 
   const handlePaymentSuccess = () => {
     console.log("Payment completed successfully");
     setIsPaymentModalOpen(false);
-    // setIsSuccessModalOpen(true);
+    setIsSuccessModalOpen(true);
   };
   const handlePaymentError = (error: string) => {
     console.log(error);
@@ -331,6 +345,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   // Open payment modal
   const openPaymentModal = () => {
+    // Check if amount meets Stripe minimum before opening payment modal
+    if (parseFloat(bookingResponse?.amountDue || "0") < 100) {
+      setBookingError("Payment amount is below the minimum of ₦100 required for online payments. Please contact support for assistance.");
+      return;
+    }
     // setPaymentError(null);
     setIsPaymentModalOpen(true);
   };
@@ -339,21 +358,43 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const closePaymentModal = () => {
     setIsPaymentModalOpen(false);
   };
-  // const handlePayment = () => {
-  //   // Implement payment logic here
-  //   console.log(
-  //     `Processing payment of ₦${bookingResponse?.amountDue} for date: ${paymentDate}`
-  //   );
-  //   // You would typically integrate with a payment gateway here
-  // };
+
   const userEmail =
-    typeof window !== "undefined"
+    currentUser?.email ||
+    (typeof window !== "undefined"
       ? localStorage.getItem("user_email") ||
         sessionStorage.getItem("user_email") ||
         "customer@example.com"
-      : "customer@example.com";
+      : "customer@example.com");
 
-  // ... (all your existing functions remain the same)
+  // Function to get booking dates for success modal
+  const getBookingDates = (): string[] => {
+    if (!selectedDate || selectedTimeSlotIds.length === 0) return [];
+
+    const dates: string[] = [];
+    const formattedDate = new Date(selectedDate).toLocaleDateString();
+
+    // If multiple time slots, show first and last
+    if (selectedTimeSlotIds.length > 1) {
+      const timeSlots = availableTimeSlots
+        .filter((slot) => selectedTimeSlotIds.includes(slot.id))
+        .sort((a, b) => a.start.localeCompare(b.start));
+
+      dates.push(`${formattedDate} ${timeSlots[0].start}`);
+      dates.push(`${formattedDate} ${timeSlots[timeSlots.length - 1].end}`);
+    } else {
+      // Single time slot
+      const slot = availableTimeSlots.find((slot) =>
+        selectedTimeSlotIds.includes(slot.id)
+      );
+      if (slot) {
+        dates.push(`${formattedDate} ${slot.start}`);
+        dates.push(`${formattedDate} ${slot.end}`);
+      }
+    }
+
+    return dates;
+  };
 
   if (!isOpen) return null;
   return (
@@ -950,6 +991,19 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   </label>
                 </div>
 
+                {/* Stripe minimum payment warning */}
+                {isAmountBelowStripeMinimum && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-700 font-medium">
+                      ⚠️ Minimum Payment Required
+                    </p>
+                    <p className="text-sm text-yellow-600 mt-1">
+                      Deposit amount is below the minimum payment of ₦100 required for online payments. 
+                      Please select &quot;Pay Full Amount Now&quot; to proceed with online payment.
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-700">
                     {payDepositOnly
@@ -978,7 +1032,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   onClick={handleConfirmBooking}
                   disabled={
                     isBookingLoading ||
-                    bookingError === "This time slot is already selected."
+                    bookingError === "This time slot is already selected." ||
+                    (payDepositOnly && isAmountBelowStripeMinimum)
                   }
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
@@ -1017,14 +1072,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   </p>
                   <p className="text-sm font-medium">Booking Generated</p>
                 </div>
-
-                {/* Bill To */}
-                {/* <div className="mb-6">
-                  <h4 className="font-medium mb-2">Bill To:</h4>
-                  <p className="text-sm">Joshua Opelola</p>
-                  <p className="text-sm text-blue-600">pahsuspobol@gmail.com</p>
-                  <p className="text-sm">+234 9028736322</p>
-                </div> */}
 
                 {/* Items Table */}
                 <table className="w-full mb-6">
@@ -1091,12 +1138,26 @@ const DatePicker: React.FC<DatePickerProps> = ({
                     className="w-full p-2 border rounded mb-4"
                     onChange={(e) => setPaymentDate(e.target.value)}
                   />
-                  <button
-                    onClick={openPaymentModal}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    Pay ₦{bookingResponse?.amountDue?.toLocaleString()}
-                  </button>
+                  
+                  {/* Check if amount meets minimum requirement */}
+                  {parseFloat(bookingResponse?.amountDue || "0") < 100 ? (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                      <p className="text-yellow-700 text-sm font-medium">
+                        ⚠️ Payment Amount Below Minimum
+                      </p>
+                      <p className="text-yellow-600 text-sm mt-1">
+                        The payment amount of ₦{bookingResponse?.amountDue?.toLocaleString()} is below the minimum of ₦100 required for online payments. 
+                        Please contact our support team to complete your payment.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={openPaymentModal}
+                      className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                    >
+                      Pay ₦{bookingResponse?.amountDue?.toLocaleString()}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1111,18 +1172,20 @@ const DatePicker: React.FC<DatePickerProps> = ({
           amountDue={parseFloat(bookingResponse.amountDue)}
           invoiceId={bookingResponse.id}
           userId={userId}
-          userEmail={userEmail}
+          userEmail={currentUser?.email || userEmail}
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentError={handlePaymentError}
         />
       )}
-      {/* <SuccessModal
+      {/* Success Modal */}
+      <SuccessModal
         isOpen={isSuccessModalOpen}
         onClose={() => {
           setIsSuccessModalOpen(false);
           handleClose();
         }}
-      /> */}
+        bookingDates={getBookingDates()}
+      />
     </div>
   );
 };

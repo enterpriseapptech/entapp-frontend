@@ -96,7 +96,7 @@ export interface RequestQuoteResponse {
   billingDetails: BillingAddress;
   billingAddress?: BillingAddress;
   requestedTimeSlots: RequestedTimeSlot[];
-  booking?: Booking; 
+  booking?: Booking;
 }
 
 export interface GetQuotesResponse {
@@ -143,7 +143,7 @@ export interface GetInvoicesResponse {
 export const quoteApi = createApi({
   reducerPath: "quoteApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://31.97.143.49:8000",
+    baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||
@@ -165,7 +165,10 @@ export const quoteApi = createApi({
         },
       }),
     }),
-    getQuotes: builder.query<GetQuotesResponse, { limit?: number; offset?: number }>({
+    getQuotes: builder.query<
+      GetQuotesResponse,
+      { limit?: number; offset?: number }
+    >({
       query: ({ limit = 10, offset = 0 }) =>
         `/requestQuote?limit=${limit}&offset=${offset}`,
     }),

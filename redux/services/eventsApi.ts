@@ -67,7 +67,7 @@ export interface CreateEventCenterRequest {
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://31.97.143.49:8000",
+    baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||

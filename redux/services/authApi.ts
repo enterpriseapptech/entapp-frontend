@@ -112,7 +112,7 @@ export interface RefreshTokenResponse {
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://31.97.143.49:8000",
+    baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
       const token =
         localStorage.getItem("access_token") ||

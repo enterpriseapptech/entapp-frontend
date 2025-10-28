@@ -19,10 +19,17 @@ import {
   ArrowLeft,
   Zap,
   Building,
+  AlertCircle,
 } from "lucide-react";
 import { useState } from "react";
 import PaymentModal from "@/components/ui/paymentModal";
 import SuccessModal from "@/components/ui/SuccessModal";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
+
+// Add minimum amount validation function
+// const validateMinimumAmount = (amount: number): boolean => {
+//   return amount >= 100; // Stripe minimum is 100 Naira
+// };
 
 export default function QuoteDetailPage() {
   const params = useParams();
@@ -46,12 +53,16 @@ export default function QuoteDetailPage() {
     typeof window !== "undefined"
       ? localStorage.getItem("user_id") || sessionStorage.getItem("user_id")
       : null;
-
+  const { data: currentUser } = useGetUserByIdQuery(userId!, {
+    skip: !userId,
+  });
   const userEmail =
-    typeof window !== "undefined"
+    currentUser?.email ||
+    (typeof window !== "undefined"
       ? localStorage.getItem("user_email") ||
-        sessionStorage.getItem("user_email")
-      : null;
+        sessionStorage.getItem("user_email") ||
+        "customer@example.com"
+      : "customer@example.com");
 
   const handlePaymentSuccess = () => {
     console.log("Payment completed successfully");
@@ -63,6 +74,10 @@ export default function QuoteDetailPage() {
   const handlePaymentError = (error: string) => {
     console.log(error);
   };
+
+  // Check if amount is below minimum for Stripe
+  const invoice = invoiceData?.data?.[0];
+  const isBelowMinimum = invoice && invoice.amountDue < 100;
 
   if (isLoading) {
     return (
@@ -98,8 +113,6 @@ export default function QuoteDetailPage() {
       </main>
     );
   }
-
-  const invoice = invoiceData?.data?.[0];
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -409,12 +422,29 @@ export default function QuoteDetailPage() {
                       </div>
                     </div>
 
+                    {/* Minimum amount warning */}
+                    {isBelowMinimum && (
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center">
+                          <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
+                          <span className="text-sm text-yellow-700">
+                            Minimum payment amount is 100 Naira. Please contact support to complete your payment.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-6">
                       <button
                         onClick={() => setIsPaymentModalOpen(true)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        disabled={isBelowMinimum}
+                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                          isBelowMinimum
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        }`}
                       >
-                        Make Payment
+                        {isBelowMinimum ? "Minimum Payment Required: 100 Naira" : "Make Payment"}
                       </button>
                     </div>
                   </div>
@@ -433,7 +463,7 @@ export default function QuoteDetailPage() {
           amountDue={invoice.amountDue}
           invoiceId={invoice.id}
           userId={userId}
-          userEmail={userEmail}
+          userEmail={currentUser?.email || userEmail}
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentError={handlePaymentError}
         />

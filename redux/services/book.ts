@@ -134,7 +134,7 @@ export interface GetInvoicesQueryParams {
 export const bookingApi = createApi({
   reducerPath: "bookingApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://31.97.143.49:8000",
+    baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
       const accessToken =
         localStorage.getItem("access_token") ||
@@ -180,7 +180,7 @@ export const bookingApi = createApi({
     }),
     initiatePayment: builder.mutation<
       string,
-      { invoiceId: string; paymentGateWay: string }
+      { invoiceId: string; paymentGateWay: string; email?: string | null, callback_url?: string; }
     >({
       query: (payload) => ({
         url: "/payment/initiate",

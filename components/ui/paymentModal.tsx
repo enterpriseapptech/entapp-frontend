@@ -37,6 +37,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   amountDue,
   invoiceId,
   userId,
+  userEmail,
   onPaymentSuccess,
   onPaymentError,
 }) => {
@@ -48,9 +49,28 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const [initiatePayment] = useInitiatePaymentMutation();
 
+  // Check if amount meets Stripe's minimum requirement
+  const isAmountBelowStripeMinimum = amountDue < 100;
+  const getCallbackUrl = () => {
+    if (typeof window === 'undefined') return '';
+    
+    // Create a success page URL with necessary parameters
+    const successUrl = new URL('/payment/success', window.location.origin);
+    successUrl.searchParams.set('invoiceId', invoiceId);
+    successUrl.searchParams.set('amount', amountDue.toString());
+    successUrl.searchParams.set('userId', userId || '');
+    
+    return successUrl.toString();
+  };
   const processPayment = async () => {
     if (!selectedPaymentMethod) {
       setPaymentError("Please select a payment method");
+      return;
+    }
+
+    // Additional check for Stripe minimum amount
+    if (selectedPaymentMethod === PaymentMethod.STRIPE && isAmountBelowStripeMinimum) {
+      setPaymentError("Payment amount is below the minimum of ₦100 required for Stripe payments. Please select Paystack or contact support.");
       return;
     }
 
@@ -58,19 +78,37 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setPaymentError(null);
 
     try {
-      const response = await initiatePayment({
+      // Prepare payment payload
+      const paymentPayload: {
+        invoiceId: string;
+        paymentGateWay: string;
+        email?: string | null;
+        callback_url?: string;
+      } = {
         invoiceId,
         paymentGateWay: selectedPaymentMethod,
-      }).unwrap();
+        email: userEmail,
+      };
+
+      // Only add callback_url for Paystack payments
+      if (selectedPaymentMethod === PaymentMethod.PAYSTACK) {
+        paymentPayload.callback_url = getCallbackUrl();
+      }
+
+      const response = await initiatePayment(paymentPayload).unwrap();
 
       if (response.includes("https://") || response.includes("http://")) {
-        // Store booking info for callback page
-        sessionStorage.setItem('pendingPayment', JSON.stringify({
-          invoiceId,
-          amountDue,
-          userId,
-          timestamp: Date.now()
-        }));
+        // For Paystack with callback URL, store minimal info since we'll handle the callback
+        if (selectedPaymentMethod === PaymentMethod.PAYSTACK) {
+          sessionStorage.setItem('pendingPayment', JSON.stringify({
+            invoiceId,
+            amountDue,
+            userId,
+            userEmail,
+            paymentMethod: selectedPaymentMethod,
+            timestamp: Date.now()
+          }));
+        }
         
         // Redirect to payment gateway
         window.location.href = response;
@@ -143,24 +181,39 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </p>
           </div>
 
+          {/* Minimum payment warning */}
+          {isAmountBelowStripeMinimum && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-700 text-sm font-medium">
+                ⚠️ Minimum Payment Notice
+              </p>
+              <p className="text-yellow-600 text-sm mt-1">
+                Amount is below ₦100 minimum for Stripe. Paystack is recommended.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-3">
             {([PaymentMethod.PAYSTACK, PaymentMethod.STRIPE] as const).map((method) => {
               const isSelected = selectedPaymentMethod === method;
+              const isStripeDisabled = method === PaymentMethod.STRIPE && isAmountBelowStripeMinimum;
+              
               return (
                 <button
                   key={method}
-                  onClick={() => !isProcessingPayment && setSelectedPaymentMethod(method)}
-                  disabled={isProcessingPayment}
+                  onClick={() => !isProcessingPayment && !isStripeDisabled && setSelectedPaymentMethod(method)}
+                  disabled={isProcessingPayment || isStripeDisabled}
                   className={`w-full border-2 rounded-lg p-4 text-left flex items-center transition-all
                     ${isSelected ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"}
-                    ${isProcessingPayment ? "opacity-50 cursor-not-allowed" : ""}`}
+                    ${isProcessingPayment || isStripeDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                    ${isStripeDisabled ? "bg-gray-100" : ""}`}
                 >
                   <div className="w-10 h-10 flex items-center justify-center mr-4 rounded-md bg-orange-100">
                     <span className="font-bold text-orange-600">
                       {method === PaymentMethod.PAYSTACK ? "P" : "S"}
                     </span>
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium text-gray-800">
                       {method === PaymentMethod.PAYSTACK ? "Paystack" : "Stripe"}
                     </h3>
@@ -169,6 +222,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                         ? "Card, bank transfer, or USSD"
                         : "Credit card payments"}
                     </p>
+                    {isStripeDisabled && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Minimum ₦100 required
+                      </p>
+                    )}
                   </div>
                 </button>
               );
