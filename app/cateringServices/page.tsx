@@ -91,6 +91,8 @@ export default function CateringService() {
         toggleLocationDropdown={toggleLocationDropdown}
         handleCategoryChange={handleCategoryChange}
         handleLocationChange={handleLocationChange}
+        onSearch={() => { }}
+        showSearch={false} 
         heading="Complete Catering Solutions for <br /> Stress-Free Planning"
         subheading="From appetizers to desserts, we handle it all with precision and care."
         backgroundImage="url('/cateringHeroImage.png')"

@@ -242,6 +242,8 @@ export default function CateringServicesAllPost() {
         toggleLocationDropdown={toggleLocationDropdown}
         handleCategoryChange={handleCategoryChange}
         handleLocationChange={handleLocationChange}
+        onSearch={() => { }}
+        showSearch={false} 
         height="400px"
         backgroundImage="url('/cateringServiceAll.png')"
         heading="Catering Services"

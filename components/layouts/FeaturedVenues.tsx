@@ -3,11 +3,12 @@ import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useGetEventCentersQuery } from "@/redux/services/eventsApi";
+import { EventCentersResponse, useGetEventCentersQuery } from "@/redux/services/eventsApi";
 import CardSkeleton from "@/components/ui/card-skeleton";
 
 interface FeaturedProps {
   heading: string;
+  searchResults?: EventCentersResponse;
 }
 
 export default function FeaturedVenues({ heading }: FeaturedProps) {

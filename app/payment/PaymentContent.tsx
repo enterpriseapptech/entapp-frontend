@@ -44,7 +44,9 @@ export default function PaymentContent() {
         toggleCategoryDropdown={() => {}}
         toggleLocationDropdown={() => {}}
         handleCategoryChange={() => {}}
-        handleLocationChange={() => {}}
+        handleLocationChange={() => { }}
+        onSearch={() => { }}
+        showSearch={false} 
         height="400px"
         backgroundImage="url('/eventHeroImage.png')"
         heading="Event Centers"

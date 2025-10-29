@@ -3,11 +3,12 @@ import Card from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useGetCateringsQuery } from "@/redux/services/cateringApi";
+import { CateringResponse, useGetCateringsQuery } from "@/redux/services/cateringApi";
 import CardSkeleton from "@/components/ui/card-skeleton";
 
 interface CateringServicesProps {
   heading?: string;
+  searchResults?: CateringResponse;
 }
 
 export default function CateringServices({

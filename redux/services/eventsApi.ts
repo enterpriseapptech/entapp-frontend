@@ -63,7 +63,31 @@ export interface CreateEventCenterRequest {
   status: string;
   // ❌ no `images` here since upload handled separately
 }
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  currency: string;
+  currencyCode: string;
+  currencySymbol: string;
+}
 
+export interface CountryResponse {
+  count: number;
+  docs: Country[];
+}
+
+export interface State {
+  id: string;
+  name: string;
+  code: string;
+  countryId: string;
+}
+
+export interface StateResponse {
+  count: number;
+  docs: State[];
+}
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
@@ -164,6 +188,33 @@ export const eventsApi = createApi({
         method: "DELETE",
       }),
     }),
+    getCountries: builder.query<CountryResponse, { limit?: number; offset?: number }>({
+      query: ({ limit = 10, offset = 0 }) => ({
+        url: `/admin/country?limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
+    getStates: builder.query<StateResponse, { limit?: number; offset?: number }>({
+      query: ({ limit = 10, offset = 0 }) => ({
+        url: `/admin/state?limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
+    getEventCentersByLocation: builder.query<EventCentersResponse, { locationId: string; limit?: number; offset?: number }>({
+      query: ({ locationId, limit = 10, offset = 0 }) => ({
+        url: `/event-centers?limit=${limit}&offset=${offset}&location=${locationId}`,
+        method: "GET",
+      }),
+    }),
+    getEventCentersByCity: builder.query<
+      EventCentersResponse,
+      { city: string; limit?: number; offset?: number }
+    >({
+      query: ({ city, limit = 10, offset = 0 }) => ({
+        url: `/event-centers?city=${encodeURIComponent(city)}&limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -176,4 +227,8 @@ export const {
   useUpdateEventCenterMutation,
   useUpdateEventCenterWithImagesMutation,
   useDeleteEventCenterMutation,
+  useGetEventCentersByCityQuery,
+  useGetCountriesQuery,
+  useGetStatesQuery,
+  useGetEventCentersByLocationQuery,
 } = eventsApi;

@@ -11,11 +11,24 @@ import Testimonials from "@/components/layouts/Testimonials";
 import EventGallery from "@/components/layouts/EventGallery";
 import PlanNextEvent from "@/components/layouts/PlanNextEvent";
 import Footer from "@/components/layouts/Footer";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [isCategoryOpen, setIsCategoryOpen] = useState<boolean>(false);
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const router = useRouter();
+  const handleSearch = (category: string, locationId: string, countryName: string, stateName: string) => {
+    // Navigate to search page with parameters
+    router.push(`/search?category=${category}&location=${locationId}&country=${encodeURIComponent(countryName)}&state=${encodeURIComponent(stateName)}`);
+  };
+  const handleCategoryChange = (category: string) => {
+    console.log("Category changed to:", category);
+  };
+
+  const handleLocationChange = (location: string) => {
+    console.log("Location changed to:", location);
+  };
 
   const testimonials = [
     {
@@ -78,8 +91,6 @@ export default function Home() {
     setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
   const toggleCategoryDropdown = () => setIsCategoryOpen((prev) => !prev);
   const toggleLocationDropdown = () => setIsLocationOpen((prev) => !prev);
-  const handleCategoryChange = () => setIsCategoryOpen(false);
-  const handleLocationChange = () => setIsLocationOpen(false);
 
   return (
     <main className="min-h-screen">
@@ -90,6 +101,8 @@ export default function Home() {
         toggleLocationDropdown={toggleLocationDropdown}
         handleCategoryChange={handleCategoryChange}
         handleLocationChange={handleLocationChange}
+        onSearch={handleSearch}
+        showSearch={true}
         heading="Simplify Your Event Planning with <br /> All-in-One Booking."
         subheading="Book stunning venues and top-notch catering services effortlessly."
       />

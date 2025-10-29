@@ -4,7 +4,7 @@ import HeroWithNavbar from "@/components/layouts/HeroWithNavbar";
 import Image from "next/image";
 import { useState } from "react";
 import { FileText, Ban, BadgeCheck, Wifi, Shield } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams} from "next/navigation";
 import CustomerReviews from "@/components/layouts/CustomerReviews";
 import FeaturedVenues from "@/components/layouts/FeaturedVenues";
 import Footer from "@/components/layouts/Footer";
@@ -13,6 +13,7 @@ import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
 import DatePicker from "@/components/ui/DatePicker";
 import { EventCenter } from "@/redux/services/eventsApi";
 import QuoteRequest from "@/components/ui/QuoteRequest";
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 
 interface BookingData {
   date: string;
@@ -35,6 +36,7 @@ interface BookingData {
 export default function EventCenterDetails() {
   const params = useParams();
   const { id } = params as { id: string };
+  const { isCheckingAuth, requireAuth } = useAuthRedirect();
 
   const {
     data: eventCenterData,
@@ -84,7 +86,13 @@ export default function EventCenterDetails() {
   const images = eventCenter?.images || ["/placeholder-image.png"];
 
   const [currentReviewPage, setCurrentReviewPage] = useState<number>(0);
+  const handleChooseDateTime = () => {
+    requireAuth(() => setIsDatePickerOpen(true));
+  };
 
+  const handleRequestQuote = () => {
+    requireAuth(() => setIsQuoteRequestOpen(true));
+  };
   const reviews = [
     {
       quote:
@@ -160,7 +168,8 @@ export default function EventCenterDetails() {
           toggleCategoryDropdown={() => {}}
           toggleLocationDropdown={() => {}}
           handleCategoryChange={() => {}}
-          handleLocationChange={() => {}}
+          handleLocationChange={() => { }}
+          onSearch={() => {}} 
           height="400px"
           backgroundImage="url('/eventHeroImage.png')"
           heading="Event Centers"
@@ -187,7 +196,9 @@ export default function EventCenterDetails() {
           toggleCategoryDropdown={() => {}}
           toggleLocationDropdown={() => {}}
           handleCategoryChange={() => {}}
-          handleLocationChange={() => {}}
+          handleLocationChange={() => { }}
+          onSearch={() => { }}
+          showSearch={false} 
           height="400px"
           backgroundImage="url('/eventHeroImage.png')"
           heading="Event Centers"
@@ -215,7 +226,9 @@ export default function EventCenterDetails() {
         toggleCategoryDropdown={() => {}}
         toggleLocationDropdown={() => {}}
         handleCategoryChange={() => {}}
-        handleLocationChange={() => {}}
+        handleLocationChange={() => { }}
+        onSearch={() => { }}
+        showSearch={false} 
         height="400px"
         backgroundImage="url('/eventHeroImage.png')"
         heading="Event Centers"
@@ -531,16 +544,16 @@ export default function EventCenterDetails() {
           </div>
 
           <button
-            onClick={() => setIsDatePickerOpen(true)}
+            onClick={handleChooseDateTime}
             className="w-full bg-[#0047AB] text-white py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
-            Choose Date & Time
+            {isCheckingAuth ? "Checking..." : "Choose Date & Time"}
           </button>
           <button
-            onClick={() => setIsQuoteRequestOpen(true)}
+            onClick={handleRequestQuote}
             className="w-full mt-3 bg-green-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
-            Request Quote
+            {isCheckingAuth ? "Checking..." : "Request Quote"}
           </button>
           {lastBooking && (
             <div className="mt-6 border border-green-200 bg-green-50 rounded-lg p-4">

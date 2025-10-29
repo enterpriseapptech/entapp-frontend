@@ -13,6 +13,7 @@ import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
 // import DatePicker from "@/components/ui/DatePicker";
 import CateringServices from "@/components/layouts/CateringServices";
 import QuoteRequest from "@/components/ui/QuoteRequest";
+import { useAuthRedirect } from '@/hooks/useAuthRedirect';
 
 interface CateringService {
   id: string;
@@ -59,7 +60,7 @@ interface CateringService {
 export default function CateringServiceDetails() {
   const params = useParams();
   const { id } = params as { id: string };
-
+  const { isCheckingAuth, requireAuth } = useAuthRedirect();
   const { data: cateringData, isLoading, error } = useGetCateringByIdQuery(id);
 
   // Map API data to component's CateringService interface
@@ -98,6 +99,9 @@ export default function CateringServiceDetails() {
 
   const images = cateringService?.images || ["/catering.png"];
 
+  const handleRequestQuote = () => {
+    requireAuth(() => setIsQuoteRequestOpen(true));
+  };
   // State and logic for CustomerReviews pagination
   const [currentReviewPage, setCurrentReviewPage] = useState<number>(0);
 
@@ -177,7 +181,9 @@ export default function CateringServiceDetails() {
           toggleCategoryDropdown={() => {}}
           toggleLocationDropdown={() => {}}
           handleCategoryChange={() => {}}
-          handleLocationChange={() => {}}
+          handleLocationChange={() => { }}
+          onSearch={() => { }} 
+          showSearch={false} 
           height="400px"
           backgroundImage="url('/caterringSerDetails.png')"
           heading="Catering Services"
@@ -205,7 +211,9 @@ export default function CateringServiceDetails() {
           toggleCategoryDropdown={() => {}}
           toggleLocationDropdown={() => {}}
           handleCategoryChange={() => {}}
-          handleLocationChange={() => {}}
+          handleLocationChange={() => { }}
+          onSearch={() => { }}
+          showSearch={false} 
           height="400px"
           backgroundImage="url('/caterringSerDetails.png')"
           heading="Catering Services"
@@ -234,7 +242,9 @@ export default function CateringServiceDetails() {
         toggleCategoryDropdown={() => {}}
         toggleLocationDropdown={() => {}}
         handleCategoryChange={() => {}}
-        handleLocationChange={() => {}}
+        handleLocationChange={() => { }}
+        onSearch={() => { }}
+        showSearch={false} 
         height="400px"
         backgroundImage="url('/caterringSerDetails.png')"
         heading="Catering Services"
@@ -562,10 +572,10 @@ export default function CateringServiceDetails() {
 
           {/* Book Button */}
           <button
-            onClick={() => setIsQuoteRequestOpen(true)}
+            onClick={handleRequestQuote}
             className="w-full mt-3 bg-green-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
           >
-            Request Quote
+            {isCheckingAuth ? "Checking..." : "Request Quote"}
           </button>
 
           {/* Contact Info */}

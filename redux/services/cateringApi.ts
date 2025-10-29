@@ -40,12 +40,10 @@ export interface Catering {
   contact: string | null;
   eventTypes: string[];
 }
-
 export interface CateringResponse {
   count: number;
   data: Catering[];
 }
-
 export interface CreateCateringRequest {
   serviceProviderId: string;
   name: string;
@@ -67,7 +65,28 @@ export interface CreateCateringRequest {
   city: string;
   postal: string;
 }
-
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  currency: string;
+  currencyCode: string;
+  currencySymbol: string;
+}
+export interface CountryResponse {
+  count: number;
+  docs: Country[];
+}
+export interface State {
+  id: string;
+  name: string;
+  code: string;
+  countryId: string;
+}
+export interface StateResponse {
+  count: number;
+  docs: State[];
+}
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
   baseQuery: fetchBaseQuery({
@@ -164,6 +183,33 @@ export const cateringApi = createApi({
         method: "DELETE",
       }),
     }),
+    getCountries: builder.query<CountryResponse, { limit?: number; offset?: number }>({
+      query: ({ limit = 10, offset = 0 }) => ({
+        url: `/admin/country?limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
+    getStates: builder.query<StateResponse, { limit?: number; offset?: number }>({
+      query: ({ limit = 10, offset = 0 }) => ({
+        url: `/admin/state?limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
+    getCateringsByLocation: builder.query<CateringResponse, { locationId: string; limit?: number; offset?: number }>({
+      query: ({ locationId, limit = 10, offset = 0 }) => ({
+        url: `/catering?limit=${limit}&offset=${offset}&location=${locationId}`,
+        method: "GET",
+      }),
+    }),
+    getCateringsByCity: builder.query<
+      CateringResponse,
+      { city: string; limit: number; offset: number }
+    >({
+      query: ({ city, limit, offset }) => ({
+        url: `/catering?city=${encodeURIComponent(city)}&limit=${limit}&offset=${offset}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -176,4 +222,8 @@ export const {
   useUpdateCateringMutation,
   useUpdateCateringWithImagesMutation,
   useDeleteCateringMutation,
+  useGetCateringsByCityQuery,
+  useGetCountriesQuery,
+  useGetStatesQuery,
+  useGetCateringsByLocationQuery,
 } = cateringApi;

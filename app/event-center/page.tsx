@@ -252,6 +252,7 @@ export default function EventCenters() {
         toggleLocationDropdown={toggleLocationDropdown}
         handleCategoryChange={handleCategoryChange}
         handleLocationChange={handleLocationChange}
+        onSearch={() => {}} 
         height="400px"
         backgroundImage="url('/eventHeroImage.png')"
         heading="Events Center"
