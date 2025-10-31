@@ -58,6 +58,66 @@ export interface CreateBookingResponse {
   deletedAt: string | null;
   deletedBy: string | null;
 }
+export interface TimeSlotEntity {
+  id: string;
+  serviceId: string;
+  serviceType: "EVENTCENTER" | "CATERING" | string;
+  bookingId: string | null;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+  previousBookings: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
+export interface EventCenterBookingEntity {
+  id: string;
+  eventcenterId: string;
+  bookingId: string;
+  eventName: string;
+  eventTheme: string;
+  eventType: string;
+  description: string;
+  noOfGuest: number;
+  specialRequirements: string[];
+  images: string[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
+export interface CateringBookingEntity {
+  id: string;
+  bookingId: string;
+  menuItems: string[];
+  guests: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
+export interface RequestQuoteEntity {
+  id: string;
+  customerId: string;
+  serviceId: string;
+  serviceType: "EVENTCENTER" | "CATERING" | string;
+  message: string | null;
+  budget: number | null;
+  status: "PENDING" | "APPROVED" | "REJECTED" | string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
 export interface BookingEntity {
   id: string;
   requestQuoteId: string | null;
@@ -71,7 +131,7 @@ export interface BookingEntity {
   subTotal: number;
   discount: number;
   total: number;
-  invoice: [];
+  invoice: string[];
   paymentStatus: "UNPAID" | "PAID" | string;
   status: "PENDING" | "BOOKED" | "RESERVED" | "POSTPONED" | "CANCELED" | string;
   isTermsAccepted: boolean;
@@ -92,9 +152,13 @@ export interface BookingEntity {
   updatedAt: string;
   deletedAt: string | null;
   deletedBy: string | null;
+  requestedTimeSlots: TimeSlotEntity[];
+  confirmedTimeSlots: TimeSlotEntity[];
+  eventCenterBooking: EventCenterBookingEntity | null;
+  cateringBooking: CateringBookingEntity | null;
+  requestQuote: RequestQuoteEntity | null;
 }
 
-// -------- LIST RESPONSE --------
 export interface GetBookingsByServiceProviderResponse {
   count: number;
   data: BookingEntity[];
@@ -112,7 +176,7 @@ export interface InvoiceEntity {
   subTotal: number;
   discount: number;
   total: number;
-  amountDue: string;
+  amountDue: number;
   currency: string;
   status: "PENDING" | "PAID" | "CANCELED" | string;
   dueDate: string;
@@ -127,6 +191,15 @@ export interface GetInvoicesResponse {
 }
 export interface GetInvoicesQueryParams {
   bookingId: string;
+  limit?: number;
+  offset?: number;
+}
+export interface GetBookingsByCustomerResponse {
+  count: number;
+  data: BookingEntity[];
+}
+export interface GetBookingsByCustomerQueryParams {
+  customerId: string;
   limit?: number;
   offset?: number;
 }
@@ -206,6 +279,16 @@ export const bookingApi = createApi({
         },
       }),
     }),
+    getBookingsByCustomer: builder.query<
+      GetBookingsByCustomerResponse,
+      GetBookingsByCustomerQueryParams
+    >({
+      query: ({ customerId, limit = 10, offset = 0 }) => ({
+        url: `/booking`,
+        method: "GET",
+        params: { customerId, limit, offset },
+      }),
+    }),
   }),
 });
 
@@ -215,4 +298,5 @@ export const {
   useGetBookingByIdQuery,
   useInitiatePaymentMutation,
   useGetInvoicesByBookingIdQuery,
+  useGetBookingsByCustomerQuery,
 } = bookingApi;

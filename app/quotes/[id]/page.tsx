@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  useGetQuoteByIdQuery,
+  useGetBookingByIdQuery,
   useGetInvoicesByBookingIdQuery,
-} from "@/redux/services/quoteApi";
+} from "@/redux/services/book";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Footer from "@/components/layouts/Footer";
@@ -11,7 +11,6 @@ import {
   Calendar,
   DollarSign,
   FileText,
-  MapPin,
   Clock,
   CheckCircle2,
   XCircle,
@@ -26,20 +25,16 @@ import PaymentModal from "@/components/ui/paymentModal";
 import SuccessModal from "@/components/ui/SuccessModal";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
-// Add minimum amount validation function
-// const validateMinimumAmount = (amount: number): boolean => {
-//   return amount >= 100; // Stripe minimum is 100 Naira
-// };
-
 export default function QuoteDetailPage() {
   const params = useParams();
-  const quoteId = params.id as string;
+  const bookingId = params.id as string;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const { data: quote, error, isLoading } = useGetQuoteByIdQuery(quoteId);
+  
+  // Replace useGetQuoteByIdQuery with useGetBookingByIdQuery
+  const { data: booking, error, isLoading } = useGetBookingByIdQuery(bookingId);
 
   // Fetch invoice when booking exists
-  const bookingId = quote?.booking?.id;
   const {
     data: invoiceData,
     isLoading: invoiceLoading,
@@ -87,7 +82,7 @@ export default function QuoteDetailPage() {
     );
   }
 
-  if (error || !quote) {
+  if (error || !booking) {
     return (
       <main className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -96,17 +91,17 @@ export default function QuoteDetailPage() {
               <XCircle className="h-6 w-6 text-red-600" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Quote Not Found
+              Booking Not Found
             </h1>
             <p className="text-gray-600 mb-6">
-              The quote you&apos;re looking for doesn&apos;t exist or may have
+              The booking you&apos;re looking for doesn&apos;t exist or may have
               been removed.
             </p>
             <Link
               href="/quotes"
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Back to Quotes
+              Back to Bookings
             </Link>
           </div>
         </div>
@@ -135,34 +130,34 @@ export default function QuoteDetailPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Quote Details
+                  Booking Details
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Reference: {quote.quoteReference}
+                  Reference: {booking.bookingReference}
                 </p>
               </div>
               <div className="mt-3 sm:mt-0">
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    quote.status === "PENDING"
+                    booking.status === "PENDING"
                       ? "bg-yellow-100 text-yellow-800"
-                      : quote.status === "APPROVED"
+                      : booking.status === "BOOKED"
                       ? "bg-green-100 text-green-800"
-                      : quote.status === "REJECTED"
+                      : booking.status === "CANCELED"
                       ? "bg-red-100 text-red-800"
                       : "bg-gray-100 text-gray-800"
                   }`}
                 >
-                  {quote.status === "PENDING" && (
+                  {booking.status === "PENDING" && (
                     <AlertTriangle className="w-4 h-4 mr-1" />
                   )}
-                  {quote.status === "APPROVED" && (
+                  {booking.status === "BOOKED" && (
                     <CheckCircle2 className="w-4 h-4 mr-1" />
                   )}
-                  {quote.status === "REJECTED" && (
+                  {booking.status === "CANCELED" && (
                     <XCircle className="w-4 h-4 mr-1" />
                   )}
-                  {quote.status}
+                  {booking.status}
                 </span>
               </div>
             </div>
@@ -171,11 +166,11 @@ export default function QuoteDetailPage() {
           {/* Main content grid */}
           <div className="px-6 py-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left column - Quote Information */}
+              {/* Left column - Booking Information */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <FileText className="w-5 h-5 mr-2 text-blue-500" />
-                  Quote Information
+                  Booking Information
                 </h2>
 
                 <div className="space-y-4">
@@ -187,10 +182,10 @@ export default function QuoteDetailPage() {
                     </div>
                     <div className="ml-4">
                       <dt className="text-sm font-medium text-gray-500">
-                        Budget
+                        Total Amount
                       </dt>
                       <dd className="text-lg font-semibold text-gray-900">
-                        ${quote.budget}
+                        ${booking.total}
                       </dd>
                     </div>
                   </div>
@@ -206,7 +201,7 @@ export default function QuoteDetailPage() {
                         Service Type
                       </dt>
                       <dd className="text-sm text-gray-900">
-                        {quote.serviceType}
+                        {booking.serviceType}
                       </dd>
                     </div>
                   </div>
@@ -222,48 +217,128 @@ export default function QuoteDetailPage() {
                         Created At
                       </dt>
                       <dd className="text-sm text-gray-900">
-                        {new Date(quote.createdAt).toLocaleString()}
+                        {new Date(booking.createdAt).toLocaleString()}
                       </dd>
                     </div>
                   </div>
 
-                  {quote.customerNotes && (
+                  {booking.customerNotes && (
                     <div className="pt-4 border-t border-gray-200">
                       <h3 className="text-sm font-medium text-gray-500 mb-2">
                         Customer Notes
                       </h3>
                       <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
-                        {quote.customerNotes}
+                        {booking.customerNotes}
+                      </p>
+                    </div>
+                  )}
+
+                  {booking.serviceNotes && (
+                    <div className="pt-4 border-t border-gray-200">
+                      <h3 className="text-sm font-medium text-gray-500 mb-2">
+                        Service Notes
+                      </h3>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+                        {booking.serviceNotes}
                       </p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Right column - Billing Address */}
+              {/* Right column - Payment Status */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <MapPin className="w-5 h-5 mr-2 text-red-500" />
-                  Billing Address
+                  <DollarSign className="w-5 h-5 mr-2 text-green-500" />
+                  Payment Information
                 </h2>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-900">
-                    <div className="font-medium">
-                      {quote.billingDetails.street}
-                    </div>
-                    <div>
-                      {quote.billingDetails.city}, {quote.billingDetails.state}{" "}
-                      {quote.billingDetails.postal}
-                    </div>
-                    <div>{quote.billingDetails.country}</div>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Subtotal:</span>
+                    <span className="text-sm text-gray-900">${booking.subTotal}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Discount:</span>
+                    <span className="text-sm text-gray-900">${booking.discount}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 pt-2">
+                    <span className="text-sm font-medium text-gray-500">Total:</span>
+                    <span className="text-sm font-semibold text-gray-900">${booking.total}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Payment Status:</span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      booking.paymentStatus === "PAID" 
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}>
+                      {booking.paymentStatus}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Event Center Booking Details */}
+            {booking.eventCenterBooking && (
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Building className="w-5 h-5 mr-2 text-blue-500" />
+                  Event Details
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Event Name</h3>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {booking.eventCenterBooking.eventName}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Event Type</h3>
+                    <p className="text-sm text-gray-900">
+                      {booking.eventCenterBooking.eventType}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Event Theme</h3>
+                    <p className="text-sm text-gray-900">
+                      {booking.eventCenterBooking.eventTheme}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Number of Guests</h3>
+                    <p className="text-sm text-gray-900">
+                      {booking.eventCenterBooking.noOfGuest}
+                    </p>
+                  </div>
+                  {booking.eventCenterBooking.description && (
+                    <div className="md:col-span-2">
+                      <h3 className="text-sm font-medium text-gray-500">Description</h3>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+                        {booking.eventCenterBooking.description}
+                      </p>
+                    </div>
+                  )}
+                  {booking.eventCenterBooking.specialRequirements.length > 0 && (
+                    <div className="md:col-span-2">
+                      <h3 className="text-sm font-medium text-gray-500">Special Requirements</h3>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {booking.eventCenterBooking.specialRequirements.map((req, index) => (
+                          <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {req}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Requested Time Slots */}
-            {quote.requestedTimeSlots?.length > 0 && (
+            {booking.requestedTimeSlots?.length > 0 && (
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <Clock className="w-5 h-5 mr-2 text-indigo-500" />
@@ -295,7 +370,7 @@ export default function QuoteDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
-                      {quote.requestedTimeSlots.map((slot) => (
+                      {booking.requestedTimeSlots.map((slot) => (
                         <tr key={slot.id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                             {new Date(slot.startTime).toLocaleString()}
@@ -318,45 +393,6 @@ export default function QuoteDetailPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-            )}
-
-            {/* Booking Details */}
-            {quote.booking && (
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Building className="w-5 h-5 mr-2 text-blue-500" />
-                  Booking Details
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <dt className="text-sm font-medium text-blue-800">
-                      Booking Reference
-                    </dt>
-                    <dd className="text-lg font-semibold text-blue-900">
-                      {quote.booking.bookingReference}
-                    </dd>
-                  </div>
-
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <dt className="text-sm font-medium text-green-800">
-                      Total Amount
-                    </dt>
-                    <dd className="text-lg font-semibold text-green-900">
-                      ${quote.booking.total}
-                    </dd>
-                  </div>
-
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <dt className="text-sm font-medium text-purple-800">
-                      Payment Status
-                    </dt>
-                    <dd className="text-lg font-semibold text-purple-900">
-                      {quote.booking.paymentStatus}
-                    </dd>
-                  </div>
                 </div>
               </div>
             )}
@@ -390,7 +426,7 @@ export default function QuoteDetailPage() {
                           Invoice Reference
                         </h3>
                         <p className="text-lg font-semibold text-gray-900">
-                          {invoice.reference}
+                          {invoice.invoiceReference}
                         </p>
                       </div>
 
@@ -437,14 +473,18 @@ export default function QuoteDetailPage() {
                     <div className="mt-6">
                       <button
                         onClick={() => setIsPaymentModalOpen(true)}
-                        disabled={isBelowMinimum}
+                        disabled={isBelowMinimum || booking.paymentStatus === "PAID"}
                         className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                          isBelowMinimum
+                          isBelowMinimum || booking.paymentStatus === "PAID"
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         }`}
                       >
-                        {isBelowMinimum ? "Minimum Payment Required: 100 Naira" : "Make Payment"}
+                        {booking.paymentStatus === "PAID" 
+                          ? "Payment Completed" 
+                          : isBelowMinimum 
+                            ? "Minimum Payment Required: 100 Naira" 
+                            : "Make Payment"}
                       </button>
                     </div>
                   </div>
@@ -456,7 +496,7 @@ export default function QuoteDetailPage() {
       </div>
 
       {/* Payment Modal */}
-      {invoice && (
+      {invoice && booking.paymentStatus !== "PAID" && (
         <PaymentModal
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
@@ -473,14 +513,14 @@ export default function QuoteDetailPage() {
           isOpen={isSuccessModalOpen}
           onClose={() => setIsSuccessModalOpen(false)}
           bookingDates={[
-            quote.requestedTimeSlots?.[0]
+            booking.requestedTimeSlots?.[0]
               ? new Date(
-                  quote.requestedTimeSlots[0].startTime
+                  booking.requestedTimeSlots[0].startTime
                 ).toLocaleDateString()
               : "",
-            quote.requestedTimeSlots?.[0]
+            booking.requestedTimeSlots?.[0]
               ? new Date(
-                  quote.requestedTimeSlots[0].endTime
+                  booking.requestedTimeSlots[0].endTime
                 ).toLocaleDateString()
               : "",
           ]}

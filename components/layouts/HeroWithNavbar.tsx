@@ -29,7 +29,7 @@ interface HeroProps {
   height?: string;
   heading?: string;
   subheading?: string;
-  showSearch?: boolean; // Add this prop
+  showSearch?: boolean;
 }
 
 interface Country {
@@ -57,7 +57,7 @@ export default function HeroWithNavbar({
   height = "600px",
   heading = "Simplify Your Event Planning with<br />All-in-One Booking.",
   subheading = "Book stunning venues and top-notch catering services effortlessly.",
-  showSearch = true, // Default to true for backward compatibility
+  showSearch = true,
 }: HeroProps) {
   const [isScrolling, setIsScrolling] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState(false);

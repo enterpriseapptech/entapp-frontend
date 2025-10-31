@@ -5,10 +5,29 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import clsx from "clsx";
+import { useRouter } from "next/navigation";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 export default function Navbar() {
   const [isScrolling, setIsScrolling] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Get user data when userId is available
+  const {
+    data: user,
+    isLoading: isLoadingUser,
+    error: userError,
+  } = useGetUserByIdQuery(userId!, {
+    skip: !userId || !isLoggedIn,
+  });
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +37,44 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const checkAuthStatus = () => {
+    const accessToken =
+      localStorage.getItem("access_token") ||
+      sessionStorage.getItem("access_token");
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+
+    setIsLoggedIn(!!accessToken);
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_expiry");
+    localStorage.removeItem("user_id");
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
+    sessionStorage.removeItem("user_id");
+
+    setIsLoggedIn(false);
+    setUserId(null);
+    setOpenMobileMenu(false);
+    router.push("/");
+  };
+
+  const handleLogin = () => {
+    setOpenMobileMenu(false);
+    router.push("/login");
+  };
+
+  const handleSignup = () => {
+    setOpenMobileMenu(false);
+    router.push("/signup");
+  };
+
   const navLinks = [
     { label: "Event Centers", href: "/event-center" },
     { label: "Catering Services", href: "/cateringServices" },
@@ -25,10 +82,13 @@ export default function Navbar() {
     { label: "About Us", href: "#" },
   ];
 
+  // Get user's first name for display
+  const userName = user ? `${user.firstName}` : "";
+
   return (
     <nav
       className={clsx(
-        "h-20 flex items-center justify-center text-white",
+        "h-20 flex items-center justify-center text-white px-6 md:px-20",
         isScrolling
           ? "md:px-20 px-10 fixed top-0 left-0 right-0 bg-white/95 shadow-lg z-50 text-gray-800"
           : "relative"
@@ -65,31 +125,63 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex gap-4">
-          <button
-            className={clsx(
-              "px-4 py-2",
-              isScrolling
-                ? "text-gray-800 hover:text-blue-500"
-                : "text-gray-800 hover:text-blue-200"
-            )}
-          >
-            Log in
-          </button>
-          <button className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white">
-            Sign up
-          </button>
+        <div className="hidden md:flex gap-4 items-center">
+          {isLoggedIn ? (
+            <>
+              <div
+                className={clsx(
+                  "px-3 py-1 text-sm",
+                  isScrolling ? "text-gray-700" : "text-gray-800"
+                )}
+              >
+                {isLoadingUser ? (
+                  <span>Loading...</span>
+                ) : userError ? (
+                  <span>Welcome!</span>
+                ) : (
+                  <span>Welcome, {userName}!</span>
+                )}
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white cursor-pointer"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleLogin}
+                className={clsx(
+                  "px-4 py-2 cursor-pointer",
+                  isScrolling
+                    ? "text-gray-800 hover:text-blue-500"
+                    : "text-gray-800 hover:text-blue-200"
+                )}
+              >
+                Log in
+              </button>
+              <button
+                onClick={handleSignup}
+                className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white cursor-pointer"
+              >
+                Sign up
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
         <div
-          className="md:hidden"
+          className="md:hidden cursor-pointer"
           onClick={() => setOpenMobileMenu(!openMobileMenu)}
         >
           {openMobileMenu ? (
-            <X size={25} color={isScrolling ? "black" : "white"} />
+            <X size={25} color={isScrolling ? "black" : "black"}/>
           ) : (
-            <Menu size={25} color={isScrolling ? "black" : "white"} />
+            <Menu size={25} color={isScrolling ? "black" : "black"} />
           )}
         </div>
       </div>
@@ -129,12 +221,41 @@ export default function Navbar() {
             </div>
 
             <div className="flex flex-col gap-4 mt-5">
-              <button className="px-4 py-2 text-gray-800 hover:text-blue-500 text-left">
-                Log in
-              </button>
-              <button className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white">
-                Sign up
-              </button>
+              {isLoggedIn ? (
+                <>
+                  <div className="px-2 py-2 text-sm text-gray-700 border-b text-gray-800">
+                    {isLoadingUser ? (
+                      <span>Loading...</span>
+                    ) : userError ? (
+                      <span>Welcome!</span>
+                    ) : (
+                      <span>Welcome, {userName}!</span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white text-center cursor-pointer"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleLogin}
+                    className="px-4 py-2 text-gray-800 hover:text-blue-500 text-left cursor-pointer"
+                  >
+                    Log in
+                  </button>
+                  <button
+                    onClick={handleSignup}
+                    className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white text-center cursor-pointer"
+                  >
+                    Sign up
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
