@@ -2,7 +2,10 @@ import React, { JSX, useState } from "react";
 import { X, CheckCircle, Calendar, MapPin, FileText } from "lucide-react";
 import { useGetTimeSlotsByServiceProviderQuery } from "@/redux/services/timeslot";
 import { useCreateBookingMutation } from "@/redux/services/book";
-import type { CreateBookingRequest } from "@/redux/services/book";
+import type {
+  CreateBookingRequest,
+  CreateBookingResponse,
+} from "@/redux/services/book";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
 import PaymentModal from "./paymentModal";
@@ -43,14 +46,14 @@ interface BookingItem {
   amount: number;
 }
 
-interface BookingResponse {
-  id: string;
-  items: BookingItem[];
-  subTotal: number;
-  discount: number;
-  total: number;
-  amountDue: string;
-}
+// interface BookingResponse {
+//   id: string;
+//   items: BookingItem[];
+//   subTotal: number;
+//   discount: number;
+//   total: number;
+//   amountDue: number;
+// }
 
 enum SpecialRequirement {
   WHEELCHAIRACCESS = "WHEELCHAIRACCESS",
@@ -99,10 +102,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   // Payment option
   const [payDepositOnly, setPayDepositOnly] = useState(true);
+  const [customPaymentAmount, setCustomPaymentAmount] = useState<number | "">(
+    ""
+  );
 
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingResponse, setBookingResponse] =
-    useState<BookingResponse | null>(null);
+    useState<CreateBookingResponse | null>(null);
   const [paymentDate, setPaymentDate] = useState("");
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -168,10 +174,35 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const discount = Math.round((subTotal * (discountPercentage || 0)) / 100);
   const total = subTotal - discount;
   const depositAmount = Math.round((total * depositPercentage) / 100);
-  const amountDue = payDepositOnly ? depositAmount : total;
+
+  // Calculate amount due based on payment option
+  const getAmountDue = () => {
+    if (customPaymentAmount && customPaymentAmount >= depositAmount) {
+      return customPaymentAmount;
+    }
+    return payDepositOnly ? depositAmount : total;
+  };
+
+  const amountDue = getAmountDue();
+  const isCustomPayment =
+    customPaymentAmount !== "" && customPaymentAmount >= depositAmount;
 
   // Check if amount meets Stripe's minimum requirement (100 Naira)
   const isAmountBelowStripeMinimum = amountDue < 100;
+
+  // Check if custom payment amount is valid
+  const isCustomAmountValid =
+    customPaymentAmount === "" ||
+    (customPaymentAmount >= depositAmount && customPaymentAmount <= total);
+
+  // Calculate due date (7 days from now)
+  const calculateDueDate = () => {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7);
+    dueDate.setUTCHours(12, 0, 0, 0);
+    return dueDate.toISOString();
+  };
+
   const handlePrevMonth = () => {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
@@ -220,6 +251,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
     );
   };
 
+  const handleCustomPaymentAmountChange = (value: string) => {
+    const numValue = value === "" ? "" : Number(value);
+    setCustomPaymentAmount(numValue);
+
+    // Auto-select custom payment option when user enters an amount
+    if (numValue !== "") {
+      setPayDepositOnly(false);
+    }
+  };
+
   const handleConfirmBooking = async () => {
     try {
       if (selectedTimeSlotIds.length === 0) {
@@ -241,9 +282,19 @@ const DatePicker: React.FC<DatePickerProps> = ({
         return;
       }
 
-      // Check if amount is below Stripe minimum for deposit-only payments
-      if (payDepositOnly && isAmountBelowStripeMinimum) {
-        setBookingError("Deposit amount is below the minimum payment of ₦100 required for online payments. Please pay the full amount instead.");
+      // Validate custom payment amount
+      if (customPaymentAmount !== "" && !isCustomAmountValid) {
+        setBookingError(
+          `Custom payment amount must be between ₦${depositAmount.toLocaleString()} and ₦${total.toLocaleString()}`
+        );
+        return;
+      }
+
+      // Check if amount is below Stripe minimum
+      if (isAmountBelowStripeMinimum) {
+        setBookingError(
+          "Payment amount is below the minimum payment of ₦100 required for online payments. Please increase your payment amount."
+        );
         return;
       }
 
@@ -255,6 +306,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         subTotal,
         discount,
         total,
+        amountDue: amountDue, // Add the amountDue field
         items: selectedTimeSlotIds.map(() => ({
           item: serviceName,
           amount: startPrice,
@@ -266,7 +318,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           country,
           postal,
         },
-        dueDate: new Date(selectedDate).toISOString(),
+        dueDate: calculateDueDate(), // Set due date to 7 days from now
         isTermsAccepted,
         isCancellationPolicyAccepted,
         isLiabilityWaiverSigned,
@@ -324,6 +376,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
     setIsCancellationPolicyAccepted(false);
     setIsLiabilityWaiverSigned(false);
     setPayDepositOnly(true);
+    setCustomPaymentAmount("");
     setBookingError(null);
   };
 
@@ -346,11 +399,15 @@ const DatePicker: React.FC<DatePickerProps> = ({
   // Open payment modal
   const openPaymentModal = () => {
     // Check if amount meets Stripe minimum before opening payment modal
-    if (parseFloat(bookingResponse?.amountDue || "0") < 100) {
-      setBookingError("Payment amount is below the minimum of ₦100 required for online payments. Please contact support for assistance.");
+    const dueAmount = Number(bookingResponse?.amountDue ?? 0);
+
+    if (dueAmount < 100) {
+      setBookingError(
+        "Payment amount is below the minimum of ₦100 required for online payments. Please contact support for assistance."
+      );
       return;
     }
-    // setPaymentError(null);
+
     setIsPaymentModalOpen(true);
   };
 
@@ -969,8 +1026,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      checked={payDepositOnly}
-                      onChange={() => setPayDepositOnly(true)}
+                      checked={payDepositOnly && !isCustomPayment}
+                      onChange={() => {
+                        setPayDepositOnly(true);
+                        setCustomPaymentAmount("");
+                      }}
                       className="mr-2"
                     />
                     <span className="text-sm">
@@ -981,14 +1041,93 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      checked={!payDepositOnly}
-                      onChange={() => setPayDepositOnly(false)}
+                      checked={!payDepositOnly && !isCustomPayment}
+                      onChange={() => {
+                        setPayDepositOnly(false);
+                        setCustomPaymentAmount("");
+                      }}
                       className="mr-2"
                     />
                     <span className="text-sm">
                       Pay Full Amount Now (₦{total.toLocaleString()})
                     </span>
                   </label>
+
+                  {/* Custom Payment Amount */}
+                  <div className="border-t pt-3 mt-3">
+                    <label className="flex items-center mb-2">
+                      <input
+                        type="radio"
+                        checked={isCustomPayment}
+                        onChange={() => {
+                          setPayDepositOnly(false);
+                          if (customPaymentAmount === "") {
+                            setCustomPaymentAmount(depositAmount);
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm font-medium">
+                        Pay Custom Amount
+                      </span>
+                    </label>
+
+                    <div className="ml-6 mt-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">₦</span>
+                        <input
+                          type="number"
+                          min={depositAmount}
+                          max={total}
+                          value={customPaymentAmount}
+                          onChange={(e) =>
+                            handleCustomPaymentAmountChange(e.target.value)
+                          }
+                          className="w-32 border px-3 py-1 rounded text-sm"
+                          placeholder="Enter amount"
+                        />
+                        <span className="text-xs text-gray-500">
+                          Min: ₦{depositAmount.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {!isCustomAmountValid &&
+                        customPaymentAmount !== null &&
+                        customPaymentAmount !== undefined && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Amount must be between ₦
+                            {depositAmount.toLocaleString()} and ₦
+                            {total.toLocaleString()}
+                          </p>
+                        )}
+
+                      {isCustomPayment && (
+                        <p className="text-blue-600 text-xs mt-1">
+                          You&apos;ll pay ₦
+                          {customPaymentAmount.toLocaleString()} now, and the
+                          remaining ₦
+                          {(
+                            total - (customPaymentAmount as number)
+                          ).toLocaleString()}{" "}
+                          before your event.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount Due Display */}
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Amount Due Now:</span>
+                    <span className="text-lg font-semibold text-blue-600">
+                      ₦{amountDue.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Payment due date:{" "}
+                    {new Date(calculateDueDate()).toLocaleDateString()}
+                  </p>
                 </div>
 
                 {/* Stripe minimum payment warning */}
@@ -998,21 +1137,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
                       ⚠️ Minimum Payment Required
                     </p>
                     <p className="text-sm text-yellow-600 mt-1">
-                      Deposit amount is below the minimum payment of ₦100 required for online payments. 
-                      Please select &quot;Pay Full Amount Now&quot; to proceed with online payment.
+                      Payment amount is below the minimum of ₦100 required for
+                      online payments. Please increase your payment amount to
+                      proceed.
                     </p>
                   </div>
                 )}
-
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-700">
-                    {payDepositOnly
-                      ? `You'll pay the remaining balance of ₦${(
-                          total - depositAmount
-                        ).toLocaleString()} before your event.`
-                      : "Your booking will be fully paid."}
-                  </p>
-                </div>
               </div>
 
               {bookingError && (
@@ -1033,7 +1163,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   disabled={
                     isBookingLoading ||
                     bookingError === "This time slot is already selected." ||
-                    (payDepositOnly && isAmountBelowStripeMinimum)
+                    isAmountBelowStripeMinimum ||
+                    !isCustomAmountValid
                   }
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
@@ -1138,16 +1269,18 @@ const DatePicker: React.FC<DatePickerProps> = ({
                     className="w-full p-2 border rounded mb-4"
                     onChange={(e) => setPaymentDate(e.target.value)}
                   />
-                  
+
                   {/* Check if amount meets minimum requirement */}
-                  {parseFloat(bookingResponse?.amountDue || "0") < 100 ? (
+                  {Number(bookingResponse?.amountDue ?? 0) < 100 ? (
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
                       <p className="text-yellow-700 text-sm font-medium">
                         ⚠️ Payment Amount Below Minimum
                       </p>
                       <p className="text-yellow-600 text-sm mt-1">
-                        The payment amount of ₦{bookingResponse?.amountDue?.toLocaleString()} is below the minimum of ₦100 required for online payments. 
-                        Please contact our support team to complete your payment.
+                        The payment amount of ₦
+                        {bookingResponse?.amountDue?.toLocaleString()} is below
+                        the minimum of ₦100 required for online payments. Please
+                        contact our support team to complete your payment.
                       </p>
                     </div>
                   ) : (
@@ -1169,7 +1302,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         <PaymentModal
           isOpen={isPaymentModalOpen}
           onClose={closePaymentModal}
-          amountDue={parseFloat(bookingResponse.amountDue)}
+          amountDue={Number(bookingResponse.amountDue ?? 0)}
           invoiceId={bookingResponse.id}
           userId={userId}
           userEmail={currentUser?.email || userEmail}

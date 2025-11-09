@@ -79,6 +79,7 @@ export default function Navbar() {
     { label: "Event Centers", href: "/event-center" },
     { label: "Catering Services", href: "/cateringServices" },
     { label: "Quotes", href: "/quotes" },
+    { label: "Bookings", href: "/bookings" },
     { label: "About Us", href: "#" },
   ];
 
@@ -179,7 +180,7 @@ export default function Navbar() {
           onClick={() => setOpenMobileMenu(!openMobileMenu)}
         >
           {openMobileMenu ? (
-            <X size={25} color={isScrolling ? "black" : "black"}/>
+            <X size={25} color={isScrolling ? "black" : "black"} />
           ) : (
             <Menu size={25} color={isScrolling ? "black" : "black"} />
           )}

@@ -94,7 +94,7 @@ export interface RequestQuoteResponse {
   deletedAt: string | null;
   deletedBy: string | null;
   billingDetails: BillingAddress;
-  billingAddress?: BillingAddress;
+  billingAddress: BillingAddress;
   requestedTimeSlots: RequestedTimeSlot[];
   booking?: Booking;
 }
@@ -192,6 +192,13 @@ export const quoteApi = createApi({
       query: ({ bookingId, limit = 10, offset = 0 }) =>
         `/invoice?limit=${limit}&offset=${offset}&bookingId=${bookingId}`,
     }),
+    getQuotesByCustomerId: builder.query<
+      GetQuotesResponse,
+      { customerId: string; limit?: number; offset?: number }
+    >({
+      query: ({ customerId, limit = 10, offset = 0 }) =>
+        `/requestQuote?limit=${limit}&offset=${offset}&customerId=${customerId}`,
+    }),
   }),
 });
 
@@ -201,4 +208,5 @@ export const {
   useGetQuoteByIdQuery,
   useGetQuotesQuery,
   useGetInvoicesByBookingIdQuery,
+  useGetQuotesByCustomerIdQuery,
 } = quoteApi;

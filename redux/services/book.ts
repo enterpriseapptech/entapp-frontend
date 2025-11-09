@@ -3,6 +3,8 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 // -------- REQUEST --------
 export interface CreateBookingRequest {
   customerId: string;
+  requestQuoteId?: string | null;
+  amountDue?: number;
   serviceId: string;
   timeslotId: string[];
   serviceType: "EVENTCENTER" | "CATERING";
@@ -36,12 +38,14 @@ export interface CreateBookingRequest {
 export interface CreateBookingResponse {
   id: string;
   userId: string;
+  reference: string;
   bookingId: string;
+  subscriptionId?: string | null;
   items: { item: string; amount: number }[];
   subTotal: number;
   discount: number;
   total: number;
-  amountDue: string;
+  amountDue: number;
   currency: string;
   note: string | null;
   billingAddress: {
@@ -203,6 +207,15 @@ export interface GetBookingsByCustomerQueryParams {
   limit?: number;
   offset?: number;
 }
+export enum PaymentReason {
+  WALLETFUNDING = "WALLETFUNDING",
+  SUBSCRIPTION = "SUBSCRIPTION",
+  KYC = "KYC",
+  CERTIFICATION = "CERTIFICATION",
+  FEATURED = "FEATURED",
+  SERVICEREQUEST = "SERVICEREQUEST",
+}
+
 // -------- API SLICE --------
 export const bookingApi = createApi({
   reducerPath: "bookingApi",
@@ -253,7 +266,13 @@ export const bookingApi = createApi({
     }),
     initiatePayment: builder.mutation<
       string,
-      { invoiceId: string; paymentGateWay: string; email?: string | null, callback_url?: string; }
+      {
+        invoiceId: string;
+        paymentGateWay: string;
+        paymentReason: PaymentReason;
+        email?: string | null;
+        callback_url?: string;
+      }
     >({
       query: (payload) => ({
         url: "/payment/initiate",
