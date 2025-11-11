@@ -64,6 +64,7 @@ export default function AddEventCenter() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
   const [createEventCenter, { isLoading: isCreating }] =
@@ -71,16 +72,12 @@ export default function AddEventCenter() {
   const [uploadEventCenterImages, { isLoading: isUploadingImages }] =
     useUploadEventCenterImagesMutation();
 
-  const userId =
-    localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
-
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     const storedUserId =
-  //       localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
-  //     setUserId(storedUserId);
-  //   }
-  // }, []);
+  // Fix: Get userId from localStorage/sessionStorage only on client side
+  useEffect(() => {
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    setUserId(storedUserId);
+  }, []);
 
   const {
     data: user,
@@ -122,6 +119,11 @@ export default function AddEventCenter() {
   });
 
   useEffect(() => {
+    if (userId === null) {
+      // Still loading userId, wait
+      return;
+    }
+
     if (!userId) {
       router.replace("/login");
       return;
@@ -303,7 +305,8 @@ export default function AddEventCenter() {
     };
   }, [images]);
 
-  if (isUserLoading) {
+  // Show loading state while checking authentication
+  if (isUserLoading || userId === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
