@@ -84,6 +84,7 @@ export interface EventCenterBookingEntity {
   eventcenterId: string;
   bookingId: string;
   eventName: string;
+  serviceName: string;
   eventTheme: string;
   eventType: string;
   description: string;
@@ -130,6 +131,7 @@ export interface BookingEntity {
   confirmedAt: string | null;
   servicebookingId: string | null;
   serviceId: string;
+  serviceName: string | null;
   serviceProvider: string;
   serviceType: "EVENTCENTER" | "CATERING" | string;
   subTotal: number;

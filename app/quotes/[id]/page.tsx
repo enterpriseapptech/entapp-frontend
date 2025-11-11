@@ -4,6 +4,8 @@ import {
   useGetQuoteByIdQuery,
   useGetInvoicesByBookingIdQuery,
 } from "@/redux/services/quoteApi";
+import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
+import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Footer from "@/components/layouts/Footer";
@@ -20,20 +22,66 @@ import {
   AlertCircle,
   Target,
   MapPin,
+  CreditCard,
+  Shield,
 } from "lucide-react";
-import { useState } from "react";
-import PaymentModal from "@/components/ui/paymentModal";
-import SuccessModal from "@/components/ui/SuccessModal";
+import { useState, useEffect } from "react";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
+import QuotePaymentModal from "@/components/ui/QuotePaymentModal";
+import BookingQuotesSuceessModal from "@/components/ui/BookingQuotesSuceessModal";
 
 export default function QuoteDetailPage() {
   const params = useParams();
   const quoteId = params.id as string;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-
+  const [paymentType, setPaymentType] = useState<"full" | "deposit">("full");
+  const [depositPercentage, setDepositPercentage] = useState<number>(0);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [isLoadingDeposit, setIsLoadingDeposit] = useState(false);
   // Use the quote query instead of booking
-  const { data: quote, error, isLoading } = useGetQuoteByIdQuery(quoteId);
+  const {
+    data: quote,
+    error,
+    isLoading,
+    refetch,
+  } = useGetQuoteByIdQuery(quoteId);
+
+  // Fetch service data for deposit calculation
+  const { data: eventCenter } = useGetEventCenterByIdQuery(
+    quote?.serviceId || "",
+    { skip: !quote || quote.serviceType !== "EVENTCENTER" }
+  );
+
+  const { data: catering } = useGetCateringByIdQuery(quote?.serviceId || "", {
+    skip: !quote || quote.serviceType !== "CATERING",
+  });
+
+  // Calculate deposit amount when quote and service data are available
+  useEffect(() => {
+    if (quote?.booking) {
+      setIsLoadingDeposit(true);
+
+      let depositPercentage = 0;
+
+      if (quote.serviceType === "EVENTCENTER" && eventCenter) {
+        depositPercentage = eventCenter.depositPercentage;
+      } else if (quote.serviceType === "CATERING" && catering) {
+        depositPercentage = catering.depositPercentage;
+      }
+
+      setDepositPercentage(depositPercentage);
+
+      // Calculate deposit amount based on booking total
+      const totalAmount = Number(quote.booking?.total) || 0;
+      const percentage = Number(depositPercentage) || 0;
+
+      const calculatedDeposit = (totalAmount * percentage) / 100;
+      setDepositAmount(calculatedDeposit);
+
+      setIsLoadingDeposit(false);
+    }
+  }, [quote, eventCenter, catering]);
 
   // Fetch invoice when quote has a booking
   const {
@@ -60,20 +108,27 @@ export default function QuoteDetailPage() {
         "customer@example.com"
       : "customer@example.com");
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     console.log("Payment completed successfully");
     setIsPaymentModalOpen(false);
     setIsSuccessModalOpen(true);
-    // You might want to refetch the quote data here to update the status
+    await refetch();
   };
 
   const handlePaymentError = (error: string) => {
     console.log(error);
   };
 
+  const handlePayNow = (type: "full" | "deposit") => {
+    setPaymentType(type);
+    setIsPaymentModalOpen(true);
+  };
+
   // Check if amount is below minimum for Stripe
   const invoice = invoiceData?.data?.[0];
-  const isBelowMinimum = invoice && invoice.amountDue < 100;
+  const fullAmount = invoice?.amountDue || 0;
+  const isFullBelowMinimum = fullAmount < 100;
+  const isDepositBelowMinimum = depositAmount < 100;
 
   if (isLoading) {
     return (
@@ -483,11 +538,147 @@ export default function QuoteDetailPage() {
               </div>
             )}
 
+            {/* Payment Options Section (only if quote has booking and not paid) */}
+            {quote.booking && quote.booking.paymentStatus !== "PAID" && (
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2 text-blue-500" />
+                  Payment Options
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Full Payment Option */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center mb-4">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                        <DollarSign className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Pay Full Amount
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Secure your booking with full payment
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-600">Amount:</span>
+                        <span className="text-lg font-bold text-gray-900">
+                          ${fullAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {isFullBelowMinimum ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+                        <div className="flex items-center">
+                          <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
+                          <span className="text-sm text-yellow-700">
+                            Minimum payment amount is 100 Naira. Please contact
+                            support.
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handlePayNow("full")}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
+                      >
+                        Pay Full Amount
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Deposit Payment Option */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center mb-4">
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <Shield className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Pay Deposit
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Secure your booking with deposit
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-600">
+                          Deposit Amount:
+                        </span>
+                        {isLoadingDeposit ? (
+                          <div className="animate-pulse bg-gray-200 h-4 w-16 rounded"></div>
+                        ) : (
+                          <span className="text-lg font-bold text-green-600">
+                            ${depositAmount.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Deposit Percentage:
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {isLoadingDeposit ? (
+                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded"></div>
+                          ) : (
+                            `${depositPercentage}%`
+                          )}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Remaining balance: $
+                        {(fullAmount - depositAmount).toLocaleString()}
+                      </div>
+                    </div>
+
+                    {isLoadingDeposit ? (
+                      <div className="w-full bg-gray-400 text-white py-2 px-4 rounded-md font-medium text-center">
+                        Calculating...
+                      </div>
+                    ) : isDepositBelowMinimum ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                        <div className="flex items-center">
+                          <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
+                          <span className="text-sm text-yellow-700">
+                            Deposit amount below minimum. Please pay full amount
+                            or contact support.
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handlePayNow("deposit")}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
+                      >
+                        Pay Deposit
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>
+                    💡 <strong>Note:</strong> Paying the deposit will secure
+                    your booking. The remaining balance will be due before the
+                    event date.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Invoice Section (only if quote has booking) */}
             {quote.booking && (
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Invoice
+                  Invoice Details
                 </h2>
 
                 {invoiceLoading && (
@@ -551,38 +742,6 @@ export default function QuoteDetailPage() {
                         </p>
                       </div>
                     </div>
-
-                    {/* Minimum amount warning */}
-                    {isBelowMinimum && (
-                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-center">
-                          <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
-                          <span className="text-sm text-yellow-700">
-                            Minimum payment amount is 100 Naira. Please contact
-                            support to complete your payment.
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Payment Button (only show if booking exists and not paid) */}
-                    {quote.booking.paymentStatus !== "PAID" && (
-                      <div className="mt-6">
-                        <button
-                          onClick={() => setIsPaymentModalOpen(true)}
-                          disabled={isBelowMinimum}
-                          className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                            isBelowMinimum
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          }`}
-                        >
-                          {isBelowMinimum
-                            ? "Minimum Payment Required: 100 Naira"
-                            : "Make Payment"}
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -621,19 +780,24 @@ export default function QuoteDetailPage() {
 
       {/* Payment Modal */}
       {invoice && quote.booking && quote.booking.paymentStatus !== "PAID" && (
-        <PaymentModal
+        <QuotePaymentModal
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
-          amountDue={invoice.amountDue}
+          amountDue={fullAmount}
           invoiceId={invoice.id}
           userId={userId}
           userEmail={currentUser?.email || userEmail}
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentError={handlePaymentError}
+          paymentType={paymentType}
+          depositPercentage={depositPercentage}
+          totalAmount={fullAmount}
         />
       )}
+
+      {/* Success Modal */}
       {isSuccessModalOpen && (
-        <SuccessModal
+        <BookingQuotesSuceessModal
           isOpen={isSuccessModalOpen}
           onClose={() => setIsSuccessModalOpen(false)}
           bookingDates={[
@@ -648,8 +812,11 @@ export default function QuoteDetailPage() {
                 ).toLocaleDateString()
               : "",
           ]}
+          paymentType={paymentType}
+          amountPaid={paymentType === "deposit" ? depositAmount : fullAmount}
         />
       )}
+
       <Footer />
     </main>
   );
