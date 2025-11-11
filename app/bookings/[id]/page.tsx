@@ -1,12 +1,16 @@
 "use client";
 
 import { useGetBookingByIdQuery } from "@/redux/services/book";
+import { useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
+import { useGetCateringByIdQuery } from "@/redux/services/cateringApi";
 import { useParams } from "next/navigation";
 import Footer from "@/components/layouts/Footer";
 import Navbar from "@/components/layouts/Navbar";
 import { useState, useEffect } from "react";
-import PaymentModal from "../../../components/ui/paymentModal";
 import type { BookingEntity } from "@/redux/services/book";
+import BookingPaymentModal from "@/components/ui/BookingPaymentModal";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
+import BookingSuccessModal from "@/components/ui/BookingSuccessModal";
 
 export default function BookingDetailsPage() {
   const params = useParams();
@@ -17,8 +21,48 @@ export default function BookingDetailsPage() {
     null
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [depositPercentage, setDepositPercentage] = useState<number>(0);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [isLoadingDeposit, setIsLoadingDeposit] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const {
+    data: booking,
+    isLoading,
+    error,
+    refetch,
+  } = useGetBookingByIdQuery(bookingId);
 
-  const { data: booking, isLoading, error } = useGetBookingByIdQuery(bookingId);
+  // Fetch deposit percentage based on service type
+  const { data: eventCenter } = useGetEventCenterByIdQuery(
+    booking?.serviceId || "",
+    { skip: !booking || booking.serviceType !== "EVENTCENTER" }
+  );
+
+  const { data: catering } = useGetCateringByIdQuery(booking?.serviceId || "", {
+    skip: !booking || booking.serviceType !== "CATERING",
+  });
+
+  // Calculate deposit amount when booking and service data are available
+  useEffect(() => {
+    if (booking) {
+      setIsLoadingDeposit(true);
+
+      let depositPercentage = 0;
+
+      if (booking.serviceType === "EVENTCENTER" && eventCenter) {
+        depositPercentage = eventCenter.depositPercentage;
+      } else if (booking.serviceType === "CATERING" && catering) {
+        depositPercentage = catering.depositPercentage;
+      }
+
+      setDepositPercentage(depositPercentage);
+
+      // Calculate deposit amount
+      const calculatedDeposit = (booking.total * depositPercentage) / 100;
+      setDepositAmount(calculatedDeposit);
+      setIsLoadingDeposit(false);
+    }
+  }, [booking, eventCenter, catering]);
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -37,7 +81,7 @@ export default function BookingDetailsPage() {
       setUserId(storedUserId);
     }
   };
-
+  const firstTimeSlot = booking?.requestedTimeSlots?.[0];
   // Handle payment initiation
   const handlePayNow = (booking: BookingEntity) => {
     setSelectedBooking(booking);
@@ -45,10 +89,12 @@ export default function BookingDetailsPage() {
   };
 
   // Handle payment success
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     console.log("Payment completed successfully");
     setIsPaymentModalOpen(false);
     setSelectedBooking(null);
+    await refetch();
+    setShowSuccessModal(true);
     // You might want to refetch booking data here to update the status
     // Or show a success message to the user
   };
@@ -64,14 +110,11 @@ export default function BookingDetailsPage() {
     setIsPaymentModalOpen(false);
     setSelectedBooking(null);
   };
+  // Fetch user details using the existing RTK Query getUserById endpoint
+  const { data: userData } = useGetUserByIdQuery(userId!, { skip: !userId });
 
-  // Get user email for payment modal
-  const userEmail =
-    typeof window !== "undefined"
-      ? localStorage.getItem("user_email") ||
-        sessionStorage.getItem("user_email") ||
-        "customer@example.com"
-      : "customer@example.com";
+  // Email from backend response
+  const userEmail = userData?.email ?? "";
 
   if (isLoading) {
     return (
@@ -224,6 +267,29 @@ export default function BookingDetailsPage() {
                       ${booking.total.toLocaleString()}
                     </p>
                   </div>
+
+                  {/* Deposit Information */}
+                  <div className="pt-2 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium text-gray-500">
+                        Required Deposit
+                      </label>
+                      {isLoadingDeposit ? (
+                        <div className="animate-pulse bg-gray-200 h-4 w-16 rounded"></div>
+                      ) : (
+                        <p className="text-blue-600 font-semibold">
+                          ${depositAmount.toLocaleString()}
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({depositPercentage}%)
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Minimum payment required to secure your booking
+                    </p>
+                  </div>
+
                   {booking.invoice && booking.invoice.length > 0 && (
                     <div>
                       <label className="text-sm font-medium text-gray-500">
@@ -512,12 +578,22 @@ export default function BookingDetailsPage() {
             {/* Action Buttons */}
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex flex-wrap gap-4">
+                {isLoggedIn === false && (
+                  <p className="text-red-500">
+                    Please log in to make a payment.
+                  </p>
+                )}
                 {booking.paymentStatus !== "PAID" && (
                   <button
                     onClick={() => handlePayNow(booking)}
-                    className="cursor-pointer px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                    disabled={isLoadingDeposit}
+                    className={`cursor-pointer px-6 py-2 rounded-md transition-colors ${
+                      isLoadingDeposit
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white"
+                    }`}
                   >
-                    Pay Now
+                    {isLoadingDeposit ? "Loading..." : "Pay Now"}
                   </button>
                 )}
                 <button
@@ -541,17 +617,26 @@ export default function BookingDetailsPage() {
 
       {/* Payment Modal */}
       {selectedBooking && (
-        <PaymentModal
+        <BookingPaymentModal
           isOpen={isPaymentModalOpen}
           onClose={closePaymentModal}
           amountDue={Number(selectedBooking.total)}
-          invoiceId={selectedBooking.id}
+          depositAmount={depositAmount}
+          depositPercentage={depositPercentage}
+          invoiceId={selectedBooking.invoice?.[0] ?? ""}
           userId={userId}
           userEmail={userEmail}
           onPaymentSuccess={handlePaymentSuccess}
           onPaymentError={handlePaymentError}
         />
       )}
+
+      <BookingSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        startTime={firstTimeSlot?.startTime}
+        endTime={firstTimeSlot?.endTime}
+      />
     </main>
   );
 }

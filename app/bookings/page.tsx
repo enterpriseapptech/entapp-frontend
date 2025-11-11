@@ -7,17 +7,11 @@ import { useGetUserByIdQuery } from "@/redux/services/authApi";
 import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import { useRouter } from "next/navigation";
-import PaymentModal from "../../components/ui/paymentModal";
-import type { BookingEntity } from "@/redux/services/book";
 
 export default function BookingsPage() {
   const [page, setPage] = useState(1);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<BookingEntity | null>(
-    null
-  );
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const limit = 10;
   const offset = (page - 1) * limit;
   const router = useRouter();
@@ -63,43 +57,6 @@ export default function BookingsPage() {
       skip: !userId || !isLoggedIn,
     }
   );
-
-  // Handle payment initiation
-  const handlePayNow = (booking: BookingEntity) => {
-    setSelectedBooking(booking);
-    setIsPaymentModalOpen(true);
-  };
-
-  // Handle payment success
-  const handlePaymentSuccess = () => {
-    console.log("Payment completed successfully");
-    setIsPaymentModalOpen(false);
-    setSelectedBooking(null);
-    // You might want to refetch bookings data here to update the status
-    // Or show a success message to the user
-  };
-
-  // Handle payment error
-  const handlePaymentError = (error: string) => {
-    console.log("Payment error:", error);
-    // You can show an error message to the user here
-  };
-
-  // Close payment modal
-  const closePaymentModal = () => {
-    setIsPaymentModalOpen(false);
-    setSelectedBooking(null);
-  };
-
-  // Get user email for payment modal
-  const userEmail =
-    userData?.email ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("user_email") ||
-        sessionStorage.getItem("user_email") ||
-        "customer@example.com"
-      : "customer@example.com");
-
   // Show loading while checking authentication
   if (isLoggedIn === null) {
     return (
@@ -334,12 +291,12 @@ export default function BookingsPage() {
                             View Details
                           </Link>
                           {booking.paymentStatus !== "PAID" && (
-                            <button
-                              onClick={() => handlePayNow(booking)}
-                              className="cursor-pointer text-green-600 hover:text-green-900 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors text-sm"
+                            <Link
+                              href={`/bookings/${booking.id}`}
+                              className="cursor-pointer text-green-600 hover:text-white px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors text-sm"
                             >
                               Pay Now
-                            </button>
+                            </Link>
                           )}
                         </td>
                       </tr>
@@ -394,20 +351,6 @@ export default function BookingsPage() {
         </div>
       </div>
       <Footer />
-
-      {/* Payment Modal */}
-      {selectedBooking && (
-        <PaymentModal
-          isOpen={isPaymentModalOpen}
-          onClose={closePaymentModal}
-          amountDue={Number(selectedBooking.amountDue || selectedBooking.total)}
-          invoiceId={selectedBooking.id}
-          userId={userId}
-          userEmail={userEmail}
-          onPaymentSuccess={handlePaymentSuccess}
-          onPaymentError={handlePaymentError}
-        />
-      )}
     </main>
   );
 }
