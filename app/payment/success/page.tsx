@@ -1,23 +1,30 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { CheckCircle, XCircle } from 'lucide-react';
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle, XCircle } from "lucide-react";
 
 const PaymentSuccessPage = () => {
   const router = useRouter();
-  const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending'>('pending');
+  const searchParams = useSearchParams();
+  const [paymentStatus, setPaymentStatus] = useState<
+    "success" | "failed" | "pending"
+  >("pending");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const verifyPayment = async () => {
       try {
-        // Get parameters from URL
-        const { invoiceId, reference, trxref } = router.query;
-        
+        // Get parameters from URL using searchParams
+        const invoiceId = searchParams.get("invoiceId");
+        const reference = searchParams.get("reference");
+        const trxref = searchParams.get("trxref");
+
         // Get stored payment info
-        const pendingPayment = sessionStorage.getItem('pendingPayment');
-        
+        const pendingPayment = sessionStorage.getItem("pendingPayment");
+
         if (!pendingPayment) {
-          setPaymentStatus('failed');
+          setPaymentStatus("failed");
           setIsLoading(false);
           return;
         }
@@ -25,10 +32,10 @@ const PaymentSuccessPage = () => {
         const paymentData = JSON.parse(pendingPayment);
 
         // Verify payment with your backend
-        const verifyResponse = await fetch('/api/payment/verify', {
-          method: 'POST',
+        const verifyResponse = await fetch("/api/payment/verify", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             invoiceId,
@@ -38,24 +45,22 @@ const PaymentSuccessPage = () => {
         });
 
         if (verifyResponse.ok) {
-          setPaymentStatus('success');
+          setPaymentStatus("success");
           // Clear the stored payment data
-          sessionStorage.removeItem('pendingPayment');
+          sessionStorage.removeItem("pendingPayment");
         } else {
-          setPaymentStatus('failed');
+          setPaymentStatus("failed");
         }
       } catch (error) {
-        console.error('Payment verification failed:', error);
-        setPaymentStatus('failed');
+        console.error("Payment verification failed:", error);
+        setPaymentStatus("failed");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (router.isReady) {
-      verifyPayment();
-    }
-  }, [router.isReady, router.query]);
+    verifyPayment();
+  }, [searchParams]);
 
   if (isLoading) {
     return (
@@ -71,25 +76,28 @@ const PaymentSuccessPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        {paymentStatus === 'success' ? (
+        {paymentStatus === "success" ? (
           <>
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Payment Successful!
+            </h1>
             <p className="text-gray-600 mb-6">
-              Your payment has been processed successfully. You will receive a confirmation email shortly.
+              Your payment has been processed successfully. You will receive a
+              confirmation email shortly.
             </p>
             <div className="space-y-3">
               <button
-                onClick={() => router.push('/bookings')}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+                onClick={() => router.push("/bookings")}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 View My Bookings
               </button>
               <button
-                onClick={() => router.push('/')}
-                className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50"
+                onClick={() => router.push("/")}
+                className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Back to Home
               </button>
@@ -100,20 +108,23 @@ const PaymentSuccessPage = () => {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <XCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Payment Failed
+            </h1>
             <p className="text-gray-600 mb-6">
-              We couldn&apos;t process your payment. Please try again or contact support if the problem persists.
+              We couldn&apos;t process your payment. Please try again or contact
+              support if the problem persists.
             </p>
             <div className="space-y-3">
               <button
-                onClick={() => router.push('/payment')}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+                onClick={() => router.push("/payment")}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Try Again
               </button>
               <button
-                onClick={() => router.push('/')}
-                className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50"
+                onClick={() => router.push("/")}
+                className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Back to Home
               </button>
