@@ -13,6 +13,7 @@ export default function Navbar() {
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Add loading state
   const router = useRouter();
 
   // Get user data when userId is available
@@ -48,6 +49,7 @@ export default function Navbar() {
     if (storedUserId) {
       setUserId(storedUserId);
     }
+    setIsCheckingAuth(false); // Auth check complete
   };
 
   const handleLogout = () => {
@@ -85,6 +87,40 @@ export default function Navbar() {
 
   // Get user's first name for display
   const userName = user ? `${user.firstName}` : "";
+
+  // Show loading skeleton until auth check is complete
+  if (isCheckingAuth) {
+    return (
+      <nav className="h-20 flex items-center justify-center text-white px-6 md:px-20 relative bg-white/95">
+        <div className="flex items-center justify-between w-full max-w-5xl">
+          <div>
+            <div className="w-32 h-8 bg-gray-300 rounded animate-pulse"></div>
+          </div>
+
+          {/* Desktop Links Skeleton */}
+          <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div
+                key={item}
+                className="w-16 h-4 bg-gray-300 rounded animate-pulse"
+              ></div>
+            ))}
+          </div>
+
+          {/* Desktop Auth Buttons Skeleton */}
+          <div className="hidden md:flex gap-4 items-center">
+            <div className="w-24 h-8 bg-gray-300 rounded animate-pulse"></div>
+            <div className="w-20 h-8 bg-gray-300 rounded animate-pulse"></div>
+          </div>
+
+          {/* Mobile Menu Toggle Skeleton */}
+          <div className="md:hidden">
+            <div className="w-6 h-6 bg-gray-300 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav
@@ -136,7 +172,7 @@ export default function Navbar() {
                 )}
               >
                 {isLoadingUser ? (
-                  <span>Loading...</span>
+                  <span className="animate-pulse"></span>
                 ) : userError ? (
                   <span>Welcome!</span>
                 ) : (
@@ -226,7 +262,7 @@ export default function Navbar() {
                 <>
                   <div className="px-2 py-2 text-sm text-gray-700 border-b text-gray-800">
                     {isLoadingUser ? (
-                      <span>Loading...</span>
+                      <span className="animate-pulse"></span>
                     ) : userError ? (
                       <span>Welcome!</span>
                     ) : (

@@ -68,6 +68,7 @@ export default function HeroWithNavbar({
   const [selectedStateId, setSelectedStateId] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Add loading state
   const router = useRouter();
 
   // Fetch countries and states
@@ -111,6 +112,7 @@ export default function HeroWithNavbar({
     if (storedUserId) {
       setUserId(storedUserId);
     }
+    setIsCheckingAuth(false); // Auth check complete
   };
 
   const handleLogout = () => {
@@ -199,6 +201,68 @@ export default function HeroWithNavbar({
   // Get user's first name for display
   const userName = user ? `${user.firstName}` : "";
 
+  // Show loading skeleton until auth check is complete
+  if (isCheckingAuth) {
+    return (
+      <section
+        className={`relative bg-cover bg-center bg-no-repeat ${className}`}
+        style={{
+          backgroundImage,
+          minHeight: height,
+        }}
+      >
+        <div className="relative max-w-5xl mx-auto px-4">
+          {/* Navbar Skeleton */}
+          <nav className="h-20 flex items-center justify-center text-white relative">
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <div className="w-32 h-8 bg-white/50 rounded animate-pulse"></div>
+              </div>
+
+              <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <div
+                    key={item}
+                    className="w-16 h-4 bg-white/50 rounded animate-pulse"
+                  ></div>
+                ))}
+              </div>
+
+              <div className="hidden md:flex gap-4 items-center">
+                <div className="w-20 h-8 bg-white/50 rounded animate-pulse"></div>
+                <div className="w-16 h-8 bg-white/50 rounded animate-pulse"></div>
+              </div>
+
+              <div className="md:hidden">
+                <div className="w-6 h-6 bg-white/50 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </nav>
+
+          {/* Hero Content Skeleton */}
+          <div
+            className="flex flex-col items-center justify-center text-center text-white"
+            style={{ minHeight: `calc(${height} - 5rem)` }}
+          >
+            <div className="md:w-96 w-64 h-12 bg-white/30 rounded animate-pulse mb-4"></div>
+            <div className="w-72 h-4 bg-white/30 rounded animate-pulse mb-12"></div>
+
+            {showSearch && (
+              <div className="flex flex-col md:flex-row gap-3 w-full max-w-3xl bg-white/80 p-3 rounded-lg items-center">
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="w-full h-10 bg-white/50 rounded animate-pulse"
+                  ></div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       className={`relative bg-cover bg-center bg-no-repeat ${className}`}
@@ -257,7 +321,7 @@ export default function HeroWithNavbar({
                     )}
                   >
                     {isLoadingUser ? (
-                      <span>Loading...</span>
+                      <span className="animate-pulse"></span>
                     ) : userError ? (
                       <span>Welcome!</span>
                     ) : (
@@ -349,7 +413,7 @@ export default function HeroWithNavbar({
                     <>
                       <div className="px-2 py-2 text-sm text-gray-700 border-b">
                         {isLoadingUser ? (
-                          <span>Loading...</span>
+                          <span className="animate-pulse"></span>
                         ) : userError ? (
                           <span>Welcome!</span>
                         ) : (
