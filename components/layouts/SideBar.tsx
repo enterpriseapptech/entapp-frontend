@@ -27,7 +27,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   // Helper function to handle link clicks (for mobile sidebar toggle)
   const handleLinkClick = () => {
     if (isOpen) {
-      toggleSidebar(); // Close the sidebar on mobile after clicking a link
+      toggleSidebar();
     }
   };
 
@@ -186,9 +186,9 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           </Link>
 
           <Link
-            href="/admin/providers"
+            href="/admin/provider"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-              pathname === "/admin/providers"
+              pathname === "/admin/provider"
                 ? "bg-gray-100 text-gray-900"
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`}
