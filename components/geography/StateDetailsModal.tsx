@@ -1,10 +1,18 @@
 import { X } from "lucide-react";
-import type { State } from "@/types/geography.types";
+import type { State } from "@/redux/services/adminApi";
 
 interface StateDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   state: State | null;
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export default function StateDetailsModal({
@@ -13,6 +21,8 @@ export default function StateDetailsModal({
   state,
 }: StateDetailsModalProps) {
   if (!isOpen || !state) return null;
+
+  const isActive = !state.deletedAt;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -35,14 +45,23 @@ export default function StateDetailsModal({
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 State/Province Name
               </label>
-              <p className="text-base text-gray-900">{state.stateName}</p>
+              <p className="text-base text-gray-900">{state.name}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
-                Country
+                State Code
               </label>
-              <p className="text-base text-gray-900">{state.country}</p>
+              <p className="text-base text-gray-900">{state.code}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Country ID
+              </label>
+              <p className="text-base text-gray-900 font-mono text-sm">
+                {state.countryId}
+              </p>
             </div>
 
             <div>
@@ -51,12 +70,12 @@ export default function StateDetailsModal({
               </label>
               <span
                 className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                  state.status === "Active"
+                  isActive
                     ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-700"
+                    : "bg-gray-100 text-gray-600"
                 }`}
               >
-                {state.status}
+                {isActive ? "Active" : "Inactive"}
               </span>
             </div>
 
@@ -64,15 +83,30 @@ export default function StateDetailsModal({
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Last Updated
               </label>
-              <p className="text-base text-gray-900">{state.lastUpdated}</p>
+              <p className="text-base text-gray-900">
+                {formatDate(state.updatedAt)}
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Created At
               </label>
-              <p className="text-base text-gray-900">{state.createdAt}</p>
+              <p className="text-base text-gray-900">
+                {formatDate(state.createdAt)}
+              </p>
             </div>
+
+            {state.updatedBy && (
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Updated By
+                </label>
+                <p className="text-base text-gray-900 font-mono text-sm">
+                  {state.updatedBy}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">

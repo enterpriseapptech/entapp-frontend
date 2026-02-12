@@ -1,11 +1,12 @@
-import { X, AlertTriangle } from "lucide-react";
-import type { Country } from "@/types/geography.types";
+import { X, AlertTriangle, Loader2 } from "lucide-react";
+import type { Country } from "@/redux/services/adminApi";
 
 interface DeleteCountryModalProps {
   isOpen: boolean;
   onClose: () => void;
   country: Country | null;
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
 export default function DeleteCountryModal({
@@ -13,6 +14,7 @@ export default function DeleteCountryModal({
   onClose,
   country,
   onConfirm,
+  isLoading = false,
 }: DeleteCountryModalProps) {
   if (!isOpen || !country) return null;
 
@@ -25,7 +27,8 @@ export default function DeleteCountryModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            disabled={isLoading}
+            className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-5 h-5 text-gray-400" />
           </button>
@@ -50,8 +53,11 @@ export default function DeleteCountryModal({
             <p className="text-sm text-gray-600">
               You are about to delete the country:{" "}
               <span className="font-semibold text-gray-900">
-                {country.countryName}
+                {country.name}
               </span>
+              {country.code && (
+                <span className="ml-1 text-gray-500">({country.code})</span>
+              )}
             </p>
           </div>
 
@@ -59,16 +65,25 @@ export default function DeleteCountryModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={onConfirm}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Delete Country
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete Country"
+              )}
             </button>
           </div>
         </div>

@@ -1,11 +1,10 @@
 import { Eye, Pencil, Trash2, Power } from "lucide-react";
-import type { Country, State, City } from "@/types/geography.types";
+import type { Country, State } from "@/redux/services/adminApi";
 
 interface GeographyTableProps {
-  type: "Countries" | "States/Provinces" | "Cities";
+  type: "Countries" | "States/Provinces";
   countries?: Country[];
   states?: State[];
-  cities?: City[];
   onViewCountryDetails?: (country: Country) => void;
   onEditCountry?: (country: Country) => void;
   onDeleteCountry?: (country: Country) => void;
@@ -14,17 +13,33 @@ interface GeographyTableProps {
   onEditState?: (state: State) => void;
   onDeleteState?: (state: State) => void;
   onToggleStateStatus?: (state: State) => void;
-  onViewCityDetails?: (city: City) => void;
-  onEditCity?: (city: City) => void;
-  onDeleteCity?: (city: City) => void;
-  onToggleCityStatus?: (city: City) => void;
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function StatusBadge({ deletedAt }: { deletedAt: string | null }) {
+  const isActive = !deletedAt;
+  return (
+    <span
+      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+        isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+      }`}
+    >
+      {isActive ? "Active" : "Inactive"}
+    </span>
+  );
 }
 
 export default function GeographyTable({
   type,
   countries = [],
   states = [],
-  cities = [],
   onViewCountryDetails,
   onEditCountry,
   onDeleteCountry,
@@ -33,185 +48,192 @@ export default function GeographyTable({
   onEditState,
   onDeleteState,
   onToggleStateStatus,
-  onViewCityDetails,
-  onEditCity,
-  onDeleteCity,
-  onToggleCityStatus,
 }: GeographyTableProps) {
+  // Countries Table
   if (type === "Countries") {
     return (
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[640px] lg:min-w-full">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Country Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Code
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Currency
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Last Updated
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {countries.map((country) => (
-              <tr key={country.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">
-                    {country.countryName}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">{country.code}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">
-                    {country.currency} ({country.currencySymbol})
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      country.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {country.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">
-                    {country.lastUpdated}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onViewCountryDetails?.(country)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => onEditCountry?.(country)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="Edit"
-                    >
-                      <Pencil className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => onToggleCountryStatus?.(country)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="Toggle Status"
-                    >
-                      <Power className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteCountry?.(country)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4 text-gray-400" />
-                    </button>
-                  </div>
+            {countries.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 sm:px-6 py-8 sm:py-10 text-center text-sm text-gray-400"
+                >
+                  No countries found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              countries.map((country) => (
+                <tr key={country.id} className="hover:bg-gray-50">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-gray-900">
+                      {country.name}
+                    </span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-600">
+                      {country.code}
+                    </span>
+                  </td>
+                  <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-600">
+                      {country.currency}{" "}
+                      <span className="text-gray-400 hidden lg:inline">
+                        {country.currencyCode} · {country.currencySymbol}
+                      </span>
+                    </span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <StatusBadge deletedAt={country.deletedAt} />
+                  </td>
+                  <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-600">
+                      {formatDate(country.updatedAt)}
+                    </span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <button
+                        onClick={() => onViewCountryDetails?.(country)}
+                        className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => onEditCountry?.(country)}
+                        className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4 text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => onToggleCountryStatus?.(country)}
+                        className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
+                        title="Toggle Status"
+                      >
+                        <Power className="w-4 h-4 text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => onDeleteCountry?.(country)}
+                        className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     );
   }
 
-  if (type === "States/Provinces") {
-    return (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                State Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Country
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Last Updated
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
+  // States/Provinces Table
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] lg:min-w-full">
+        <thead>
+          <tr className="border-b border-gray-200">
+            <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              State Name
+            </th>
+            <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              Code
+            </th>
+            <th className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              Status
+            </th>
+            <th className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              Last Updated
+            </th>
+            <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {states.length === 0 ? (
+            <tr>
+              <td
+                colSpan={5}
+                className="px-4 sm:px-6 py-8 sm:py-10 text-center text-sm text-gray-400"
+              >
+                No states found.
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {states.map((state) => (
+          ) : (
+            states.map((state) => (
               <tr key={state.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                   <span className="text-sm font-medium text-gray-900">
-                    {state.stateName}
+                    {state.name}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">{state.country}</span>
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-600">{state.code}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      state.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {state.status}
-                  </span>
+                <td className="hidden sm:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
+                  <StatusBadge deletedAt={state.deletedAt} />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-600">
-                    {state.lastUpdated}
+                    {formatDate(state.updatedAt)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <button
                       onClick={() => onViewStateDetails?.(state)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
                       title="View Details"
                     >
                       <Eye className="w-4 h-4 text-gray-400" />
                     </button>
                     <button
                       onClick={() => onEditState?.(state)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4 text-gray-400" />
                     </button>
                     <button
                       onClick={() => onToggleStateStatus?.(state)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
                       title="Toggle Status"
                     >
                       <Power className="w-4 h-4 text-gray-400" />
                     </button>
                     <button
                       onClick={() => onDeleteState?.(state)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4 text-gray-400" />
@@ -219,108 +241,10 @@ export default function GeographyTable({
                   </div>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
-  if (type === "Cities") {
-    return (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                City Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                State
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Country
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Last Updated
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {cities.map((city) => (
-              <tr key={city.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">
-                    {city.cityName}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">{city.state}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">{city.country}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      city.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {city.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-600">
-                    {city.lastUpdated}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onViewCityDetails?.(city)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => onEditCity?.(city)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="Edit"
-                    >
-                      <Pencil className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => onToggleCityStatus?.(city)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="Toggle Status"
-                    >
-                      <Power className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteCity?.(city)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4 text-gray-400" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
-  return null;
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 }

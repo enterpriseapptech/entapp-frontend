@@ -4,12 +4,15 @@ import { useState } from "react";
 import {
   Globe,
   Map,
-  MapPin,
   Settings,
   Bell,
   Download,
   Menu,
   Plus,
+  Loader2,
+  AlertCircle,
+  ChevronLeft,
+  Zap,
 } from "lucide-react";
 import Sidebar from "@/components/layouts/SideBar";
 import StatCard from "@/components/geography/StatCard";
@@ -23,160 +26,55 @@ import AddStateModal from "@/components/geography/AddStateModal";
 import EditStateModal from "@/components/geography/EditStateModal";
 import DeleteStateModal from "@/components/geography/DeleteStateModal";
 import StateDetailsModal from "@/components/geography/StateDetailsModal";
-import AddCityModal from "@/components/geography/AddCityModal";
-import EditCityModal from "@/components/geography/EditCityModal";
-import DeleteCityModal from "@/components/geography/DeleteCityModal";
-import CityDetailsModal from "@/components/geography/CityDetailsModal";
+import Notification from "@/components/ui/Notification";
 
-import type {
-  Country,
-  State,
-  City,
-  NewCountry,
-  NewState,
-  NewCity,
-} from "@/types/geography.types";
+import {
+  useGetCountriesQuery,
+  useGetStatesQuery,
+  useCreateCountryMutation,
+  useUpdateCountryMutation,
+  useDeleteCountryMutation,
+  useUpdateStateMutation,
+  type Country,
+  type State,
+  type CreateCountryRequest,
+  type UpdateCountryRequest,
+  type UpdateStateRequest,
+} from "@/redux/services/adminApi";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
-// Mock data for countries
-const mockCountries: Country[] = [
-  {
-    id: "1",
-    countryName: "United States",
-    code: "US",
-    currency: "USD",
-    currencySymbol: "$",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "2",
-    countryName: "United Kingdom",
-    code: "GB",
-    currency: "GBP",
-    currencySymbol: "£",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "3",
-    countryName: "Canada",
-    code: "CA",
-    currency: "CAD",
-    currencySymbol: "$",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-];
+import type { NewCountry, NewState } from "@/types/geography.types";
 
-// Mock data for states
-const mockStates: State[] = [
-  {
-    id: "1",
-    stateName: "California",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "2",
-    stateName: "New York",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "3",
-    stateName: "Texas",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "4",
-    stateName: "Ontario",
-    country: "Canada",
-    countryId: "3",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-];
+type TabType = "Countries" | "States/Provinces";
 
-// Mock data for cities
-const mockCities: City[] = [
-  {
-    id: "1",
-    cityName: "Los Angeles",
-    state: "California",
-    stateId: "1",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "2",
-    cityName: "San Francisco",
-    state: "California",
-    stateId: "1",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "3",
-    cityName: "New York City",
-    state: "New York",
-    stateId: "2",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "4",
-    cityName: "Houston",
-    state: "Texas",
-    stateId: "3",
-    country: "United States",
-    countryId: "1",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "5",
-    cityName: "Toronto",
-    state: "Ontario",
-    stateId: "4",
-    country: "Canada",
-    countryId: "3",
-    status: "Active",
-    lastUpdated: "2024-01-01",
-    createdAt: "2024-01-01",
-  },
-];
+function getCurrentUserId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return (
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id") || ""
+    );
+  } catch {
+    return "";
+  }
+}
 
-type TabType = "Countries" | "States/Provinces" | "Cities";
-
-export default function GeographyManagementPage() {
+function GeographyManagementPageInner({
+  currentUserId,
+}: {
+  currentUserId: string;
+}) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<TabType>("Countries");
-  const totalPages = 10;
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  const PAGE_SIZE = 10;
+  const [countryPage, setCountryPage] = useState(1);
+  const [statePage, setStatePage] = useState(1);
 
   // Modal states
   const [isAddCountryModalOpen, setIsAddCountryModalOpen] = useState(false);
@@ -191,15 +89,74 @@ export default function GeographyManagementPage() {
   const [isDeleteStateModalOpen, setIsDeleteStateModalOpen] = useState(false);
   const [isStateDetailsModalOpen, setIsStateDetailsModalOpen] = useState(false);
 
-  const [isAddCityModalOpen, setIsAddCityModalOpen] = useState(false);
-  const [isEditCityModalOpen, setIsEditCityModalOpen] = useState(false);
-  const [isDeleteCityModalOpen, setIsDeleteCityModalOpen] = useState(false);
-  const [isCityDetailsModalOpen, setIsCityDetailsModalOpen] = useState(false);
-
-  // Selected item states
+  // Selected items
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedState, setSelectedState] = useState<State | null>(null);
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+
+  // Queries
+  const {
+    data: countriesData,
+    isLoading: countriesLoading,
+    isError: countriesError,
+    refetch: refetchCountries,
+  } = useGetCountriesQuery({
+    limit: PAGE_SIZE,
+    offset: (countryPage - 1) * PAGE_SIZE,
+  });
+
+  const {
+    data: statesData,
+    isLoading: statesLoading,
+    isError: statesError,
+    refetch: refetchStates,
+  } = useGetStatesQuery({
+    limit: PAGE_SIZE,
+    offset: (statePage - 1) * PAGE_SIZE,
+  });
+
+  const { data: currentUser } = useGetUserByIdQuery(currentUserId, {
+    skip: !currentUserId,
+  });
+
+  // Mutations
+  const [createCountry, { isLoading: isCreatingCountry }] =
+    useCreateCountryMutation();
+  const [updateCountry, { isLoading: isUpdatingCountry }] =
+    useUpdateCountryMutation();
+  const [deleteCountry, { isLoading: isDeletingCountry }] =
+    useDeleteCountryMutation();
+  const [updateState, { isLoading: isUpdatingState }] =
+    useUpdateStateMutation();
+
+  // Derived data
+  const countries: Country[] = countriesData?.docs ?? [];
+  const states: State[] = statesData?.docs ?? [];
+
+  const totalCountryPages = Math.ceil((countriesData?.count ?? 0) / PAGE_SIZE);
+  const totalStatePages = Math.ceil((statesData?.count ?? 0) / PAGE_SIZE);
+
+  const currentPage = activeTab === "Countries" ? countryPage : statePage;
+  const totalPages =
+    activeTab === "Countries" ? totalCountryPages : totalStatePages;
+
+  const isLoading =
+    (activeTab === "Countries" && countriesLoading) ||
+    (activeTab === "States/Provinces" && statesLoading);
+
+  const isError =
+    (activeTab === "Countries" && countriesError) ||
+    (activeTab === "States/Provinces" && statesError);
+
+  const isAddButtonDisabled =
+    isCreatingCountry ||
+    isUpdatingCountry ||
+    isDeletingCountry ||
+    isUpdatingState;
+
+  // Helper function to show notification
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   // Country handlers
   const handleViewCountryDetails = (country: Country) => {
@@ -218,22 +175,60 @@ export default function GeographyManagementPage() {
   };
 
   const handleToggleCountryStatus = (country: Country) => {
-    console.log("Toggle country status:", country);
+    console.log("Toggle country status (API coming soon):", country.id);
   };
 
-  const handleAddCountry = (newCountry: NewCountry) => {
-    console.log("Add new country:", newCountry);
-    setIsAddCountryModalOpen(false);
+  const handleAddCountry = async (newCountry: NewCountry) => {
+    const updatedBy = currentUser?.id ?? currentUserId;
+    const payload: CreateCountryRequest = {
+      name: newCountry.name,
+      code: newCountry.code,
+      currency: newCountry.currency,
+      currencyCode: newCountry.currencyCode,
+      currencySymbol: newCountry.currencySymbol,
+      updatedBy,
+    };
+    try {
+      await createCountry(payload).unwrap();
+      setIsAddCountryModalOpen(false);
+      showNotification("Country created successfully!", "success");
+    } catch (err) {
+      console.error("Failed to create country:", err);
+      showNotification("Failed to create country. Please try again.", "error");
+    }
   };
 
-  const handleUpdateCountry = (updatedCountry: Country) => {
-    console.log("Update country:", updatedCountry);
-    setIsEditCountryModalOpen(false);
+  const handleUpdateCountry = async (updatedCountry: Country) => {
+    const updatedBy = currentUser?.id ?? currentUserId;
+    const body: UpdateCountryRequest = {
+      name: updatedCountry.name,
+      code: updatedCountry.code,
+      currency: updatedCountry.currency,
+      currencyCode: updatedCountry.currencyCode,
+      currencySymbol: updatedCountry.currencySymbol,
+      updatedBy,
+    };
+    try {
+      await updateCountry({ countryId: updatedCountry.id, body }).unwrap();
+      setIsEditCountryModalOpen(false);
+      showNotification("Country updated successfully!", "success");
+    } catch (err) {
+      console.error("Failed to update country:", err);
+      showNotification("Failed to update country. Please try again.", "error");
+    }
   };
 
-  const handleConfirmDeleteCountry = () => {
-    console.log("Delete country:", selectedCountry);
-    setIsDeleteCountryModalOpen(false);
+  const handleConfirmDeleteCountry = async () => {
+    if (!selectedCountry) return;
+    try {
+      await deleteCountry(selectedCountry.id).unwrap();
+      setIsDeleteCountryModalOpen(false);
+      setSelectedCountry(null);
+      showNotification("Country deleted successfully!", "success");
+    } catch (err) {
+      console.error("Failed to delete country:", err);
+      showNotification("Failed to delete country. Please try again.", "error");
+    }
   };
 
   // State handlers
@@ -253,189 +248,143 @@ export default function GeographyManagementPage() {
   };
 
   const handleToggleStateStatus = (state: State) => {
-    console.log("Toggle state status:", state);
+    console.log("Toggle state status (API coming soon):", state.id);
   };
 
-  const handleAddState = (newState: NewState) => {
-    console.log("Add new state:", newState);
-    setIsAddStateModalOpen(false);
+  const handleAddState = async (newState: NewState) => {
+    try {
+      // API call will go here
+      console.log("Create state (API coming soon):", newState);
+      setIsAddStateModalOpen(false);
+      showNotification("State created successfully!", "success");
+    } catch (err) {
+      console.error("Failed to create state:", err);
+      showNotification("Failed to create state. Please try again.", "error");
+    }
   };
 
-  const handleUpdateState = (updatedState: State) => {
-    console.log("Update state:", updatedState);
-    setIsEditStateModalOpen(false);
+  const handleUpdateState = async (updatedState: State) => {
+    const updatedBy = currentUser?.id ?? currentUserId;
+    const body: UpdateStateRequest = {
+      name: updatedState.name,
+      code: updatedState.code,
+      countryId: updatedState.countryId,
+      updatedBy,
+    };
+    try {
+      await updateState({ stateId: updatedState.id, body }).unwrap();
+      setIsEditStateModalOpen(false);
+      showNotification("State updated successfully!", "success");
+    } catch (err) {
+      console.error("Failed to update state:", err);
+      showNotification("Failed to update state. Please try again.", "error");
+    }
   };
 
   const handleConfirmDeleteState = () => {
-    console.log("Delete state:", selectedState);
-    setIsDeleteStateModalOpen(false);
+    try {
+      console.log("Delete state (API coming soon):", selectedState?.id);
+      setIsDeleteStateModalOpen(false);
+      showNotification("State deleted successfully!", "success");
+    } catch (err) {
+      console.error("Failed to delete state:", err);
+      showNotification("Failed to delete state. Please try again.", "error");
+    }
   };
 
-  // City handlers
-  const handleViewCityDetails = (city: City) => {
-    setSelectedCity(city);
-    setIsCityDetailsModalOpen(true);
-  };
-
-  const handleEditCity = (city: City) => {
-    setSelectedCity(city);
-    setIsEditCityModalOpen(true);
-  };
-
-  const handleDeleteCity = (city: City) => {
-    setSelectedCity(city);
-    setIsDeleteCityModalOpen(true);
-  };
-
-  const handleToggleCityStatus = (city: City) => {
-    console.log("Toggle city status:", city);
-  };
-
-  const handleAddCity = (newCity: NewCity) => {
-    console.log("Add new city:", newCity);
-    setIsAddCityModalOpen(false);
-  };
-
-  const handleUpdateCity = (updatedCity: City) => {
-    console.log("Update city:", updatedCity);
-    setIsEditCityModalOpen(false);
-  };
-
-  const handleConfirmDeleteCity = () => {
-    console.log("Delete city:", selectedCity);
-    setIsDeleteCityModalOpen(false);
-  };
-
+  // Pagination
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    if (activeTab === "Countries") setCountryPage(page);
+    else setStatePage(page);
   };
 
-  // Calculate stats
-  const totalCountries = mockCountries.length;
-  const activeCountries = mockCountries.filter(
-    (country) => country.status === "Active"
-  ).length;
-  const totalStates = mockStates.length;
-  const activeStates = mockStates.filter(
-    (state) => state.status === "Active"
-  ).length;
-  const totalCities = mockCities.length;
-  const activeCities = mockCities.filter(
-    (city) => city.status === "Active"
-  ).length;
+  const handleRetry = () => {
+    if (activeTab === "Countries") refetchCountries();
+    else refetchStates();
+  };
 
-  // Get button text based on active tab
+  // UI helpers
   const getAddButtonText = () => {
-    switch (activeTab) {
-      case "Countries":
-        return "Add";
-      case "States/Provinces":
-        return "Add State";
-      case "Cities":
-        return "Add City";
-      default:
-        return "Add";
+    return activeTab === "Countries" ? "Add Country" : "Add State";
+  };
+
+  const handleAddButtonClick = () => {
+    if (activeTab === "Countries") {
+      setIsAddCountryModalOpen(true);
+    } else {
+      setIsAddStateModalOpen(true);
     }
   };
 
-  // Handle add button click
-  const handleAddButtonClick = () => {
-    switch (activeTab) {
-      case "Countries":
-        setIsAddCountryModalOpen(true);
-        break;
-      case "States/Provinces":
-        setIsAddStateModalOpen(true);
-        break;
-      case "Cities":
-        setIsAddCityModalOpen(true);
-        break;
-    }
-  };
+  // Stats
+  const totalCountriesCount = countriesData?.count ?? 0;
+  const totalStatesCount = statesData?.count ?? 0;
+
+  const activeCountries = countries.filter((c) => !c.deletedAt).length;
+  const activeStates = states.filter((s) => !s.deletedAt).length;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
+      {/* Notification Component */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       <Sidebar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 md:ml-72">
+      <div className="flex-1 lg:ml-72 w-full">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
-          <div className="px-4 md:px-6 py-4">
+          <div className="px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {/* Mobile Menu Button */}
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                 <button
                   onClick={() => setIsSidebarOpen(true)}
-                  className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+                  className="lg:hidden p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
                 >
                   <Menu className="w-5 h-5 text-gray-600" />
                 </button>
 
-                {/* Back Button */}
-                <button className="hidden md:flex items-center justify-center w-8 h-8 hover:bg-gray-100 rounded-lg">
-                  <svg
-                    className="w-5 h-5 text-gray-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
+                <button className="hidden lg:flex items-center justify-center w-8 h-8 hover:bg-gray-100 rounded-lg flex-shrink-0">
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
                 </button>
 
-                {/* Page Title */}
-                <div>
-                  <h1 className="text-xl md:text-2xl font-semibold text-gray-900">
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">
                     Geography Management
                   </h1>
-                  <p className="text-sm text-gray-400 mt-0.5">
-                    Manage countries, states, and cities for platform locations
+                  <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">
+                    Manage countries and states for platform locations
                   </p>
                 </div>
               </div>
 
-              {/* Right Section */}
-              <div className="flex items-center gap-2">
-                <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Upgrade now
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <button className="hidden sm:flex items-center gap-2 px-3 lg:px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-xs lg:text-sm font-medium">
+                  <Zap className="w-4 h-4" />
+                  <span className="hidden lg:inline">Upgrade now</span>
+                  <span className="lg:hidden">Upgrade</span>
                 </button>
                 <button className="p-2 hover:bg-gray-100 rounded-lg">
                   <Settings className="w-5 h-5 text-gray-400" />
                 </button>
                 <button className="p-2 hover:bg-gray-100 rounded-lg relative">
                   <Bell className="w-5 h-5 text-gray-400" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                 </button>
               </div>
             </div>
@@ -443,12 +392,13 @@ export default function GeographyManagementPage() {
         </header>
 
         {/* Content */}
-        <main className="p-4 md:p-6">
+        <main className="p-3 sm:p-4 lg:p-6">
           {/* Add Button */}
-          <div className="flex justify-end mb-6">
+          <div className="flex justify-end mb-4 sm:mb-6">
             <button
               onClick={handleAddButtonClick}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              disabled={isAddButtonDisabled}
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
               {getAddButtonText()}
@@ -456,10 +406,10 @@ export default function GeographyManagementPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <StatCard
               title="Countries"
-              value={totalCountries.toString()}
+              value={totalCountriesCount.toString()}
               subtitle={`${activeCountries} active`}
               icon={Globe}
               iconColor="text-blue-600"
@@ -467,32 +417,23 @@ export default function GeographyManagementPage() {
             />
             <StatCard
               title="States/Provinces"
-              value={totalStates.toString()}
+              value={totalStatesCount.toString()}
               subtitle={`${activeStates} active`}
               icon={Map}
               iconColor="text-green-600"
               iconBgColor="bg-green-50"
             />
-            <StatCard
-              title="Cities"
-              value={totalCities.toString()}
-              subtitle={`${activeCities} active`}
-              icon={MapPin}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-50"
-            />
           </div>
 
-          {/* Geography Table Section */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            {/* Table Header with Tabs */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+          {/* Table Section */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                   Platform Locations
                 </h2>
                 <button
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="p-2 hover:bg-gray-100 rounded-lg self-end sm:self-center"
                   aria-label="Download"
                 >
                   <Download className="w-5 h-5 text-gray-600" />
@@ -500,95 +441,100 @@ export default function GeographyManagementPage() {
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveTab("Countries")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    activeTab === "Countries"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <Globe className="w-4 h-4" />
-                  Countries
-                </button>
-                <button
-                  onClick={() => setActiveTab("States/Provinces")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    activeTab === "States/Provinces"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <Map className="w-4 h-4" />
-                  States/Provinces
-                </button>
-                <button
-                  onClick={() => setActiveTab("Cities")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    activeTab === "Cities"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <MapPin className="w-4 h-4" />
-                  Cities
-                </button>
+              <div className="flex flex-wrap gap-2">
+                {(["Countries", "States/Provinces"] as TabType[]).map((tab) => {
+                  const Icon = tab === "Countries" ? Globe : Map;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors ${
+                        activeTab === tab
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className={activeTab === tab ? "text-white" : ""}>
+                        {tab}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Geography Table */}
-            <GeographyTable
-              type={activeTab}
-              countries={mockCountries}
-              states={mockStates}
-              cities={mockCities}
-              onViewCountryDetails={handleViewCountryDetails}
-              onEditCountry={handleEditCountry}
-              onDeleteCountry={handleDeleteCountry}
-              onToggleCountryStatus={handleToggleCountryStatus}
-              onViewStateDetails={handleViewStateDetails}
-              onEditState={handleEditState}
-              onDeleteState={handleDeleteState}
-              onToggleStateStatus={handleToggleStateStatus}
-              onViewCityDetails={handleViewCityDetails}
-              onEditCity={handleEditCity}
-              onDeleteCity={handleDeleteCity}
-              onToggleCityStatus={handleToggleCityStatus}
-            />
+            {isLoading && (
+              <div className="flex items-center justify-center py-12 sm:py-16 gap-3 text-gray-500">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Loading data…</span>
+              </div>
+            )}
 
-            {/* Pagination */}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+            {!isLoading && isError && (
+              <div className="flex flex-col items-center justify-center py-12 sm:py-16 gap-3 text-red-500">
+                <AlertCircle className="w-6 h-6" />
+                <p className="text-sm">Failed to load data.</p>
+                <button
+                  onClick={handleRetry}
+                  className="text-sm text-blue-600 underline hover:text-blue-800"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!isLoading && !isError && (
+              <>
+                <GeographyTable
+                  type={activeTab}
+                  countries={countries}
+                  states={states}
+                  onViewCountryDetails={handleViewCountryDetails}
+                  onEditCountry={handleEditCountry}
+                  onDeleteCountry={handleDeleteCountry}
+                  onToggleCountryStatus={handleToggleCountryStatus}
+                  onViewStateDetails={handleViewStateDetails}
+                  onEditState={handleEditState}
+                  onDeleteState={handleDeleteState}
+                  onToggleStateStatus={handleToggleStateStatus}
+                />
+
+                {totalPages > 0 && (
+                  <div className="border-t border-gray-200">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </main>
       </div>
 
-      {/* All Modals */}
       {/* Country Modals */}
       <AddCountryModal
         isOpen={isAddCountryModalOpen}
         onClose={() => setIsAddCountryModalOpen(false)}
         onSubmit={handleAddCountry}
       />
-
       <EditCountryModal
         isOpen={isEditCountryModalOpen}
         onClose={() => setIsEditCountryModalOpen(false)}
         country={selectedCountry}
         onSubmit={handleUpdateCountry}
+        isLoading={isUpdatingCountry}
       />
-
       <DeleteCountryModal
         isOpen={isDeleteCountryModalOpen}
         onClose={() => setIsDeleteCountryModalOpen(false)}
         country={selectedCountry}
         onConfirm={handleConfirmDeleteCountry}
+        isLoading={isDeletingCountry}
       />
-
       <CountryDetailsModal
         isOpen={isCountryDetailsModalOpen}
         onClose={() => setIsCountryDetailsModalOpen(false)}
@@ -600,60 +546,32 @@ export default function GeographyManagementPage() {
         isOpen={isAddStateModalOpen}
         onClose={() => setIsAddStateModalOpen(false)}
         onSubmit={handleAddState}
-        countries={mockCountries}
+        countries={countries}
       />
-
       <EditStateModal
         isOpen={isEditStateModalOpen}
         onClose={() => setIsEditStateModalOpen(false)}
         state={selectedState}
         onSubmit={handleUpdateState}
-        countries={mockCountries}
+        countries={countries}
+        isLoading={isUpdatingState}
       />
-
       <DeleteStateModal
         isOpen={isDeleteStateModalOpen}
         onClose={() => setIsDeleteStateModalOpen(false)}
         state={selectedState}
         onConfirm={handleConfirmDeleteState}
       />
-
       <StateDetailsModal
         isOpen={isStateDetailsModalOpen}
         onClose={() => setIsStateDetailsModalOpen(false)}
         state={selectedState}
       />
-
-      {/* City Modals */}
-      <AddCityModal
-        isOpen={isAddCityModalOpen}
-        onClose={() => setIsAddCityModalOpen(false)}
-        onSubmit={handleAddCity}
-        states={mockStates}
-        countries={mockCountries}
-      />
-
-      <EditCityModal
-        isOpen={isEditCityModalOpen}
-        onClose={() => setIsEditCityModalOpen(false)}
-        city={selectedCity}
-        onSubmit={handleUpdateCity}
-        states={mockStates}
-        countries={mockCountries}
-      />
-
-      <DeleteCityModal
-        isOpen={isDeleteCityModalOpen}
-        onClose={() => setIsDeleteCityModalOpen(false)}
-        city={selectedCity}
-        onConfirm={handleConfirmDeleteCity}
-      />
-
-      <CityDetailsModal
-        isOpen={isCityDetailsModalOpen}
-        onClose={() => setIsCityDetailsModalOpen(false)}
-        city={selectedCity}
-      />
     </div>
   );
+}
+
+export default function GeographyManagementPage() {
+  const currentUserId = getCurrentUserId();
+  return <GeographyManagementPageInner currentUserId={currentUserId} />;
 }

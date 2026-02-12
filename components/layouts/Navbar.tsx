@@ -13,7 +13,7 @@ export default function Navbar() {
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Add loading state
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
 
   // Get user data when userId is available

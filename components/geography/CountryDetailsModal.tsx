@@ -1,10 +1,18 @@
 import { X } from "lucide-react";
-import type { Country } from "@/types/geography.types";
+import type { Country } from "@/redux/services/adminApi";
 
 interface CountryDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   country: Country | null;
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export default function CountryDetailsModal({
@@ -13,6 +21,8 @@ export default function CountryDetailsModal({
   country,
 }: CountryDetailsModalProps) {
   if (!isOpen || !country) return null;
+
+  const isActive = !country.deletedAt;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -35,7 +45,7 @@ export default function CountryDetailsModal({
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Country Name
               </label>
-              <p className="text-base text-gray-900">{country.countryName}</p>
+              <p className="text-base text-gray-900">{country.name}</p>
             </div>
 
             <div>
@@ -47,9 +57,16 @@ export default function CountryDetailsModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
-                Currency
+                Currency Name
               </label>
               <p className="text-base text-gray-900">{country.currency}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Currency Code
+              </label>
+              <p className="text-base text-gray-900">{country.currencyCode}</p>
             </div>
 
             <div>
@@ -67,12 +84,12 @@ export default function CountryDetailsModal({
               </label>
               <span
                 className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                  country.status === "Active"
+                  isActive
                     ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-700"
+                    : "bg-gray-100 text-gray-600"
                 }`}
               >
-                {country.status}
+                {isActive ? "Active" : "Inactive"}
               </span>
             </div>
 
@@ -80,14 +97,18 @@ export default function CountryDetailsModal({
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Last Updated
               </label>
-              <p className="text-base text-gray-900">{country.lastUpdated}</p>
+              <p className="text-base text-gray-900">
+                {formatDate(country.updatedAt)}
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Created At
               </label>
-              <p className="text-base text-gray-900">{country.createdAt}</p>
+              <p className="text-base text-gray-900">
+                {formatDate(country.createdAt)}
+              </p>
             </div>
           </div>
 

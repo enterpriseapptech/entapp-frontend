@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import type { NewState, Country } from "@/types/geography.types";
+import type { Country } from "@/redux/services/adminApi";
+import type { NewState } from "@/types/geography.types";
 
 interface AddStateModalProps {
   isOpen: boolean;
@@ -9,36 +10,30 @@ interface AddStateModalProps {
   countries: Country[];
 }
 
+const EMPTY_FORM: NewState = {
+  name: "",
+  code: "",
+  countryId: "",
+};
+
 export default function AddStateModal({
   isOpen,
   onClose,
   onSubmit,
+  countries,
 }: AddStateModalProps) {
-  const [formData, setFormData] = useState<NewState>({
-    stateName: "",
-    country: "",
-    countryId: "",
-    status: "",
-  });
+  const [formData, setFormData] = useState<NewState>(EMPTY_FORM);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({
-      stateName: "",
-      country: "",
-      countryId: "",
-      status: "",
-    });
+    setFormData(EMPTY_FORM);
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   if (!isOpen) return null;
@@ -65,8 +60,8 @@ export default function AddStateModal({
             </label>
             <input
               type="text"
-              name="stateName"
-              value={formData.stateName}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               placeholder="California"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
@@ -76,14 +71,14 @@ export default function AddStateModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Country
+              State Code
             </label>
             <input
               type="text"
-              name="country"
-              value={formData.country}
+              name="code"
+              value={formData.code}
               onChange={handleChange}
-              placeholder="United States"
+              placeholder="CA"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
               required
             />
@@ -91,17 +86,24 @@ export default function AddStateModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
+              Country
             </label>
-            <input
-              type="text"
-              name="status"
-              value={formData.status}
+            <select
+              name="countryId"
+              value={formData.countryId}
               onChange={handleChange}
-              placeholder="Active"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               required
-            />
+            >
+              <option value="" disabled>
+                Select a country
+              </option>
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex gap-3 pt-4">

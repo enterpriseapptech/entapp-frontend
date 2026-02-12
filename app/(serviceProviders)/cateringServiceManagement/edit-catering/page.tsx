@@ -24,37 +24,50 @@ const cuisineOptions = ["Italian", "Mexican", "Indian"];
 const dishTypeOptions = ["Vegetarian", "Non-Vegetarian", "Vegan"];
 const eventTypeOptions = ["wedding", "conference", "birthday"];
 
-const schema = z.object({
-  serviceProviderId: z.string().uuid("Invalid service provider ID"),
-  name: z.string().min(1, "Catering service name is required"),
-  eventTypes: z.array(z.string()).min(1, "At least one event type is required"),
-  location: z.array(z.string().uuid("Invalid location ID")).min(1, "At least one location is required"),
-  tagLine: z.string().min(1, "Tagline is required"),
-  depositPercentage: z.number().min(0, "Deposit percentage must be non-negative").max(100, "Deposit percentage cannot exceed 100"),
-  discountPercentage: z.number().min(0, "Discount percentage must be non-negative").max(100, "Discount percentage cannot exceed 100"),
-  startPrice: z.number().min(0, "Start price must be non-negative"),
-  minCapacity: z.number().min(1, "Minimum capacity must be at least 1"),
-  maxCapacity: z.number().min(1, "Maximum capacity must be at least 1"),
-  cuisine: z.array(z.string()).min(1, "At least one cuisine is required"),
-  description: z.string().min(1, "Description is required"),
-  dishTypes: z.array(z.string()).min(1, "At least one dish type is required"),
-  termsOfUse: z.string().min(1, "Terms of use are required"),
-  cancellationPolicy: z.string().min(1, "Cancellation policy is required"),
-  streetAddress: z.string().min(1, "Street address is required"),
-  streetAddress2: z.string().nullable(),
-  city: z.string().min(1, "City is required"),
-  postal: z.string().min(1, "Postal code is required"),
-  status: z.enum(["ACTIVE", "INACTIVE"], {
-    errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
-  }),
-  isFeatured: z.boolean(),
-  contact: z.string().nullable(),
-  rating: z.number().min(0).max(5).nullable(),
-  images: z.array(z.any()).max(3, "Maximum 3 images allowed").optional(),
-}).refine((data) => data.maxCapacity >= data.minCapacity, {
-  message: "Maximum capacity must be greater than or equal to minimum capacity",
-  path: ["maxCapacity"],
-});
+const schema = z
+  .object({
+    serviceProviderId: z.string().uuid("Invalid service provider ID"),
+    name: z.string().min(1, "Catering service name is required"),
+    eventTypes: z
+      .array(z.string())
+      .min(1, "At least one event type is required"),
+    location: z
+      .array(z.string().uuid("Invalid location ID"))
+      .min(1, "At least one location is required"),
+    tagLine: z.string().min(1, "Tagline is required"),
+    depositPercentage: z
+      .number()
+      .min(0, "Deposit percentage must be non-negative")
+      .max(100, "Deposit percentage cannot exceed 100"),
+    discountPercentage: z
+      .number()
+      .min(0, "Discount percentage must be non-negative")
+      .max(100, "Discount percentage cannot exceed 100"),
+    startPrice: z.number().min(0, "Start price must be non-negative"),
+    minCapacity: z.number().min(1, "Minimum capacity must be at least 1"),
+    maxCapacity: z.number().min(1, "Maximum capacity must be at least 1"),
+    cuisine: z.array(z.string()).min(1, "At least one cuisine is required"),
+    description: z.string().min(1, "Description is required"),
+    dishTypes: z.array(z.string()).min(1, "At least one dish type is required"),
+    termsOfUse: z.string().min(1, "Terms of use are required"),
+    cancellationPolicy: z.string().min(1, "Cancellation policy is required"),
+    streetAddress: z.string().min(1, "Street address is required"),
+    streetAddress2: z.string().nullable(),
+    city: z.string().min(1, "City is required"),
+    postal: z.string().min(1, "Postal code is required"),
+    status: z.enum(["ACTIVE", "INACTIVE"], {
+      errorMap: () => ({ message: "Status must be ACTIVE or INACTIVE" }),
+    }),
+    isFeatured: z.boolean(),
+    contact: z.string().nullable(),
+    rating: z.number().min(0).max(5).nullable(),
+    images: z.array(z.any()).max(3, "Maximum 3 images allowed").optional(),
+  })
+  .refine((data) => data.maxCapacity >= data.minCapacity, {
+    message:
+      "Maximum capacity must be greater than or equal to minimum capacity",
+    path: ["maxCapacity"],
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -71,15 +84,22 @@ export default function EditCateringService() {
   const searchParams = useSearchParams();
   const cateringId = searchParams.get("id");
 
-  const [updateCatering, { isLoading: isUpdating }] = useUpdateCateringMutation();
-  const [uploadCateringImages, { isLoading: isUploadingImages }] = useUploadCateringImagesMutation();
+  const [updateCatering, { isLoading: isUpdating }] =
+    useUpdateCateringMutation();
+  const [uploadCateringImages, { isLoading: isUploadingImages }] =
+    useUploadCateringImagesMutation();
 
-  const { data: cateringService, isLoading: isCateringLoading, error: cateringError } = useGetCateringByIdQuery(cateringId!, {
+  const {
+    data: cateringService,
+    isLoading: isCateringLoading,
+    error: cateringError,
+  } = useGetCateringByIdQuery(cateringId!, {
     skip: !cateringId,
   });
 
-  const userId = localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
-  const { data: user, isLoading: isUserLoading, error: userError } = useGetUserByIdQuery(userId!, {
+  const userId =
+    localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+  const { data: user } = useGetUserByIdQuery(userId ?? "", {
     skip: !userId,
   });
 
@@ -127,7 +147,7 @@ export default function EditCateringService() {
   }, [cateringService, reset]);
 
   useEffect(() => {
-    if (!userId || userError) {
+    if (!userId) {
       router.replace("/login");
       return;
     }
@@ -141,7 +161,7 @@ export default function EditCateringService() {
         return;
       }
     }
-  }, [user, userError, userId, router]);
+  }, [user, userId, router]);
 
   const selectedEventTypes = watch("eventTypes") || [];
   const selectedCuisines = watch("cuisine") || [];
@@ -213,11 +233,18 @@ export default function EditCateringService() {
       try {
         const filesArray = Array.from(e.target.files);
         filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3 - existingImages.length);
+        const newImages = [...images, ...filesArray].slice(
+          0,
+          3 - existingImages.length
+        );
         setImages(newImages);
         setValue("images", newImages);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "An error occurred while uploading the image.");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An error occurred while uploading the image."
+        );
       }
     }
   };
@@ -229,11 +256,18 @@ export default function EditCateringService() {
       try {
         const filesArray = Array.from(e.dataTransfer.files);
         filesArray.forEach(validateImage);
-        const newImages = [...images, ...filesArray].slice(0, 3 - existingImages.length);
+        const newImages = [...images, ...filesArray].slice(
+          0,
+          3 - existingImages.length
+        );
         setImages(newImages);
         setValue("images", newImages);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "An error occurred while uploading the image.");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An error occurred while uploading the image."
+        );
       }
     }
   };
@@ -311,7 +345,7 @@ export default function EditCateringService() {
     };
   }, [images]);
 
-  if (isUserLoading || isCateringLoading) {
+  if (isCateringLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
@@ -319,7 +353,7 @@ export default function EditCateringService() {
     );
   }
 
-  if (userError || cateringError) {
+  if (cateringError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-red-500">
@@ -353,7 +387,9 @@ export default function EditCateringService() {
             <div className="flex gap-2">
               <button
                 onClick={() =>
-                  router.push("/cateringServiceManagement/manage-catering-services")
+                  router.push(
+                    "/cateringServiceManagement/manage-catering-services"
+                  )
                 }
                 className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100"
               >
@@ -790,7 +826,9 @@ export default function EditCateringService() {
                           onChange={() => handleDishTypeChange(dishType)}
                           className="form-checkbox h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <span className="text-xs text-gray-600">{dishType}</span>
+                        <span className="text-xs text-gray-600">
+                          {dishType}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -856,7 +894,9 @@ export default function EditCateringService() {
                 </h3>
                 <div
                   className={`border border-dashed rounded-md p-6 text-center ${
-                    isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                    isDragging
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300"
                   }`}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -874,7 +914,9 @@ export default function EditCateringService() {
                   />
                   <button
                     type="button"
-                    onClick={() => document.getElementById("fileInput")?.click()}
+                    onClick={() =>
+                      document.getElementById("fileInput")?.click()
+                    }
                     className={`px-4 py-1 text-[#1E5EFF] bg-white border border-gray-200 rounded-sm hover:bg-gray-100 ${
                       images.length + existingImages.length >= 3
                         ? "opacity-50 cursor-not-allowed"

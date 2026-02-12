@@ -1,39 +1,32 @@
-export interface Country {
-  id: string;
-  countryName: string;
-  code: string;
-  currency: string;
-  currencySymbol: string;
-  status: "Active" | "Inactive";
-  lastUpdated: string;
-  createdAt: string;
-}
+// Re-export types from adminApi to avoid duplication
+export type {
+  Country,
+  State,
+  CountryWithStates,
+  StateWithCountry,
+  CreateCountryRequest,
+  UpdateStateRequest,
+} from "@/redux/services/adminApi";
 
+// ─── Country form type (used by AddCountryModal / EditCountryModal) ───────────
+// Maps to CreateCountryRequest but with UI-friendly field names
 export interface NewCountry {
-  countryName: string;
+  name: string;
   code: string;
   currency: string;
+  currencyCode: string;
   currencySymbol: string;
-  status: string;
 }
 
-export interface State {
-  id: string;
-  stateName: string;
-  country: string;
-  countryId: string;
-  status: "Active" | "Inactive";
-  lastUpdated: string;
-  createdAt: string;
-}
-
+// ─── State form type (used by AddStateModal) ──────────────────────────────────
+// Create-state API is coming soon; kept here so modals still compile
 export interface NewState {
-  stateName: string;
-  country: string;
+  name: string;
+  code: string;
   countryId: string;
-  status: string;
 }
 
+// ─── City types (city API is coming soon) ─────────────────────────────────────
 export interface City {
   id: string;
   cityName: string;

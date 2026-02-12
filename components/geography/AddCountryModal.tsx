@@ -8,38 +8,29 @@ interface AddCountryModalProps {
   onSubmit: (country: NewCountry) => void;
 }
 
+const EMPTY_FORM: NewCountry = {
+  name: "",
+  code: "",
+  currency: "",
+  currencyCode: "",
+  currencySymbol: "",
+};
+
 export default function AddCountryModal({
   isOpen,
   onClose,
   onSubmit,
 }: AddCountryModalProps) {
-  const [formData, setFormData] = useState<NewCountry>({
-    countryName: "",
-    code: "",
-    currency: "",
-    currencySymbol: "",
-    status: "",
-  });
+  const [formData, setFormData] = useState<NewCountry>(EMPTY_FORM);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({
-      countryName: "",
-      code: "",
-      currency: "",
-      currencySymbol: "",
-      status: "",
-    });
+    setFormData(EMPTY_FORM);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   if (!isOpen) return null;
@@ -64,8 +55,8 @@ export default function AddCountryModal({
             </label>
             <input
               type="text"
-              name="countryName"
-              value={formData.countryName}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               placeholder="United States"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
@@ -88,15 +79,30 @@ export default function AddCountryModal({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Currency Name
+            </label>
+            <input
+              type="text"
+              name="currency"
+              value={formData.currency}
+              onChange={handleChange}
+              placeholder="US Dollar"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Currency
+                Currency Code
               </label>
               <input
                 type="text"
-                name="currency"
-                value={formData.currency}
+                name="currencyCode"
+                value={formData.currencyCode}
                 onChange={handleChange}
                 placeholder="USD"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
@@ -118,21 +124,6 @@ export default function AddCountryModal({
                 required
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <input
-              type="text"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              placeholder="Active"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
-              required
-            />
           </div>
 
           <div className="flex gap-3 pt-4">

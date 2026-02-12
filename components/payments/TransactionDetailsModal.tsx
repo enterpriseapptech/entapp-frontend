@@ -1,10 +1,10 @@
 import { X } from "lucide-react";
-import type { Transaction } from "@/types/payment.types";
+import { TransactionTableRow } from "./TransactionTable";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  transaction: Transaction | null;
+  transaction: TransactionTableRow | null;
 }
 
 export default function TransactionDetailsModal({
@@ -14,13 +14,13 @@ export default function TransactionDetailsModal({
 }: TransactionDetailsModalProps) {
   if (!isOpen || !transaction) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
+  const getStatusColor = (status: TransactionTableRow["status"]) => {
+    switch (status) {
+      case "COMPLETED":
         return "bg-green-50 text-green-700";
-      case "pending":
+      case "PENDING":
         return "bg-yellow-50 text-yellow-700";
-      case "failed":
+      case "FAILED":
         return "bg-red-50 text-red-700";
       default:
         return "bg-gray-50 text-gray-700";
@@ -64,14 +64,11 @@ export default function TransactionDetailsModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-600">Amount</p>
-              <p
-                className={`text-base font-medium ${
-                  transaction.amount.startsWith("+")
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
+              <p className="text-base font-medium text-gray-900">
                 {transaction.amount}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {transaction.currency}
               </p>
             </div>
             <div>
@@ -89,12 +86,12 @@ export default function TransactionDetailsModal({
             </p>
           </div>
 
-          <div>
+          {/* <div>
             <p className="text-sm text-gray-600">Related To</p>
             <p className="text-base font-medium text-gray-900">
               {transaction.relatedTo}
             </p>
-          </div>
+          </div> */}
 
           {transaction.description && (
             <div>
@@ -105,14 +102,12 @@ export default function TransactionDetailsModal({
             </div>
           )}
 
-          {transaction.paymentMethod && (
-            <div>
-              <p className="text-sm text-gray-600">Payment Method</p>
-              <p className="text-base font-medium text-gray-900">
-                {transaction.paymentMethod}
-              </p>
-            </div>
-          )}
+          <div>
+            <p className="text-sm text-gray-600">Payment Method</p>
+            <p className="text-base font-medium text-gray-900">
+              {transaction.paymentMethod}
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

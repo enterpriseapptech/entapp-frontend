@@ -84,7 +84,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <span className="font-medium text-sm">Overview</span>
           </Link>
 
-          <Link
+          {/* <Link
             href="/admin/manage-event-center"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
               pathname === "/admin/manage-event-center" ||
@@ -144,7 +144,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               unoptimized
             />
             <span className="font-medium text-sm">Bookings</span>
-          </Link>
+          </Link> */}
 
           <Link
             href="/admin/subscription-management"

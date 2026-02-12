@@ -1,10 +1,10 @@
 import { X } from "lucide-react";
-import type { Invoice } from "@/types/payment.types";
+import { InvoiceTableRow } from "./InvoiceTable";
 
 interface InvoiceDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  invoice: Invoice | null;
+  invoice: InvoiceTableRow | null;
 }
 
 export default function InvoiceDetailsModal({
@@ -14,16 +14,14 @@ export default function InvoiceDetailsModal({
 }: InvoiceDetailsModalProps) {
   if (!isOpen || !invoice) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
+  const getStatusColor = (status: InvoiceTableRow["status"]) => {
+    switch (status) {
+      case "PAID":
         return "bg-green-50 text-green-700";
-      case "pending":
+      case "PENDING":
         return "bg-yellow-50 text-yellow-700";
-      case "overdue":
+      case "CANCELLED":
         return "bg-red-50 text-red-700";
-      case "partially paid":
-        return "bg-blue-50 text-blue-700";
       default:
         return "bg-gray-50 text-gray-700";
     }
@@ -69,6 +67,7 @@ export default function InvoiceDetailsModal({
               <p className="text-base font-medium text-gray-900">
                 {invoice.amount}
               </p>
+              <p className="text-xs text-gray-500 mt-1">{invoice.currency}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Due Date</p>
@@ -79,23 +78,9 @@ export default function InvoiceDetailsModal({
           </div>
 
           <div>
-            <p className="text-sm text-gray-600">User</p>
+            <p className="text-sm text-gray-600">Number of Items</p>
             <p className="text-base font-medium text-gray-900">
-              {invoice.user}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-600">Related To</p>
-            <p className="text-base font-medium text-gray-900">
-              {invoice.relatedTo}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-600">Payments Linked</p>
-            <p className="text-base font-medium text-gray-900">
-              {invoice.payments} payment(s)
+              {invoice.items} item(s)
             </p>
           </div>
 

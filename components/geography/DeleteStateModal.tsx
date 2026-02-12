@@ -1,5 +1,5 @@
 import { X, AlertTriangle } from "lucide-react";
-import type { State } from "@/types/geography.types";
+import type { State } from "@/redux/services/adminApi";
 
 interface DeleteStateModalProps {
   isOpen: boolean;
@@ -49,9 +49,10 @@ export default function DeleteStateModal({
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-sm text-gray-600">
               You are about to delete the state/province:{" "}
-              <span className="font-semibold text-gray-900">
-                {state.stateName}
-              </span>
+              <span className="font-semibold text-gray-900">{state.name}</span>
+              {state.code && (
+                <span className="ml-1 text-gray-500">({state.code})</span>
+              )}
             </p>
           </div>
 
