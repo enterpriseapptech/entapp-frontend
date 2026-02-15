@@ -1,37 +1,57 @@
 "use client";
 
 import { useState } from "react";
-import { Users, TrendingUp, Settings, Bell, Menu } from "lucide-react";
+import {
+  Users,
+  TrendingUp,
+  UserCheck,
+  Settings,
+  Bell,
+  Menu,
+} from "lucide-react";
 import Sidebar from "@/components/layouts/SideBar";
 import StatCard from "@/components/providers/StatCard";
-import ProviderTable from "@/components/providers/ProviderTable";
 import Pagination from "@/components/providers/Pagination";
-import ProviderDetailsModal from "@/components/providers/ProviderDetailsModal";
+import UserTable from "@/components/users/UserTable";
+import UserFilterTabs from "@/components/users/UserFilterTabs";
+import UserDetailsModal from "@/components/users/UserDetailsModal";
 import { useGetUsersQuery } from "@/redux/services/adminApi";
-import type { User } from "@/redux/services/adminApi";
+import type { User, UserType } from "@/redux/services/adminApi";
+import type { UserFilterType } from "@/types/user.types";
 
 const ITEMS_PER_PAGE = 10;
 
-export default function ServiceProvidersPage() {
+export default function UsersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeFilter, setActiveFilter] = useState<UserFilterType>("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const { data, isLoading, isError } = useGetUsersQuery({
+  const queryArgs = {
     limit: ITEMS_PER_PAGE,
     offset: (currentPage - 1) * ITEMS_PER_PAGE,
-    userType: "SERVICE_PROVIDER",
-  });
+    ...(activeFilter !== "ALL" && {
+      userType: activeFilter as UserType,
+    }),
+  };
 
-  const providers = data?.docs ?? [];
+  const { data, isLoading, isError } = useGetUsersQuery(queryArgs);
+
+  const users = data?.docs ?? [];
   const totalCount = data?.count ?? 0;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-  const activeProviders = providers.filter((p) => p.status === "ACTIVE").length;
+  const activeUsers = users.filter((u) => u.status === "ACTIVE").length;
+  const verifiedUsers = users.filter((u) => u.isEmailVerified).length;
 
-  const handleViewDetails = (provider: User) => {
-    setSelectedProvider(provider);
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user);
     setIsModalOpen(true);
+  };
+
+  const handleFilterChange = (filter: UserFilterType) => {
+    setActiveFilter(filter);
+    setCurrentPage(1);
   };
 
   return (
@@ -80,10 +100,10 @@ export default function ServiceProvidersPage() {
 
                 <div className="min-w-0">
                   <h1 className="text-lg md:text-2xl font-semibold text-gray-900 truncate">
-                    Service Providers
+                    Users
                   </h1>
                   <p className="text-xs md:text-sm text-gray-500 truncate">
-                    View and manage service provider accounts
+                    View and manage all user accounts
                   </p>
                 </div>
               </div>
@@ -108,58 +128,84 @@ export default function ServiceProvidersPage() {
 
         {/* Content */}
         <main className="p-3 md:p-6">
-          {/* Stats — 2 cols on mobile */}
-          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+          {/* Stats — 2 cols on mobile, 3 on sm+ */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
             <StatCard
-              title="Total Providers"
+              title="Total Users"
               value={totalCount.toString()}
-              subtitle="All registered providers"
+              subtitle="All registered users"
               icon={Users}
               iconColor="text-blue-600"
               iconBgColor="bg-blue-50"
             />
             <StatCard
-              title="Active Providers"
-              value={activeProviders.toString()}
-              subtitle="With active status"
+              title="Active Users"
+              value={activeUsers.toString()}
+              subtitle="Active on this page"
               icon={TrendingUp}
               iconColor="text-green-600"
               iconBgColor="bg-green-50"
             />
+            {/* Third card spans full width on mobile when it wraps */}
+            <div className="col-span-2 sm:col-span-1">
+              <StatCard
+                title="Verified Users"
+                value={verifiedUsers.toString()}
+                subtitle="Email verified"
+                icon={UserCheck}
+                iconColor="text-purple-600"
+                iconBgColor="bg-purple-50"
+              />
+            </div>
           </div>
 
           {/* Table Section */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                All Service Providers
-              </h2>
+            {/* Table toolbar */}
+            <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+              {/* Title row */}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                  All Users
+                </h2>
+              </div>
+              {/* Filter tabs — full width on mobile */}
+              <UserFilterTabs
+                activeFilter={activeFilter}
+                onFilterChange={handleFilterChange}
+                counts={{ all: totalCount }}
+              />
             </div>
 
+            {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
-                Loading providers...
+                Loading users...
               </div>
             )}
 
+            {/* Error */}
             {isError && (
               <div className="flex items-center justify-center py-16 text-red-500 text-sm">
-                Failed to load providers. Please try again.
+                Failed to load users. Please try again.
               </div>
             )}
 
-            {!isLoading && !isError && providers.length === 0 && (
+            {/* Empty */}
+            {!isLoading && !isError && users.length === 0 && (
               <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
-                No service providers found.
+                No users found
+                {activeFilter !== "ALL"
+                  ? ` for: ${activeFilter.replace("_", " ").toLowerCase()}`
+                  : ""}
+                .
               </div>
             )}
 
-            {!isLoading && !isError && providers.length > 0 && (
+            {/* Table + Pagination */}
+            {!isLoading && !isError && users.length > 0 && (
               <>
-                <ProviderTable
-                  providers={providers}
-                  onViewDetails={handleViewDetails}
-                />
+                <UserTable users={users} onViewDetails={handleViewDetails} />
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -171,10 +217,10 @@ export default function ServiceProvidersPage() {
         </main>
       </div>
 
-      <ProviderDetailsModal
+      <UserDetailsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        provider={selectedProvider}
+        user={selectedUser}
       />
     </div>
   );

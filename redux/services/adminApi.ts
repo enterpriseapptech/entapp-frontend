@@ -151,6 +151,43 @@ export interface PaginatedInvoiceResponse {
   count: number;
   data: Invoice[];
 }
+// ================= USERS =================
+export type UserType = "CUSTOMER" | "SERVICE_PROVIDER";
+export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isEmailVerified: boolean;
+  userType: UserType;
+  status: UserStatus;
+  lastLoginAt: string | null;
+  loginAttempts: number;
+  streetAddress: string | null;
+  streetAddress2: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+
+  // backend currently returns null
+  location: null;
+
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+
+  // backend returns empty arrays
+  catering: [];
+  eventCenter: [];
+}
+
+export interface PaginatedUserResponse {
+  count: number;
+  docs: User[];
+}
 
 export const adminApi = createApi({
   reducerPath: "adminApi",
@@ -167,7 +204,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Country", "State", "Payment", "Invoice"],
+  tagTypes: ["Country", "State", "Payment", "Invoice", "User"],
   endpoints: (builder) => ({
     getCountries: builder.query<
       PaginatedCountryResponse,
@@ -257,6 +294,29 @@ export const adminApi = createApi({
       query: ({ limit, offset }) => `/invoice?limit=${limit}&offset=${offset}`,
       providesTags: ["Invoice"],
     }),
+    // ================= USERS =================
+    getUsers: builder.query<
+      PaginatedUserResponse,
+      {
+        limit: number;
+        offset: number;
+        userType?: UserType;
+      }
+    >({
+      query: ({ limit, offset, userType }) => {
+        const params = new URLSearchParams({
+          limit: String(limit),
+          offset: String(offset),
+        });
+
+        if (userType) {
+          params.append("filter[userType]", userType);
+        }
+
+        return `/users?${params.toString()}`;
+      },
+      providesTags: ["User"],
+    }),
   }),
 });
 
@@ -271,4 +331,5 @@ export const {
   useDeleteCountryMutation,
   useGetPaymentsQuery,
   useGetInvoicesQuery,
+  useGetUsersQuery,
 } = adminApi;
