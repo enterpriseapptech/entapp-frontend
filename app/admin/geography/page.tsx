@@ -34,11 +34,14 @@ import {
   useCreateCountryMutation,
   useUpdateCountryMutation,
   useDeleteCountryMutation,
+  useCreateStateMutation,
   useUpdateStateMutation,
+  useDeleteStateMutation,
   type Country,
   type State,
   type CreateCountryRequest,
   type UpdateCountryRequest,
+  type CreateStateRequest,
   type UpdateStateRequest,
 } from "@/redux/services/adminApi";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
@@ -125,8 +128,12 @@ function GeographyManagementPageInner({
     useUpdateCountryMutation();
   const [deleteCountry, { isLoading: isDeletingCountry }] =
     useDeleteCountryMutation();
+  const [createState, { isLoading: isCreatingState }] =
+    useCreateStateMutation();
   const [updateState, { isLoading: isUpdatingState }] =
     useUpdateStateMutation();
+  const [deleteState, { isLoading: isDeletingState }] =
+    useDeleteStateMutation();
 
   // Derived data
   const countries: Country[] = countriesData?.docs ?? [];
@@ -151,7 +158,9 @@ function GeographyManagementPageInner({
     isCreatingCountry ||
     isUpdatingCountry ||
     isDeletingCountry ||
-    isUpdatingState;
+    isCreatingState ||
+    isUpdatingState ||
+    isDeletingState;
 
   // Helper function to show notification
   const showNotification = (message: string, type: "success" | "error") => {
@@ -252,9 +261,15 @@ function GeographyManagementPageInner({
   };
 
   const handleAddState = async (newState: NewState) => {
+    const updatedBy = currentUser?.id ?? currentUserId;
+    const payload: CreateStateRequest = {
+      name: newState.name,
+      code: newState.code,
+      countryId: newState.countryId,
+      updatedBy,
+    };
     try {
-      // API call will go here
-      console.log("Create state (API coming soon):", newState);
+      await createState(payload).unwrap();
       setIsAddStateModalOpen(false);
       showNotification("State created successfully!", "success");
     } catch (err) {
@@ -281,10 +296,12 @@ function GeographyManagementPageInner({
     }
   };
 
-  const handleConfirmDeleteState = () => {
+  const handleConfirmDeleteState = async () => {
+    if (!selectedState) return;
     try {
-      console.log("Delete state (API coming soon):", selectedState?.id);
+      await deleteState(selectedState.id).unwrap();
       setIsDeleteStateModalOpen(false);
+      setSelectedState(null);
       showNotification("State deleted successfully!", "success");
     } catch (err) {
       console.error("Failed to delete state:", err);
@@ -448,11 +465,10 @@ function GeographyManagementPageInner({
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors ${
-                        activeTab === tab
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors ${activeTab === tab
                           ? "bg-blue-600 text-white"
                           : "bg-white text-gray-600 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       <Icon className="w-4 h-4" />
                       <span className={activeTab === tab ? "text-white" : ""}>
@@ -561,6 +577,7 @@ function GeographyManagementPageInner({
         onClose={() => setIsDeleteStateModalOpen(false)}
         state={selectedState}
         onConfirm={handleConfirmDeleteState}
+        isLoading={isDeletingState}
       />
       <StateDetailsModal
         isOpen={isStateDetailsModalOpen}

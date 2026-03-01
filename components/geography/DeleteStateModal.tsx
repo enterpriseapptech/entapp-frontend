@@ -1,4 +1,4 @@
-import { X, AlertTriangle } from "lucide-react";
+import { X, AlertTriangle, Loader2 } from "lucide-react";
 import type { State } from "@/redux/services/adminApi";
 
 interface DeleteStateModalProps {
@@ -6,6 +6,7 @@ interface DeleteStateModalProps {
   onClose: () => void;
   state: State | null;
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
 export default function DeleteStateModal({
@@ -13,6 +14,7 @@ export default function DeleteStateModal({
   onClose,
   state,
   onConfirm,
+  isLoading = false,
 }: DeleteStateModalProps) {
   if (!isOpen || !state) return null;
 

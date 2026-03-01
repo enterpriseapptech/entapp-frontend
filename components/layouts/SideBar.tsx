@@ -4,8 +4,8 @@ import {
   BarChart3,
   X,
   Search,
-  LifeBuoy,
-  Settings,
+  // LifeBuoy,
+  // Settings,
   CreditCard,
   Users,
   MapPin,
@@ -70,7 +70,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col space-y-1">
+        <nav className="flex flex-col space-y-6">
           <Link
             href="/admin"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -246,8 +246,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </nav>
 
         {/* Support, Settings, and Profile Section */}
-        <div className="mt-auto pt-8">
-          {/* Support Button */}
+        {/* <div className="mt-auto pt-8">
           <Link
             href="/admin/support"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full`}
@@ -257,7 +256,6 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <span className="font-medium text-sm">Support</span>
           </Link>
 
-          {/* Settings Button */}
           <Link
             href="/admin/settings"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full`}
@@ -267,10 +265,8 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <span className="font-medium text-sm">Settings</span>
           </Link>
 
-          {/* Horizontal Line */}
           <hr className="my-4 border-gray-200" />
 
-          {/* Profile Section */}
           <div className="flex items-center gap-3 px-3 py-2.5">
             <Image
               src="/profileImg.png"
@@ -302,7 +298,7 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               </svg>
             </button>
           </div>
-        </div>
+        </div> */}
       </aside>
 
       {/* Overlay when Sidebar is Open (Mobile) */}

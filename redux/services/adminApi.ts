@@ -78,6 +78,12 @@ export interface UpdateStateRequest {
   countryId?: string;
   updatedBy: string;
 }
+export interface CreateStateRequest {
+  name: string;
+  code: string;
+  countryId: string;
+  updatedBy: string;
+}
 export interface UpdateCountryRequest {
   name?: string;
   code?: string;
@@ -277,6 +283,24 @@ export const adminApi = createApi({
         "State",
       ],
     }),
+    createState: builder.mutation<State, CreateStateRequest>({
+      query: (body) => ({
+        url: "/admin/state",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["State"],
+    }),
+    deleteState: builder.mutation<State, string>({
+      query: (stateId) => ({
+        url: `/admin/state/${stateId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, stateId) => [
+        { type: "State", id: stateId },
+        "State",
+      ],
+    }),
     // ================= PAYMENTS =================
     getPayments: builder.query<
       PaginatedPaymentResponse,
@@ -325,8 +349,10 @@ export const {
   useGetCountryByIdQuery,
   useGetStatesQuery,
   useCreateCountryMutation,
+  useCreateStateMutation,
   useGetStateByIdQuery,
   useUpdateStateMutation,
+  useDeleteStateMutation,
   useUpdateCountryMutation,
   useDeleteCountryMutation,
   useGetPaymentsQuery,
