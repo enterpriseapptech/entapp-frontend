@@ -1,15 +1,10 @@
-import { X, Check } from "lucide-react";
+import { X } from "lucide-react";
+import type { SubscriptionPlan } from "@/redux/services/adminApi";
 
 interface PlanDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  plan: {
-    planName: string;
-    billingType: string;
-    price: string;
-    status: string;
-    features: string[];
-  } | null;
+  plan: SubscriptionPlan | null;
 }
 
 export default function PlanDetailsModal({
@@ -42,25 +37,25 @@ export default function PlanDetailsModal({
                 Plan Name
               </label>
               <p className="text-base font-medium text-gray-900">
-                {plan.planName}
+                {plan.plan}
               </p>
             </div>
 
-            {/* Billing Type */}
+            {/* Time Frame */}
             <div>
               <label className="block text-sm text-gray-600 mb-1">
-                Billing Type
+                Time Frame (Days)
               </label>
               <p className="text-base font-medium text-gray-900">
-                {plan.billingType}
+                {plan.timeFrame}
               </p>
             </div>
 
-            {/* Price */}
+            {/* Amount */}
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Price</label>
+              <label className="block text-sm text-gray-600 mb-1">Amount</label>
               <p className="text-base font-medium text-gray-900">
-                {plan.price}
+                ${plan.amount}
               </p>
             </div>
 
@@ -68,27 +63,13 @@ export default function PlanDetailsModal({
             <div>
               <label className="block text-sm text-gray-600 mb-1">Status</label>
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  plan.status === "Active"
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${plan.status === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-700"
-                }`}
+                  }`}
               >
                 {plan.status}
               </span>
-            </div>
-          </div>
-
-          {/* Features */}
-          <div>
-            <label className="block text-sm text-gray-600 mb-3">Features</label>
-            <div className="space-y-2">
-              {plan.features.map((feature, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-900">{feature}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

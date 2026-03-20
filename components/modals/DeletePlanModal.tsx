@@ -1,11 +1,10 @@
 import { X, AlertTriangle } from "lucide-react";
+import type { SubscriptionPlan } from "@/redux/services/adminApi";
 
 interface DeletePlanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  plan: {
-    planName: string;
-  } | null;
+  plan: SubscriptionPlan | null;
   onDelete: () => void;
 }
 
@@ -51,7 +50,7 @@ export default function DeletePlanModal({
               <p className="text-sm text-gray-600">
                 Do you really want to delete the plan{" "}
                 <span className="font-semibold text-gray-900">
-                  &quot;{plan.planName}&ldquo;
+                  &quot;{plan.plan}&ldquo;
                 </span>
                 ? This action cannot be undone.
               </p>

@@ -1,12 +1,10 @@
 import { X, Power } from "lucide-react";
+import type { SubscriptionPlan } from "@/redux/services/adminApi";
 
 interface TogglePlanStatusModalProps {
   isOpen: boolean;
   onClose: () => void;
-  plan: {
-    planName: string;
-    status: string;
-  } | null;
+  plan: SubscriptionPlan | null;
   onToggle: () => void;
 }
 
@@ -18,7 +16,7 @@ export default function TogglePlanStatusModal({
 }: TogglePlanStatusModalProps) {
   if (!isOpen || !plan) return null;
 
-  const isActive = plan.status === "Active";
+  const isActive = plan.status === "ACTIVE";
   const newStatus = isActive ? "Inactive" : "Active";
 
   const handleToggle = () => {
@@ -57,13 +55,12 @@ export default function TogglePlanStatusModal({
               <p className="text-sm text-gray-600">
                 Are you sure you want to change the status of{" "}
                 <span className="font-semibold text-gray-900">
-                  &quot;{plan.planName}&ldquo;
+                  &quot;{plan.plan}&ldquo;
                 </span>{" "}
                 to{" "}
                 <span
-                  className={`font-semibold ${
-                    isActive ? "text-gray-700" : "text-green-700"
-                  }`}
+                  className={`font-semibold ${isActive ? "text-gray-700" : "text-green-700"
+                    }`}
                 >
                   {newStatus}
                 </span>
@@ -83,11 +80,10 @@ export default function TogglePlanStatusModal({
           </button>
           <button
             onClick={handleToggle}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              isActive
+            className={`px-4 py-2 rounded-lg font-medium ${isActive
                 ? "bg-gray-600 hover:bg-gray-700 text-white"
                 : "bg-green-600 hover:bg-green-700 text-white"
-            }`}
+              }`}
           >
             {isActive ? "Deactivate" : "Activate"}
           </button>

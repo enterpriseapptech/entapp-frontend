@@ -1,11 +1,11 @@
 import { X } from "lucide-react";
 import { useState } from "react";
-import type { NewPlan } from "@/types/subscription.types";
+import type { CreateSubscriptionPlanRequest } from "@/redux/services/adminApi";
 
 interface CreatePlanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (newPlan: NewPlan) => void;
+  onCreate: (newPlan: CreateSubscriptionPlanRequest) => void;
 }
 
 export default function CreatePlanModal({
@@ -14,47 +14,28 @@ export default function CreatePlanModal({
   onCreate,
 }: CreatePlanModalProps) {
   const [formData, setFormData] = useState({
-    planName: "",
-    billingType: "",
-    price: "",
-    features: [] as string[],
+    plan: "",
+    timeFrame: "",
+    amount: "",
   });
-  const [newFeature, setNewFeature] = useState("");
 
   if (!isOpen) return null;
 
-  const handleAddFeature = () => {
-    if (newFeature.trim()) {
-      setFormData({
-        ...formData,
-        features: [...formData.features, newFeature.trim()],
-      });
-      setNewFeature("");
-    }
-  };
-
   const handleSubmit = () => {
-    if (!formData.planName || !formData.billingType || !formData.price) {
+    if (!formData.plan || !formData.timeFrame || !formData.amount) {
       alert("Please fill in all required fields");
       return;
     }
 
-    const newPlan = {
-      id: Date.now(),
-      planName: formData.planName,
-      billingType: formData.billingType,
-      price: `$${formData.price}`,
-      priceValue: Number(formData.price),
-      period: formData.billingType.toLowerCase().includes("annual")
-        ? "/yr"
-        : "/mo",
-      features: formData.features,
-      featureCount: `${formData.features.length} features`,
-      status: "Active",
+    const newPlan: CreateSubscriptionPlanRequest = {
+      plan: formData.plan,
+      amount: Number(formData.amount),
+      timeFrame: Number(formData.timeFrame),
+      status: "ACTIVE",
     };
 
     onCreate(newPlan);
-    setFormData({ planName: "", billingType: "", price: "", features: [] });
+    setFormData({ plan: "", timeFrame: "", amount: "" });
     onClose();
   };
 
@@ -76,88 +57,49 @@ export default function CreatePlanModal({
 
         {/* Content */}
         <div className="p-6">
-          {/* Plan Name */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Plan Name
             </label>
             <input
               type="text"
-              value={formData.planName}
+              value={formData.plan}
               onChange={(e) =>
-                setFormData({ ...formData, planName: e.target.value })
+                setFormData({ ...formData, plan: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
-              placeholder="Enter plan name"
+              className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+              placeholder="e.g., Gold, Premium"
             />
           </div>
 
-          {/* Billing Type and Price */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
-                Billing Type
+                Time Frame (Days)
               </label>
               <input
-                type="text"
-                value={formData.billingType}
+                type="number"
+                value={formData.timeFrame}
                 onChange={(e) =>
-                  setFormData({ ...formData, billingType: e.target.value })
+                  setFormData({ ...formData, timeFrame: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
-                placeholder="e.g., Monthly, Annual"
+                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+                placeholder="e.g., 30, 365"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
-                Price ($)
+                Amount ($)
               </label>
               <input
                 type="number"
-                value={formData.price}
+                value={formData.amount}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
+                  setFormData({ ...formData, amount: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
-                placeholder="49"
+                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+                placeholder="299"
               />
-            </div>
-          </div>
-
-          {/* Features */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Features
-            </label>
-            {formData.features.length > 0 && (
-              <div className="space-y-2 mb-3">
-                {formData.features.map((feature, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50"
-                  >
-                    <span className="flex-1 text-sm text-gray-900">
-                      {feature}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleAddFeature()}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
-                placeholder="Add a feature..."
-              />
-              <button
-                onClick={handleAddFeature}
-                className="px-4 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Add
-              </button>
             </div>
           </div>
         </div>

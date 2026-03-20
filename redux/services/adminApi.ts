@@ -195,6 +195,39 @@ export interface PaginatedUserResponse {
   docs: User[];
 }
 
+// ================= SUBSCRIPTION PLANS =================
+export interface SubscriptionPlan {
+  id: string;
+  plan: string;
+  amount: number;
+  timeFrame: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
+export interface PaginatedSubscriptionPlanResponse {
+  count: number;
+  data: SubscriptionPlan[];
+}
+
+export interface CreateSubscriptionPlanRequest {
+  plan: string;
+  amount: number;
+  timeFrame: number;
+  status: string;
+}
+
+export interface UpdateSubscriptionPlanRequest {
+  plan?: string;
+  amount?: number;
+  timeFrame?: number;
+  status?: string;
+}
+
 export const adminApi = createApi({
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
@@ -210,7 +243,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Country", "State", "Payment", "Invoice", "User"],
+  tagTypes: ["Country", "State", "Payment", "Invoice", "User", "SubscriptionPlan"],
   endpoints: (builder) => ({
     getCountries: builder.query<
       PaginatedCountryResponse,
@@ -318,6 +351,40 @@ export const adminApi = createApi({
       query: ({ limit, offset }) => `/invoice?limit=${limit}&offset=${offset}`,
       providesTags: ["Invoice"],
     }),
+    // ================= SUBSCRIPTION PLANS =================
+    getSubscriptionPlans: builder.query<
+      PaginatedSubscriptionPlanResponse,
+      { limit: number; offset: number }
+    >({
+      query: ({ limit, offset }) => `/subscription-plans?limit=${limit}&offset=${offset}`,
+      providesTags: ["SubscriptionPlan"],
+    }),
+    createSubscriptionPlan: builder.mutation<SubscriptionPlan, CreateSubscriptionPlanRequest>({
+      query: (body) => ({
+        url: "/subscription-plans",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["SubscriptionPlan"],
+    }),
+    updateSubscriptionPlan: builder.mutation<
+      SubscriptionPlan,
+      { id: string; body: UpdateSubscriptionPlanRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/subscription-plans/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["SubscriptionPlan"],
+    }),
+    deleteSubscriptionPlan: builder.mutation<SubscriptionPlan, string>({
+      query: (id) => ({
+        url: `/subscription-plans/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SubscriptionPlan"],
+    }),
     // ================= USERS =================
     getUsers: builder.query<
       PaginatedUserResponse,
@@ -358,4 +425,8 @@ export const {
   useGetPaymentsQuery,
   useGetInvoicesQuery,
   useGetUsersQuery,
+  useGetSubscriptionPlansQuery,
+  useCreateSubscriptionPlanMutation,
+  useUpdateSubscriptionPlanMutation,
+  useDeleteSubscriptionPlanMutation,
 } = adminApi;

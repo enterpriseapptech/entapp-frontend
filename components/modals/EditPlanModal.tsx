@@ -1,18 +1,12 @@
-import { X, Trash2 } from "lucide-react";
-import { useState } from "react";
-import type { UpdatedPlan } from "@/types/subscription.types";
+import { X } from "lucide-react";
+import { useState, useEffect } from "react";
+import type { SubscriptionPlan, UpdateSubscriptionPlanRequest } from "@/redux/services/adminApi";
 
 interface EditPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  plan: {
-    id: number;
-    planName: string;
-    billingType: string;
-    priceValue: number;
-    features: string[];
-  } | null;
-  onUpdate: (updatedPlan: UpdatedPlan) => void;
+  plan: SubscriptionPlan | null;
+  onUpdate: (id: string, updatedPlan: UpdateSubscriptionPlanRequest) => void;
 }
 
 export default function EditPlanModal({
@@ -22,38 +16,28 @@ export default function EditPlanModal({
   onUpdate,
 }: EditPlanModalProps) {
   const [formData, setFormData] = useState({
-    planName: plan?.planName || "",
-    billingType: plan?.billingType || "",
-    price: plan?.priceValue || 0,
-    features: plan?.features || [],
+    plan: plan?.plan || "",
+    timeFrame: plan?.timeFrame?.toString() || "",
+    amount: plan?.amount?.toString() || "",
   });
-  const [newFeature, setNewFeature] = useState("");
+
+  useEffect(() => {
+    if (plan) {
+      setFormData({
+        plan: plan.plan || "",
+        timeFrame: plan.timeFrame?.toString() || "",
+        amount: plan.amount?.toString() || "",
+      });
+    }
+  }, [plan]);
 
   if (!isOpen || !plan) return null;
 
-  const handleAddFeature = () => {
-    if (newFeature.trim()) {
-      setFormData({
-        ...formData,
-        features: [...formData.features, newFeature.trim()],
-      });
-      setNewFeature("");
-    }
-  };
-
-  const handleRemoveFeature = (index: number) => {
-    setFormData({
-      ...formData,
-      features: formData.features.filter((_, i) => i !== index),
-    });
-  };
-
   const handleSubmit = () => {
-    onUpdate({
-      ...plan,
-      ...formData,
-      priceValue: formData.price,
-      price: `$${formData.price}`,
+    onUpdate(plan.id, {
+      plan: formData.plan,
+      timeFrame: Number(formData.timeFrame),
+      amount: Number(formData.amount),
     });
     onClose();
   };
@@ -76,99 +60,49 @@ export default function EditPlanModal({
 
         {/* Content */}
         <div className="p-6">
-          {/* Plan Name */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Plan Name
             </label>
             <input
               type="text"
-              value={formData.planName}
+              value={formData.plan}
               onChange={(e) =>
-                setFormData({ ...formData, planName: e.target.value })
+                setFormData({ ...formData, plan: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+              className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
               placeholder="Enter plan name"
             />
           </div>
 
-          {/* Billing Type and Price */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
-                Billing Type
+                Time Frame (Days)
               </label>
               <input
-                type="text"
-                value={formData.billingType}
+                type="number"
+                value={formData.timeFrame}
                 onChange={(e) =>
-                  setFormData({ ...formData, billingType: e.target.value })
+                  setFormData({ ...formData, timeFrame: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
-                placeholder="e.g., Monthly, Annual"
+                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+                placeholder="e.g., 30, 365"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
-                Price ($)
+                Amount ($)
               </label>
               <input
                 type="number"
-                value={formData.price}
+                value={formData.amount}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: Number(e.target.value) })
+                  setFormData({ ...formData, amount: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
                 placeholder="49"
               />
-            </div>
-          </div>
-
-          {/* Features */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Features
-            </label>
-            <div className="space-y-2 mb-3">
-              {formData.features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg"
-                >
-                  <input
-                    type="text"
-                    value={feature}
-                    onChange={(e) => {
-                      const newFeatures = [...formData.features];
-                      newFeatures[index] = e.target.value;
-                      setFormData({ ...formData, features: newFeatures });
-                    }}
-                    className="flex-1 px-3 py-1 border-0 focus:outline-none placeholder:text-gray-300"
-                  />
-                  <button
-                    onClick={() => handleRemoveFeature(index)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleAddFeature()}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
-                placeholder="Add a feature..."
-              />
-              <button
-                onClick={handleAddFeature}
-                className="px-4 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Add
-              </button>
             </div>
           </div>
         </div>

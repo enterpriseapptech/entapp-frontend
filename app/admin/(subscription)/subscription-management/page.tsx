@@ -11,7 +11,15 @@ import {
 } from "lucide-react";
 import SideBar from "@/components/layouts/SideBar";
 import Header from "@/components/layouts/Header";
+import Notification from "@/components/ui/Notification";
 import { useState } from "react";
+import {
+  useGetSubscriptionPlansQuery,
+  useCreateSubscriptionPlanMutation,
+  useUpdateSubscriptionPlanMutation,
+  useDeleteSubscriptionPlanMutation,
+  type SubscriptionPlan,
+} from "@/redux/services/adminApi";
 
 // Import all modals
 import PlanDetailsModal from "@/components/modals/PlanDetailsModal";
@@ -27,17 +35,7 @@ import AssignSubscriptionModal from "@/components/modals/AssignSubscriptionModal
 type ViewMode = "cards" | "list";
 type TabType = "plans" | "users";
 
-interface SubscriptionPlan {
-  id: number;
-  planName: string;
-  billingType: string;
-  price: string;
-  priceValue: number;
-  period: string;
-  features: string[];
-  featureCount: string;
-  status: string;
-}
+
 
 interface SubscribedUser {
   id: number;
@@ -54,6 +52,23 @@ export default function SubscriptionManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [activeTab, setActiveTab] = useState<TabType>("plans");
   const itemsPerPage = viewMode === "list" ? 10 : 6;
+
+  const { data: plansData, isLoading: plansLoading } = useGetSubscriptionPlansQuery({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  });
+
+  const [createPlan] = useCreateSubscriptionPlanMutation();
+  const [updatePlan] = useUpdateSubscriptionPlanMutation();
+  const [deletePlan] = useDeleteSubscriptionPlanMutation();
+
+  const subscriptionPlans = plansData?.data || [];
+  const totalPlansCount = plansData?.count || 0;
+
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Modal states for Plans
   const [planDetailsModal, setPlanDetailsModal] = useState<{
@@ -125,112 +140,60 @@ export default function SubscriptionManagement() {
     },
   ]);
 
-  // Sample data for subscription plans
-  const [subscriptionPlans, setSubscriptionPlans] = useState<
-    SubscriptionPlan[]
-  >([
-    {
-      id: 1,
-      planName: "Basic Plan",
-      billingType: "Monthly",
-      price: "$49",
-      priceValue: 49,
-      period: "/mo",
-      features: ["Up to 10 listings", "Basic analytics", "Email support"],
-      featureCount: "3 features",
-      status: "Active",
-    },
-    {
-      id: 2,
-      planName: "Professional Plan",
-      billingType: "Monthly",
-      price: "$99",
-      priceValue: 99,
-      period: "/mo",
-      features: [
-        "Unlimited listings",
-        "Advanced analytics",
-        "Priority support",
-        "Featured listings",
-      ],
-      featureCount: "4 features",
-      status: "Active",
-    },
-    {
-      id: 3,
-      planName: "Enterprise Plan",
-      billingType: "Annual",
-      price: "$999",
-      priceValue: 999,
-      period: "/yr",
-      features: [
-        "Unlimited listings",
-        "Premium analytics",
-        "24/7 support",
-        "API access",
-        "+1 more features",
-      ],
-      featureCount: "5 features",
-      status: "Active",
-    },
-    {
-      id: 4,
-      planName: "Starter Plan",
-      billingType: "Monthly",
-      price: "$29",
-      priceValue: 29,
-      period: "/mo",
-      features: ["Up to 5 listings", "Basic analytics"],
-      featureCount: "2 features",
-      status: "Inactive",
-    },
-  ]);
-
   // Get current data based on active tab
-  const currentData =
-    activeTab === "plans" ? subscriptionPlans : subscribedUsers;
+  const totalPages =
+    activeTab === "plans"
+      ? Math.ceil(totalPlansCount / itemsPerPage)
+      : Math.ceil(subscribedUsers.length / itemsPerPage);
 
-  // Calculate total pages based on data
-  const totalPages = Math.ceil(currentData.length / itemsPerPage);
-
-  // Get the items for the current page
-  const paginatedData = currentData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedData =
+    activeTab === "plans"
+      ? subscriptionPlans
+      : subscribedUsers.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+      );
 
   // Handler functions for Plans
-  const handleCreatePlan = (newPlan: SubscriptionPlan) => {
-    setSubscriptionPlans([...subscriptionPlans, newPlan]);
+  const handleCreatePlan = async (newPlan: Parameters<typeof createPlan>[0]) => {
+    try {
+      await createPlan(newPlan).unwrap();
+      setNotification({ message: "Plan created successfully", type: "success" });
+    } catch (e) {
+      console.error(e);
+      setNotification({ message: "Failed to create plan", type: "error" });
+    }
   };
 
-  const handleUpdatePlan = (
-    updatedPlan: Partial<SubscriptionPlan> & { id: number }
-  ) => {
-    setSubscriptionPlans(
-      subscriptionPlans.map((plan) =>
-        plan.id === updatedPlan.id ? { ...plan, ...updatedPlan } : plan
-      )
-    );
+  const handleUpdatePlan = async (id: string, updatedPlan: Parameters<typeof updatePlan>[0]["body"]) => {
+    try {
+      await updatePlan({ id, body: updatedPlan }).unwrap();
+      setNotification({ message: "Plan updated successfully", type: "success" });
+    } catch (e) {
+      console.error(e);
+      setNotification({ message: "Failed to update plan", type: "error" });
+    }
   };
 
-  const handleDeletePlan = (planId: number) => {
-    setSubscriptionPlans(
-      subscriptionPlans.filter((plan) => plan.id !== planId)
-    );
+  const handleDeletePlan = async (planId: string) => {
+    try {
+      await deletePlan(planId).unwrap();
+      setNotification({ message: "Plan deleted successfully", type: "success" });
+    } catch (e) {
+      console.error(e);
+      setNotification({ message: "Failed to delete plan", type: "error" });
+    }
   };
 
-  const handleTogglePlanStatus = (planId: number) => {
-    setSubscriptionPlans(
-      subscriptionPlans.map((plan) =>
-        plan.id === planId
-          ? {
-              ...plan,
-              status: plan.status === "Active" ? "Inactive" : "Active",
-            }
-          : plan
-      )
-    );
+  const handleTogglePlanStatus = async (plan: SubscriptionPlan) => {
+    try {
+      const newStatus = plan.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+      await updatePlan({ id: plan.id, body: { status: newStatus } }).unwrap();
+      setNotification({ message: "Plan status updated successfully", type: "success" });
+    } catch (e) {
+      console.error(e);
+      setNotification({ message: "Failed to update plan status", type: "error" });
+    }
   };
 
   // Handler functions for Subscribed Users
@@ -255,16 +218,16 @@ export default function SubscriptionManagement() {
       subscribedUsers.map((user) =>
         user.id === subscriptionId
           ? {
-              ...user,
-              status: user.status === "Active" ? "Expired" : "Active",
-            }
+            ...user,
+            status: user.status === "Active" ? "Expired" : "Active",
+          }
           : user
       )
     );
   };
 
   // Get available plan names for dropdowns
-  const availablePlanNames = subscriptionPlans.map((plan) => plan.planName);
+  const availablePlanNames = subscriptionPlans.map((plan) => plan.plan);
 
   // Generate page numbers with ellipsis
   const getPageNumbers = () => {
@@ -340,7 +303,7 @@ export default function SubscriptionManagement() {
                   <span>Assign Subscription</span>
                 </button>
               )}
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 text-sm font-medium">
+              {/* <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 text-sm font-medium">
                 <svg
                   width="16"
                   height="16"
@@ -357,7 +320,7 @@ export default function SubscriptionManagement() {
                   />
                 </svg>
                 <span>Upgrade now</span>
-              </button>
+              </button> */}
               {activeTab === "plans" && (
                 <button
                   onClick={() => setCreatePlanModal(true)}
@@ -378,13 +341,12 @@ export default function SubscriptionManagement() {
                   setActiveTab("plans");
                   setCurrentPage(1);
                 }}
-                className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                  activeTab === "plans"
-                    ? "text-[#0047AB]"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`pb-3 px-1 text-sm font-medium transition-colors relative ${activeTab === "plans"
+                  ? "text-[#0047AB]"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
-                Subscription Plans ({subscriptionPlans.length})
+                Subscription Plans ({totalPlansCount})
                 {activeTab === "plans" && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0047AB]"></div>
                 )}
@@ -394,11 +356,10 @@ export default function SubscriptionManagement() {
                   setActiveTab("users");
                   setCurrentPage(1);
                 }}
-                className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                  activeTab === "users"
-                    ? "text-[#0047AB]"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`pb-3 px-1 text-sm font-medium transition-colors relative ${activeTab === "users"
+                  ? "text-[#0047AB]"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 Subscribed Users ({subscribedUsers.length})
                 {activeTab === "users" && (
@@ -411,22 +372,20 @@ export default function SubscriptionManagement() {
             <div className="flex gap-2 border border-gray-200 rounded-lg p-1 bg-white">
               <button
                 onClick={() => setViewMode("cards")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === "cards"
-                    ? "bg-gray-100 text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === "cards"
+                  ? "bg-gray-100 text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
               >
                 <Grid3x3 className="w-4 h-4" />
                 <span>Cards</span>
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === "list"
-                    ? "bg-gray-100 text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === "list"
+                  ? "bg-gray-100 text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
               >
                 <List className="w-4 h-4" />
                 <span>List</span>
@@ -476,11 +435,10 @@ export default function SubscriptionManagement() {
                             </td>
                             <td className="px-6 py-4 text-sm whitespace-nowrap">
                               <span
-                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                  user.status === "Active"
-                                    ? "bg-green-50 text-green-700"
-                                    : "bg-red-50 text-red-700"
-                                }`}
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.status === "Active"
+                                  ? "bg-green-50 text-green-700"
+                                  : "bg-red-50 text-red-700"
+                                  }`}
                               >
                                 {user.status}
                               </span>
@@ -568,13 +526,12 @@ export default function SubscriptionManagement() {
                         onClick={() =>
                           typeof page === "number" && setCurrentPage(page)
                         }
-                        className={`px-3 py-1 rounded-md text-sm ${
-                          page === currentPage
-                            ? "bg-blue-600 text-white"
-                            : typeof page === "number"
+                        className={`px-3 py-1 rounded-md text-sm ${page === currentPage
+                          ? "bg-blue-600 text-white"
+                          : typeof page === "number"
                             ? "text-gray-600 hover:bg-gray-100"
                             : "text-gray-600 cursor-default"
-                        }`}
+                          }`}
                         disabled={typeof page !== "number"}
                       >
                         {page}
@@ -627,11 +584,10 @@ export default function SubscriptionManagement() {
                           </p>
                         </div>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            user.status === "Active"
-                              ? "bg-green-50 text-green-700"
-                              : "bg-red-50 text-red-700"
-                          }`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.status === "Active"
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700"
+                            }`}
                         >
                           {user.status}
                         </span>
@@ -726,13 +682,12 @@ export default function SubscriptionManagement() {
                         onClick={() =>
                           typeof page === "number" && setCurrentPage(page)
                         }
-                        className={`px-3 py-1 rounded-md text-sm ${
-                          page === currentPage
-                            ? "bg-blue-600 text-white"
-                            : typeof page === "number"
+                        className={`px-3 py-1 rounded-md text-sm ${page === currentPage
+                          ? "bg-blue-600 text-white"
+                          : typeof page === "number"
                             ? "text-gray-600 hover:bg-gray-100 bg-white"
                             : "text-gray-600 cursor-default"
-                        }`}
+                          }`}
                         disabled={typeof page !== "number"}
                       >
                         {page}
@@ -778,13 +733,10 @@ export default function SubscriptionManagement() {
                         Plan Name
                       </th>
                       <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
-                        Billing Type
+                        Time Frame (Days)
                       </th>
                       <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
                         Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
-                        Features
                       </th>
                       <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
                         Status
@@ -799,24 +751,20 @@ export default function SubscriptionManagement() {
                       (plan, index) => (
                         <tr key={index} className="border-b hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap font-medium">
-                            {plan.planName}
+                            {plan.plan}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                            {plan.billingType}
+                            {plan.timeFrame}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap font-medium">
-                            {plan.price}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                            {plan.featureCount}
+                            ${plan.amount}
                           </td>
                           <td className="px-6 py-4 text-sm whitespace-nowrap">
                             <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                plan.status === "Active"
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${plan.status === "ACTIVE"
+                                ? "bg-green-50 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                                }`}
                             >
                               {plan.status}
                             </span>
@@ -906,13 +854,12 @@ export default function SubscriptionManagement() {
                       onClick={() =>
                         typeof page === "number" && setCurrentPage(page)
                       }
-                      className={`px-3 py-1 rounded-md text-sm ${
-                        page === currentPage
-                          ? "bg-blue-600 text-white"
-                          : typeof page === "number"
+                      className={`px-3 py-1 rounded-md text-sm ${page === currentPage
+                        ? "bg-blue-600 text-white"
+                        : typeof page === "number"
                           ? "text-gray-600 hover:bg-gray-100"
                           : "text-gray-600 cursor-default"
-                      }`}
+                        }`}
                       disabled={typeof page !== "number"}
                     >
                       {page}
@@ -958,18 +905,17 @@ export default function SubscriptionManagement() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {plan.planName}
+                          {plan.plan}
                         </h3>
                         <p className="text-sm text-gray-600 mt-1">
-                          {plan.billingType}
+                          {plan.timeFrame} Days
                         </p>
                       </div>
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          plan.status === "Active"
-                            ? "bg-green-50 text-green-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${plan.status === "ACTIVE"
+                          ? "bg-green-50 text-green-700"
+                          : "bg-gray-100 text-gray-700"
+                          }`}
                       >
                         {plan.status}
                       </span>
@@ -979,31 +925,15 @@ export default function SubscriptionManagement() {
                     <div className="mb-4">
                       <div className="flex items-baseline">
                         <span className="text-3xl font-bold text-gray-900">
-                          ${plan.priceValue}
+                          ${plan.amount}
                         </span>
                         <span className="text-gray-600 ml-1">
-                          {plan.period}
+                          / {plan.timeFrame} Days
                         </span>
                       </div>
                     </div>
 
-                    {/* Features */}
-                    <div className="mb-6">
-                      <p className="text-sm font-medium text-gray-700 mb-3">
-                        Features:
-                      </p>
-                      <ul className="space-y-2">
-                        {plan.features.slice(0, 4).map((feature, idx) => (
-                          <li
-                            key={idx}
-                            className="flex items-start gap-2 text-sm text-gray-600"
-                          >
-                            <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+
 
                     {/* Actions */}
                     <div className="flex justify-between items-center pt-4 border-t border-gray-200">
@@ -1077,13 +1007,12 @@ export default function SubscriptionManagement() {
                       onClick={() =>
                         typeof page === "number" && setCurrentPage(page)
                       }
-                      className={`px-3 py-1 rounded-md text-sm ${
-                        page === currentPage
-                          ? "bg-blue-600 text-white"
-                          : typeof page === "number"
+                      className={`px-3 py-1 rounded-md text-sm ${page === currentPage
+                        ? "bg-blue-600 text-white"
+                        : typeof page === "number"
                           ? "text-gray-600 hover:bg-gray-100 bg-white"
                           : "text-gray-600 cursor-default"
-                      }`}
+                        }`}
                       disabled={typeof page !== "number"}
                     >
                       {page}
@@ -1156,7 +1085,7 @@ export default function SubscriptionManagement() {
         plan={togglePlanStatusModal.plan}
         onToggle={() =>
           togglePlanStatusModal.plan &&
-          handleTogglePlanStatus(togglePlanStatusModal.plan.id)
+          handleTogglePlanStatus(togglePlanStatusModal.plan)
         }
       />
 
@@ -1202,6 +1131,14 @@ export default function SubscriptionManagement() {
         availablePlans={availablePlanNames}
         onAssign={handleAssignSubscription}
       />
+
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 }
