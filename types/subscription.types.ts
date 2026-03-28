@@ -21,7 +21,7 @@ export interface SubscribedUser {
   renewalDate: string;
 }
 
-// Types for Create/Update operations
+// Types for Create/Update operation
 export interface NewPlan {
   id: number;
   planName: string;
