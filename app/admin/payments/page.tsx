@@ -32,6 +32,7 @@ const transformPaymentToTransaction = (
   type: payment.paymentReason || "Payment",
   amount: `${payment.currency} ${payment.amount.toLocaleString()}`,
   amountRaw: payment.amount,
+  amountCharged: payment.amountCharged,
   date: new Date(payment.paidAt || payment.createdAt).toLocaleDateString(
     "en-US",
     {
@@ -40,11 +41,29 @@ const transformPaymentToTransaction = (
       day: "2-digit",
     }
   ),
+  paidAt: payment.paidAt
+    ? new Date(payment.paidAt).toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : undefined,
+  createdAt: new Date(payment.createdAt).toLocaleString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }),
   status: payment.status,
-  // relatedTo: `Invoice #${payment.invoiceId?.slice(-6) || "N/A"}`,
   description: `Payment via ${payment.paymentMethod}`,
   paymentMethod: payment.paymentMethod,
   currency: payment.currency,
+  reference: payment.reference,
+  invoiceId: payment.invoiceId,
+  userId: payment.userId,
 });
 
 // Transform API Invoice to match Invoice table expected format
@@ -52,12 +71,6 @@ const transformApiInvoiceToComponent = (invoice: Invoice): InvoiceTableRow => {
   return {
     id: invoice.id,
     invoiceRef: invoice.reference || `INV-${invoice.id.slice(-6)}`,
-    // userId: invoice.userId ? invoice.userId.slice(-8) : "N/A",
-    // relatedTo: invoice.bookingId
-    //   ? `Booking #${invoice.bookingId.slice(-6)}`
-    //   : invoice.subscriptionId
-    //   ? "Subscription"
-    //   : "N/A",
     amount: `${invoice.currency} ${invoice.amountDue.toLocaleString()}`,
     amountRaw: invoice.amountDue,
     dueDate: new Date(invoice.dueDate).toLocaleDateString("en-US", {
@@ -68,11 +81,21 @@ const transformApiInvoiceToComponent = (invoice: Invoice): InvoiceTableRow => {
     status: invoice.status,
     currency: invoice.currency,
     items: invoice.items?.length || 0,
+    itemDetails: invoice.items,
     createdAt: new Date(invoice.createdAt).toLocaleDateString("en-US", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     }),
+    updatedAt: new Date(invoice.updatedAt).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }),
+    userId: invoice.userId,
+    bookingId: invoice.bookingId,
+    note: invoice.note,
+    billingAddress: invoice.billingAddress,
   };
 };
 

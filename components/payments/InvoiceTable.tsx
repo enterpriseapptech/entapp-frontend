@@ -9,7 +9,19 @@ export interface InvoiceTableRow {
   status: "PAID" | "PENDING" | "CANCELLED";
   currency: string;
   items: number;
+  itemDetails?: { item: string; amount: number }[];
   createdAt: string;
+  updatedAt?: string;
+  userId?: string;
+  bookingId?: string;
+  note?: string;
+  billingAddress?: {
+    city: string;
+    state: string;
+    postal: string;
+    street: string;
+    country: string;
+  };
 }
 
 interface InvoiceTableProps {

@@ -6,11 +6,17 @@ export interface TransactionTableRow {
   type: string;
   amount: string;
   amountRaw: number;
+  amountCharged?: number;
   date: string;
+  paidAt?: string;
+  createdAt?: string;
   status: "COMPLETED" | "PENDING" | "FAILED";
   description?: string;
   paymentMethod: "STRIPE" | "PAYSTACK";
   currency: string;
+  reference?: string;
+  invoiceId?: string;
+  userId?: string;
 }
 
 interface TransactionTableProps {

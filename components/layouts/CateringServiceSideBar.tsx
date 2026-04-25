@@ -1,9 +1,11 @@
 "use client";
 
-import { BarChart3, X, Search, LifeBuoy, Settings } from "lucide-react";
+import { BarChart3, X, Search, LifeBuoy, Settings, LogOut } from "lucide-react";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,8 +14,28 @@ interface SidebarProps {
 
 const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Helper function to handle link clicks (for mobile sidebar toggle)
+  useEffect(() => {
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    if (storedUserId) setUserId(storedUserId);
+  }, []);
+
+  const { data: user } = useGetUserByIdQuery(userId!, { skip: !userId });
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_expiry");
+    localStorage.removeItem("user_id");
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
+    sessionStorage.removeItem("user_id");
+    router.push("/");
+  };
+
   const handleLinkClick = () => {
     if (isOpen) {
       toggleSidebar();
@@ -148,18 +170,19 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
               className="w-10 h-10 rounded-full"
               unoptimized
             />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Olivia Rhye</p>
-              <p className="text-xs text-gray-500">olivia@untitledui.com</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user ? `${user.firstName} ${user.lastName}` : "—"}
+              </p>
+              <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
             </div>
-            <Image
-              src="/sidebardown.png"
-              alt="sidebardown"
-              width={40}
-              height={40}
-              className="w-10 h-8 rounded-full ml-4"
-              unoptimized
-            />
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </aside>

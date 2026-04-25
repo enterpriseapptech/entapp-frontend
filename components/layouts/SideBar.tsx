@@ -11,10 +11,13 @@ import {
   MapPin,
   DollarSign,
   ShieldCheck,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useGetUserByIdQuery } from "@/redux/services/authApi";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,8 +26,28 @@ interface SidebarProps {
 
 const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Helper function to handle link clicks (for mobile sidebar toggle)
+  useEffect(() => {
+    const storedUserId =
+      localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
+    if (storedUserId) setUserId(storedUserId);
+  }, []);
+
+  const { data: user } = useGetUserByIdQuery(userId!, { skip: !userId });
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_expiry");
+    localStorage.removeItem("user_id");
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
+    sessionStorage.removeItem("user_id");
+    router.push("/");
+  };
+
   const handleLinkClick = () => {
     if (isOpen) {
       toggleSidebar();
@@ -245,28 +268,9 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           </Link>
         </nav>
 
-        {/* Support, Settings, and Profile Section */}
-        {/* <div className="mt-auto pt-8">
-          <Link
-            href="/admin/support"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full`}
-            onClick={handleLinkClick}
-          >
-            <LifeBuoy className="w-5 h-5" />
-            <span className="font-medium text-sm">Support</span>
-          </Link>
-
-          <Link
-            href="/admin/settings"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full`}
-            onClick={handleLinkClick}
-          >
-            <Settings className="w-5 h-5" />
-            <span className="font-medium text-sm">Settings</span>
-          </Link>
-
-          <hr className="my-4 border-gray-200" />
-
+        {/* Profile Section */}
+        <div className="mt-auto pt-8">
+          <hr className="mb-4 border-gray-200" />
           <div className="flex items-center gap-3 px-3 py-2.5">
             <Image
               src="/profileImg.png"
@@ -276,29 +280,21 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               className="w-10 h-10 rounded-full"
               unoptimized
             />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Olivia Rhye</p>
-              <p className="text-xs text-gray-500">olivia@ui.com</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user ? `${user.firstName} ${user.lastName}` : "—"}
+              </p>
+              <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
             </div>
-            <button className="text-gray-400 hover:text-gray-600">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M15.833 7.5L10 13.333 4.167 7.5"
-                  stroke="currentColor"
-                  strokeWidth="1.667"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+            >
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
-        </div> */}
+        </div>
       </aside>
 
       {/* Overlay when Sidebar is Open (Mobile) */}
