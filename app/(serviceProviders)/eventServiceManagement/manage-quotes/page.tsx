@@ -4,7 +4,7 @@ import Header from "@/components/layouts/Header";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { useGetQuotesByServiceIdQuery } from "@/redux/services/quoteApi";
 import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/eventsApi";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
@@ -243,7 +243,7 @@ export default function QuoteRequests() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -262,7 +262,7 @@ export default function QuoteRequests() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -283,7 +283,7 @@ export default function QuoteRequests() {
   if (!selectedServiceId) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -303,7 +303,7 @@ export default function QuoteRequests() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

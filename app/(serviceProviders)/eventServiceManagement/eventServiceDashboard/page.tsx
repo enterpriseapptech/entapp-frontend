@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { useState } from "react";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar"; // Updated sidebar component
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar"; // Updated sidebar component
 
 export default function EventServices() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -235,7 +235,7 @@ export default function EventServices() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

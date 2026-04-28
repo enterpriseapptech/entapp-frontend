@@ -162,14 +162,11 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
 
           {/* Profile Section */}
           <div className="flex items-center gap-3 px-4 py-3">
-            <Image
-              src="/profileImg.png"
-              alt="Profile Picture"
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full"
-              unoptimized
-            />
+            <div className="w-10 h-10 rounded-full bg-[#0047AB] flex items-center justify-center shrink-0">
+              <span className="text-white text-sm font-semibold">
+                {user?.firstName?.charAt(0).toUpperCase() ?? "?"}
+              </span>
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {user ? `${user.firstName} ${user.lastName}` : "—"}

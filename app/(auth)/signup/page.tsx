@@ -323,6 +323,7 @@ export default function SignupPage() {
                         Event Centers
                       </option>
                       <option value={ServiceType.CATERING}>Catering</option>
+                      <option value={ServiceType.ALL}>All Services</option>
                     </select>
                     {userType === UserType.SERVICE_PROVIDER &&
                       "serviceType" in errors && (

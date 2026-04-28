@@ -12,7 +12,7 @@ interface SidebarProps {
   toggleSidebar: () => void;
 }
 
-const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
+const AllServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -37,14 +37,13 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
   };
 
   const handleLinkClick = () => {
-    if (isOpen) {
-      toggleSidebar();
-    }
+    if (isOpen) toggleSidebar();
   };
+
+  const isActive = (href: string) => pathname === href;
 
   return (
     <>
-      {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 flex flex-col p-6 w-72 z-40 transition-transform overflow-y-auto ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -71,7 +70,7 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
         </div>
 
         {/* Search Input */}
-        <div className="relative mb-8">
+        <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="text"
@@ -81,11 +80,12 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col space-y-2">
+        <nav className="flex flex-col space-y-1">
+          {/* Overview */}
           <Link
             href="/eventServiceManagement/eventServiceDashboard"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/eventServiceManagement/eventServiceDashboard"
+              isActive("/eventServiceManagement/eventServiceDashboard")
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
@@ -95,57 +95,124 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
             <span className="font-medium text-sm">Overview</span>
           </Link>
 
+          {/* Event Centers section */}
+          <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Event Centers
+          </p>
+
           <Link
             href="/eventServiceManagement/manage-event-center"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/eventServiceManagement/manage-event-center" || pathname === "/eventServiceManagement/add-event-center"
+              isActive("/eventServiceManagement/manage-event-center") ||
+              isActive("/eventServiceManagement/add-event-center")
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
             onClick={handleLinkClick}
           >
             <Image
-              width={10}
-              height={10}
-              alt="mangeEventCenterIcon"
+              width={20}
+              height={20}
+              alt="Manage Event Center"
               src="/mangeEventCenterIcon.png"
               className="w-5 h-5"
               unoptimized
             />
             <span className="font-medium text-sm">Manage Event Center</span>
           </Link>
+
           <Link
             href="/eventServiceManagement/manage-bookings"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/eventServiceManagement/manage-bookings"
+              isActive("/eventServiceManagement/manage-bookings")
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
             onClick={handleLinkClick}
           >
             <Image
-              width={10}
-              height={10}
-              alt="manageBooking"
+              width={20}
+              height={20}
+              alt="Manage Booking"
               src="/manageBooking.png"
               className="w-5 h-5"
               unoptimized
             />
             <span className="font-medium text-sm">Manage Booking</span>
           </Link>
+
           <Link
             href="/eventServiceManagement/manage-quotes"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-              pathname === "/eventServiceManagement/manage-quotes"
+              isActive("/eventServiceManagement/manage-quotes")
                 ? "bg-[#F2F6FC] text-[#0047AB]"
                 : "text-[#081127] hover:bg-gray-100"
             }`}
             onClick={handleLinkClick}
           >
             <Image
-              width={10}
-              height={10}
-              alt="manageQuotes"
+              width={20}
+              height={20}
+              alt="Manage Quotes"
+              src="/manageBooking.png"
+              className="w-5 h-5"
+              unoptimized
+            />
+            <span className="font-medium text-sm">Manage Quotes</span>
+          </Link>
+
+          {/* Catering section */}
+          <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Catering
+          </p>
+
+          <Link
+            href="/cateringServiceManagement/cateringServiceDashboard"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              isActive("/cateringServiceManagement/cateringServiceDashboard")
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span className="font-medium text-sm">Catering Overview</span>
+          </Link>
+
+          <Link
+            href="/cateringServiceManagement/manage-catering-services"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              isActive("/cateringServiceManagement/manage-catering-services") ||
+              isActive("/cateringServiceManagement/add-catering-services")
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Image
+              width={20}
+              height={20}
+              alt="Manage Catering"
+              src="/mangeEventCenterIcon.png"
+              className="w-5 h-5"
+              unoptimized
+            />
+            <span className="font-medium text-sm">Manage Catering</span>
+          </Link>
+
+          <Link
+            href="/cateringServiceManagement/manage-quotes"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              isActive("/cateringServiceManagement/manage-quotes")
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Image
+              width={20}
+              height={20}
+              alt="Catering Quotes"
               src="/manageBooking.png"
               className="w-5 h-5"
               unoptimized
@@ -154,32 +221,28 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
           </Link>
         </nav>
 
-        {/* Support, Settings, and Profile Section */}
-        <div className="mt-auto md:pt-8">
-          {/* Support Button */}
+        {/* Bottom section */}
+        <div className="mt-auto pt-6">
           <Link
             href="/admin/support"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full`}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full"
             onClick={handleLinkClick}
           >
             <LifeBuoy className="w-5 h-5" />
             <span className="font-medium text-sm">Support</span>
           </Link>
 
-          {/* Settings Button */}
           <Link
             href="/eventServiceManagement/settings"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full`}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#081127] hover:bg-gray-100 w-full"
             onClick={handleLinkClick}
           >
             <Settings className="w-5 h-5" />
             <span className="font-medium text-sm">Settings</span>
           </Link>
 
-          {/* Horizontal Line */}
           <hr className="my-4 border-gray-200" />
 
-          {/* Profile Section */}
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded-full bg-[#0047AB] flex items-center justify-center shrink-0">
               <span className="text-white text-sm font-semibold">
@@ -203,7 +266,7 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
         </div>
       </aside>
 
-      {/* Overlay when Sidebar is Open (Mobile) */}
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 bg-opacity-50 z-30 md:hidden"
@@ -214,4 +277,4 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
   );
 };
 
-export default EventServiceSideBar;
+export default AllServiceSideBar;

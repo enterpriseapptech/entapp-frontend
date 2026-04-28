@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { useGetCateringsByServiceProviderQuery, useDeleteCateringMutation } from "../../../../redux/services/cateringApi";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import Notification from "../../../../components/ui/Notification";
@@ -366,7 +366,7 @@ export default function ManageCatering() {
   if (!cateringData?.data?.length) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <CateringServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -418,7 +418,7 @@ export default function ManageCatering() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <CateringServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

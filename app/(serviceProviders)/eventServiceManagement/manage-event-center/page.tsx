@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { useGetEventCentersByServiceProviderQuery } from "../../../../redux/services/eventsApi";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import { useDeleteEventCenterMutation } from "../../../../redux/services/eventsApi";
@@ -390,7 +390,7 @@ export default function ManageEventCenter() {
   if (!eventCentersData?.data?.length) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -442,7 +442,7 @@ export default function ManageEventCenter() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

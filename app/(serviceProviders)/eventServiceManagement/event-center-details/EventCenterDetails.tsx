@@ -3,7 +3,7 @@
 import Header from "@/components/layouts/Header";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { Plus, X, Trash2 } from "lucide-react";
 import { useGetEventCenterByIdQuery } from "../../../../redux/services/eventsApi";
 import {
@@ -197,7 +197,7 @@ export default function EventCenterDetails() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

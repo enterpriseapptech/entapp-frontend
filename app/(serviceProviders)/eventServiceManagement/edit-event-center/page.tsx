@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useGetEventCenterByIdQuery,
   useUpdateEventCenterMutation,
@@ -18,6 +18,11 @@ import {
   UserType,
   ServiceType,
 } from "../../../../redux/services/authApi";
+import {
+  useGetCountriesQuery,
+  useGetCountryByIdQuery,
+  useGetStateByIdQuery,
+} from "../../../../redux/services/adminApi";
 import Notification from "../../../../components/ui/Notification";
 
 const eventTypesOptions = ["Wedding", "Conference", "Birthday", "Party"];
@@ -63,6 +68,7 @@ export default function EditEventCenter() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedCountryId, setSelectedCountryId] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventCenterId = searchParams.get("id");
@@ -91,6 +97,16 @@ export default function EditEventCenter() {
   } = useGetUserByIdQuery(userId!, {
     skip: !userId,
   });
+
+  const { data: countriesData } = useGetCountriesQuery({ limit: 200, offset: 0 });
+  const { data: selectedCountry } = useGetCountryByIdQuery(selectedCountryId, {
+    skip: !selectedCountryId,
+  });
+  // Resolve the existing location (state ID) → its country, so we can pre-select the country dropdown
+  const { data: existingState } = useGetStateByIdQuery(
+    eventCenter?.location ?? "",
+    { skip: !eventCenter?.location }
+  );
 
   const {
     register,
@@ -132,6 +148,13 @@ export default function EditEventCenter() {
     }
   }, [eventCenter, reset]);
 
+  // Pre-select country dropdown from the existing state's country
+  useEffect(() => {
+    if (existingState?.country?.id && !selectedCountryId) {
+      setSelectedCountryId(existingState.country.id);
+    }
+  }, [existingState, selectedCountryId]);
+
   // Redirect to login if not authenticated or not a service provider
   useEffect(() => {
     if (!userId || userError) {
@@ -141,7 +164,8 @@ export default function EditEventCenter() {
     if (user) {
       if (
         user.userType !== UserType.SERVICE_PROVIDER ||
-        user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS
+        (user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS &&
+          user.serviceProvider?.serviceType !== ServiceType.ALL)
       ) {
         setError("You are not authorized to edit event centers.");
         router.replace("/login");
@@ -360,7 +384,7 @@ export default function EditEventCenter() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -470,13 +494,42 @@ export default function EditEventCenter() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Location ID
+                    Country
                   </label>
-                  <input
+                  <select
+                    value={selectedCountryId}
+                    onChange={(e) => {
+                      setSelectedCountryId(e.target.value);
+                      setValue("location", "");
+                    }}
+                    className="w-full text-gray-700 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select country</option>
+                    {countriesData?.docs?.map((country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    State / Location
+                  </label>
+                  <select
                     {...register("location")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter location ID"
-                  />
+                    disabled={!selectedCountryId}
+                    className="w-full text-gray-700 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    <option value="">
+                      {selectedCountryId ? "Select state" : "Select a country first"}
+                    </option>
+                    {selectedCountry?.states?.map((state) => (
+                      <option key={state.id} value={state.id}>
+                        {state.name}
+                      </option>
+                    ))}
+                  </select>
                   {errors.location && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.location.message}

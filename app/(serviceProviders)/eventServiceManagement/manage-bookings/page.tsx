@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { useGetBookingsByServiceProviderQuery } from "@/redux/services/book";
 import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/eventsApi";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
@@ -275,7 +275,7 @@ export default function ManageBookings() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -294,7 +294,7 @@ export default function ManageBookings() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -315,7 +315,7 @@ export default function ManageBookings() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -343,7 +343,7 @@ export default function ManageBookings() {
                 />
                 <span>Import</span>
               </button>
-              <Link href="/admin/add-booking">
+              <Link href="/eventServiceManagement/add-booking">
                 <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
                   <Image
                     width={10}

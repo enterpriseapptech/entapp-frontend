@@ -76,9 +76,9 @@ const getRedirectRoute = (user: UserResponse): string => {
       const serviceType = user.serviceProvider?.serviceType;
       if (serviceType === ServiceType.CATERING) {
         targetRoute = "/cateringServiceManagement/cateringServiceDashboard";
-      } else if (serviceType === ServiceType.EVENTCENTERS) {
-        targetRoute = "/eventServiceManagement/eventServiceDashboard";
       } else {
+        // EVENTCENTERS and ALL both land on the event dashboard;
+        // AllServiceSideBar gives ALL users access to catering from there
         targetRoute = "/eventServiceManagement/eventServiceDashboard";
       }
       break;

@@ -3,7 +3,7 @@
 import Header from "@/components/layouts/Header";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { Plus, X, Trash2 } from "lucide-react";
 import { useGetCateringByIdQuery } from "../../../../redux/services/cateringApi";
 import {
@@ -192,7 +192,7 @@ export default function CateringServiceDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CateringServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

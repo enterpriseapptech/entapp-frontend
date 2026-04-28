@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { useState } from "react";
 import Header from "@/components/layouts/Header";
-import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 
 export default function CateringServices() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -235,7 +235,7 @@ export default function CateringServices() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <CateringServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Header from "@/components/layouts/Header";
 import Image from "next/image";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 
 export default function Settings() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

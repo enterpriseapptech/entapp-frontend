@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useCreateEventCenterMutation,
   useUploadEventCenterImagesMutation,
@@ -19,6 +19,10 @@ import {
   UserType,
   ServiceType,
 } from "../../../../redux/services/authApi";
+import {
+  useGetCountriesQuery,
+  useGetCountryByIdQuery,
+} from "../../../../redux/services/adminApi";
 import Notification from "../../../../components/ui/Notification";
 
 const eventTypesOptions = ["Wedding", "Conference", "Birthday", "Party"];
@@ -65,7 +69,13 @@ export default function AddEventCenter() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedCountryId, setSelectedCountryId] = useState<string>("");
   const router = useRouter();
+
+  const { data: countriesData } = useGetCountriesQuery({ limit: 200, offset: 0 });
+  const { data: selectedCountry } = useGetCountryByIdQuery(selectedCountryId, {
+    skip: !selectedCountryId,
+  });
 
   const [createEventCenter, { isLoading: isCreating }] =
     useCreateEventCenterMutation();
@@ -136,7 +146,8 @@ export default function AddEventCenter() {
     if (
       user &&
       (user.userType !== UserType.SERVICE_PROVIDER ||
-        user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS)
+        (user.serviceProvider?.serviceType !== ServiceType.EVENTCENTERS &&
+          user.serviceProvider?.serviceType !== ServiceType.ALL))
     ) {
       setError("You are not authorized to create event centers.");
       router.replace("/login");
@@ -316,7 +327,7 @@ export default function AddEventCenter() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -427,13 +438,44 @@ export default function AddEventCenter() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-900 mb-1">
-                    Location ID
+                    Country
                   </label>
-                  <input
+                  <select
+                    value={selectedCountryId}
+                    onChange={(e) => {
+                      setSelectedCountryId(e.target.value);
+                      setValue("location", "");
+                    }}
+                    className="w-full text-gray-700 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select country</option>
+                    {countriesData?.docs?.map((country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-900 mb-1">
+                    State / Location
+                  </label>
+                  <select
                     {...register("location")}
-                    className="w-full text-gray-400 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                    placeholder="Enter location ID"
-                  />
+                    disabled={!selectedCountryId}
+                    className="w-full text-gray-700 p-3 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    <option value="">
+                      {selectedCountryId
+                        ? "Select state"
+                        : "Select a country first"}
+                    </option>
+                    {selectedCountry?.states?.map((state) => (
+                      <option key={state.id} value={state.id}>
+                        {state.name}
+                      </option>
+                    ))}
+                  </select>
                   {errors.location && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.location.message}
@@ -769,6 +811,25 @@ export default function AddEventCenter() {
                 Please fix the form errors before submitting.
               </p>
             )}
+
+            {/* Bottom publish bar */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-8 py-4 flex justify-end gap-3 mt-6">
+              <Link href="/eventServiceManagement/eventServiceDashboard">
+                <button
+                  type="button"
+                  className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-sm"
+                >
+                  Cancel
+                </button>
+              </Link>
+              <button
+                type="submit"
+                disabled={isCreating || isUploadingImages}
+                className="px-6 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+              >
+                {isCreating || isUploadingImages ? "Publishing..." : "Publish"}
+              </button>
+            </div>
           </form>
         </main>
       </div>

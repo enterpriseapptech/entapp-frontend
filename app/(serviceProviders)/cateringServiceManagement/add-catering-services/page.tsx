@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
-import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useCreateCateringMutation,
   useUploadCateringImagesMutation,
@@ -18,6 +18,10 @@ import {
   UserType,
   ServiceType,
 } from "../../../../redux/services/authApi";
+import {
+  useGetCountriesQuery,
+  useGetCountryByIdQuery,
+} from "../../../../redux/services/adminApi";
 import Notification from "../../../../components/ui/Notification";
 
 const cuisineOptions = ["Italian", "Mexican", "Indian", "Chinese", "American"];
@@ -70,8 +74,9 @@ export default function AddCatering() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [locations, setLocations] = useState<string[]>([]);
-  const [newLocation, setNewLocation] = useState("");
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCountryId, setSelectedCountryId] = useState<string>("");
+  const [selectedStateId, setSelectedStateId] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -79,6 +84,11 @@ export default function AddCatering() {
     useCreateCateringMutation();
   const [uploadCateringImages, { isLoading: isUploadingImages }] =
     useUploadCateringImagesMutation();
+
+  const { data: countriesData } = useGetCountriesQuery({ limit: 200, offset: 0 });
+  const { data: selectedCountry } = useGetCountryByIdQuery(selectedCountryId, {
+    skip: !selectedCountryId,
+  });
 
   // Check authentication
   useEffect(() => {
@@ -131,6 +141,7 @@ export default function AddCatering() {
 
   // Redirect to login if not authenticated or not a service provider
   useEffect(() => {
+    if (userId === null) return; // still loading from storage
     if (!userId || userError) {
       router.replace("/login");
       return;
@@ -138,7 +149,8 @@ export default function AddCatering() {
     if (user) {
       if (
         user.userType !== UserType.SERVICE_PROVIDER ||
-        user.serviceProvider?.serviceType !== ServiceType.CATERING
+        (user.serviceProvider?.serviceType !== ServiceType.CATERING &&
+          user.serviceProvider?.serviceType !== ServiceType.ALL)
       ) {
         setError("You are not authorized to create catering services.");
         router.replace("/login");
@@ -186,18 +198,20 @@ export default function AddCatering() {
   };
 
   const handleAddLocation = () => {
-    if (newLocation && !locations.includes(newLocation)) {
-      const updatedLocations = [...locations, newLocation];
-      setLocations(updatedLocations);
-      setValue("location", updatedLocations);
-      setNewLocation("");
-    }
+    if (!selectedStateId) return;
+    if (locations.some((l) => l.id === selectedStateId)) return;
+    const stateName =
+      selectedCountry?.states?.find((s) => s.id === selectedStateId)?.name ?? selectedStateId;
+    const updated = [...locations, { id: selectedStateId, name: stateName }];
+    setLocations(updated);
+    setValue("location", updated.map((l) => l.id));
+    setSelectedStateId("");
   };
 
   const handleRemoveLocation = (index: number) => {
-    const updatedLocations = locations.filter((_, i) => i !== index);
-    setLocations(updatedLocations);
-    setValue("location", updatedLocations);
+    const updated = locations.filter((_, i) => i !== index);
+    setLocations(updated);
+    setValue("location", updated.map((l) => l.id));
   };
 
   const validateImage = (file: File) => {
@@ -267,7 +281,7 @@ export default function AddCatering() {
     try {
       const requestData = {
         ...data,
-        location: locations,
+        location: locations.map((l) => l.id),
         images: [],
       };
 
@@ -349,7 +363,7 @@ export default function AddCatering() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CateringServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -570,42 +584,74 @@ export default function AddCatering() {
 
               <div className="mt-4">
                 <h3 className="text-xs font-medium text-gray-900 mb-1">
-                  Locations
+                  Locations (States)
                 </h3>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {locations.map((loc, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
-                      >
-                        <span>{loc}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLocation(index)}
-                          className="text-blue-800 hover:text-blue-600"
+                <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  {/* Selected locations tags */}
+                  {locations.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {locations.map((loc, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-300"
                         >
-                          ✕
-                        </button>
-                      </div>
+                          <span>{loc.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLocation(index)}
+                            className="text-blue-800 hover:text-blue-600"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Country select */}
+                  <select
+                    value={selectedCountryId}
+                    onChange={(e) => {
+                      setSelectedCountryId(e.target.value);
+                      setSelectedStateId("");
+                    }}
+                    className="w-full text-gray-700 p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select country</option>
+                    {countriesData?.docs?.map((country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
                     ))}
-                  </div>
+                  </select>
+
+                  {/* State select + Add button */}
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newLocation}
-                      onChange={(e) => setNewLocation(e.target.value)}
-                      className="flex-1 text-gray-400 p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                      placeholder="Enter location UUID"
-                    />
+                    <select
+                      value={selectedStateId}
+                      onChange={(e) => setSelectedStateId(e.target.value)}
+                      disabled={!selectedCountryId}
+                      className="flex-1 text-gray-700 p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      <option value="">
+                        {selectedCountryId ? "Select state" : "Select a country first"}
+                      </option>
+                      {selectedCountry?.states?.map((state) => (
+                        <option key={state.id} value={state.id}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       onClick={handleAddLocation}
-                      className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      disabled={!selectedStateId}
+                      className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
                     >
                       Add
                     </button>
                   </div>
+
                   {errors.location && (
                     <p className="text-xs text-red-500 mt-1">
                       {errors.location.message}
@@ -855,6 +901,26 @@ export default function AddCatering() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Bottom publish bar */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-8 py-4 flex justify-end gap-3 mt-6">
+              <Link href="/cateringServiceManagement/cateringServiceDashboard">
+                <button
+                  type="button"
+                  className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-sm"
+                >
+                  Cancel
+                </button>
+              </Link>
+              <button
+                type="submit"
+                form="cateringForm"
+                disabled={isCreating || isUploadingImages}
+                className="px-6 py-2 bg-[#315E9D] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium cursor-pointer"
+              >
+                {isCreating || isUploadingImages ? "Publishing..." : "Publish"}
+              </button>
             </div>
           </form>
         </main>

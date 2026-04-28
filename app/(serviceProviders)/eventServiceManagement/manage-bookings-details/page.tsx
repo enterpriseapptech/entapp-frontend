@@ -3,7 +3,7 @@ import { JSX, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGetBookingByIdQuery } from "@/redux/services/book";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { ArrowLeft, Calendar, Clock, MapPin, User, Mail, Phone, CheckCircle, XCircle, Clock as ClockIcon } from "lucide-react";
 
 export default function BookingDetails() {
@@ -19,7 +19,7 @@ export default function BookingDetails() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -38,7 +38,7 @@ export default function BookingDetails() {
   if (error || !booking) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -160,7 +160,7 @@ export default function BookingDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

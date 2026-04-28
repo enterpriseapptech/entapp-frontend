@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Header from "@/components/layouts/Header";
-import CateringServiceSideBar from "@/components/layouts/CateringServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import GenerateInvoiceModal from "@/components/layouts/GenerateInvoiceModal";
 import { useGetQuoteByIdQuery } from "@/redux/services/quoteApi";
 
@@ -121,7 +121,7 @@ export default function CateringQuoteDetails() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <CateringServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -140,7 +140,7 @@ export default function CateringQuoteDetails() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <CateringServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -160,7 +160,7 @@ export default function CateringQuoteDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CateringServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

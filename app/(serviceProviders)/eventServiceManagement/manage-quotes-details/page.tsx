@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Header from "@/components/layouts/Header";
-import EventServiceSideBar from "@/components/layouts/EventServiceSideBar";
+import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import GenerateInvoiceModal from "@/components/layouts/GenerateInvoiceModal";
 import { useGetQuoteByIdQuery } from "@/redux/services/quoteApi";
 
@@ -86,7 +86,7 @@ export default function QuoteDetails() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -105,7 +105,7 @@ export default function QuoteDetails() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <EventServiceSideBar
+        <ServiceProviderSideBar
           isOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -125,7 +125,7 @@ export default function QuoteDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <EventServiceSideBar
+      <ServiceProviderSideBar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
