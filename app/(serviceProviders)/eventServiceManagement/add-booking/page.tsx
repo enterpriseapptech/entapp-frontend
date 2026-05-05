@@ -7,9 +7,10 @@ import { Plus, X, Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import { useGetUserByIdQuery, ServiceType } from "@/redux/services/authApi";
-import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/eventsApi";
+import { useGetEventCentersByServiceProviderQuery, useGetEventCenterByIdQuery } from "@/redux/services/eventsApi";
 import { useGetTimeSlotsByServiceProviderQuery } from "@/redux/services/timeslot";
 import { useCreateBookingMutation } from "@/redux/services/book";
+import { useGetUsersQuery } from "@/redux/services/adminApi";
 import Notification from "@/components/ui/Notification";
 
 const EVENT_TYPES = ["Wedding", "Conference", "Birthday", "Party", "Corporate", "Other"];
@@ -42,6 +43,7 @@ export default function AddBooking() {
   const [requirementInput, setRequirementInput] = useState<string>("");
   const [lineItems, setLineItems] = useState<LineItem[]>([{ item: "", amount: 0 }]);
   const [discount, setDiscount] = useState<number>(0);
+  const [serviceCharge, setServiceCharge] = useState<number>(1500);
   const [serviceNotes, setServiceNotes] = useState<string>("");
   const [customerNotes, setCustomerNotes] = useState<string>("");
   const [billingStreet, setBillingStreet] = useState<string>("");
@@ -52,6 +54,8 @@ export default function AddBooking() {
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [isCancellationPolicyAccepted, setIsCancellationPolicyAccepted] = useState(false);
   const [isLiabilityWaiverSigned, setIsLiabilityWaiverSigned] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("user_id") || sessionStorage.getItem("user_id");
@@ -96,11 +100,35 @@ export default function AddBooking() {
       },
       { skip: !selectedServiceId }
     );
+    
+  const { data: fullEventCenter } = useGetEventCenterByIdQuery(selectedServiceId, { skip: !selectedServiceId });
+
+  const { data: customersData, isLoading: isLoadingCustomers } = useGetUsersQuery({
+    limit: 100,
+    offset: 0,
+    userType: "CUSTOMER",
+  });
 
   const [createBooking, { isLoading: isCreating }] = useCreateBookingMutation();
 
+  // Auto-fill form
+  useEffect(() => {
+    if (fullEventCenter) {
+      setDescription(fullEventCenter.description || "");
+      setNoOfGuest(fullEventCenter.sittingCapacity || 0);
+      setBillingStreet(fullEventCenter.streetAddress || "");
+      setBillingCity(fullEventCenter.city || "");
+      setBillingPostal(fullEventCenter.postal || "");
+      setServiceNotes(fullEventCenter.termsOfUse || "");
+      setCustomerNotes(fullEventCenter.cancellationPolicy || "");
+      setEventType(fullEventCenter.eventTypes?.[0] || "");
+      setEventName(`${fullEventCenter.name} Event`);
+      setLineItems([{ item: `Venue Booking - ${fullEventCenter.name}`, amount: fullEventCenter.pricingPerSlot || 0 }]);
+    }
+  }, [fullEventCenter]);
+
   const subTotal = lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-  const total = Math.max(0, subTotal - discount);
+  const total = Math.max(0, subTotal + serviceCharge - discount);
 
   const toggleTimeslot = (id: string) => {
     setSelectedTimeslots((prev) =>
@@ -156,7 +184,9 @@ export default function AddBooking() {
         serviceType: "EVENTCENTER",
         subTotal,
         discount,
+        serviceCharge,
         total,
+        amountDue: total,
         items: lineItems.filter((i) => i.item.trim()),
         billingAddress: {
           street: billingStreet,
@@ -190,7 +220,16 @@ export default function AddBooking() {
     }
   };
 
+  const filteredCustomers = customersData?.docs.filter((c) =>
+    `${c.firstName} ${c.lastName}`.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    c.email.toLowerCase().includes(customerSearch.toLowerCase())
+  );
+
   const availableTimeslots = timeslotsData?.data?.filter((ts) => ts.isAvailable) ?? [];
+
+  const dynamicEventTypes = fullEventCenter?.eventTypes?.length 
+    ? fullEventCenter.eventTypes 
+    : EVENT_TYPES;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -258,7 +297,7 @@ export default function AddBooking() {
                       setSelectedServiceId(e.target.value);
                       setSelectedTimeslots([]);
                     }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900"
                   >
                     <option value="">Select event center</option>
                     {eventCentersData?.data?.map((ec) => (
@@ -269,17 +308,50 @@ export default function AddBooking() {
                   </select>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Customer ID <span className="text-red-500">*</span>
+                    Customer <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
-                    placeholder="Enter customer ID"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    value={customerSearch}
+                    onChange={(e) => {
+                      setCustomerSearch(e.target.value);
+                      setShowCustomerDropdown(true);
+                    }}
+                    onFocus={() => setShowCustomerDropdown(true)}
+                    placeholder="Search customer by name or email"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
+                  {showCustomerDropdown && (customerSearch || isLoadingCustomers) && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {isLoadingCustomers ? (
+                        <div className="p-3 text-sm text-gray-500 flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Loading customers...
+                        </div>
+                      ) : filteredCustomers && filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((c) => (
+                          <div
+                            key={c.id}
+                            className={`p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 ${customerId === c.id ? 'bg-blue-50' : ''}`}
+                            onClick={() => {
+                              setCustomerId(c.id);
+                              setCustomerSearch(`${c.firstName} ${c.lastName} (${c.email})`);
+                              setShowCustomerDropdown(false);
+                            }}
+                          >
+                            <p className="text-sm font-medium text-gray-900">{c.firstName} {c.lastName}</p>
+                            <p className="text-xs text-gray-500">{c.email}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-3 text-sm text-gray-500">No customers found</div>
+                      )}
+                    </div>
+                  )}
+                  {customerId && !showCustomerDropdown && (
+                    <p className="text-[10px] text-green-600 mt-1 font-medium italic">Customer selected ID: {customerId}</p>
+                  )}
                 </div>
 
                 <div>
@@ -309,7 +381,7 @@ export default function AddBooking() {
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
                     placeholder="e.g. Smith Wedding"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
 
@@ -320,10 +392,10 @@ export default function AddBooking() {
                   <select
                     value={eventType}
                     onChange={(e) => setEventType(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900"
                   >
                     <option value="">Select event type</option>
-                    {EVENT_TYPES.map((t) => (
+                    {dynamicEventTypes.map((t) => (
                       <option key={t} value={t}>
                         {t}
                       </option>
@@ -340,7 +412,7 @@ export default function AddBooking() {
                     value={eventTheme}
                     onChange={(e) => setEventTheme(e.target.value)}
                     placeholder="e.g. Garden, Vintage"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
 
@@ -365,8 +437,9 @@ export default function AddBooking() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
+                    readOnly={false}
                     placeholder="Brief description of the event"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 resize-none placeholder:text-gray-500"
                   />
                 </div>
 
@@ -381,7 +454,7 @@ export default function AddBooking() {
                       onChange={(e) => setRequirementInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addRequirement())}
                       placeholder="Add a requirement and press Enter"
-                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-500"
                     />
                     <button
                       type="button"
@@ -496,7 +569,7 @@ export default function AddBooking() {
                       value={item.item}
                       onChange={(e) => updateLineItem(index, "item", e.target.value)}
                       placeholder="Item description"
-                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-500"
                     />
                     <input
                       type="number"
@@ -504,7 +577,7 @@ export default function AddBooking() {
                       value={item.amount}
                       onChange={(e) => updateLineItem(index, "amount", Number(e.target.value))}
                       placeholder="Amount"
-                      className="w-36 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="w-36 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-500"
                     />
                     <button
                       type="button"
@@ -542,6 +615,16 @@ export default function AddBooking() {
                     className="w-28 px-2 py-1 border border-gray-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
+                <div className="flex justify-between items-center text-gray-600">
+                  <span>Service Charge</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={serviceCharge}
+                    onChange={(e) => setServiceCharge(Number(e.target.value))}
+                    className="w-28 px-2 py-1 border border-gray-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900"
+                  />
+                </div>
                 <div className="flex justify-between font-semibold text-gray-900 border-t pt-2">
                   <span>Total</span>
                   <span>₦{total.toLocaleString()}</span>
@@ -559,8 +642,9 @@ export default function AddBooking() {
                     type="text"
                     value={billingStreet}
                     onChange={(e) => setBillingStreet(e.target.value)}
+                    readOnly={false}
                     placeholder="Street address"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
@@ -569,8 +653,9 @@ export default function AddBooking() {
                     type="text"
                     value={billingCity}
                     onChange={(e) => setBillingCity(e.target.value)}
+                    readOnly={false}
                     placeholder="City"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
@@ -579,8 +664,9 @@ export default function AddBooking() {
                     type="text"
                     value={billingState}
                     onChange={(e) => setBillingState(e.target.value)}
+                    readOnly={false}
                     placeholder="State"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
@@ -590,7 +676,7 @@ export default function AddBooking() {
                     value={billingCountry}
                     onChange={(e) => setBillingCountry(e.target.value)}
                     placeholder="Country"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
@@ -599,8 +685,9 @@ export default function AddBooking() {
                     type="text"
                     value={billingPostal}
                     onChange={(e) => setBillingPostal(e.target.value)}
+                    readOnly={false}
                     placeholder="Postal code"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
               </div>
@@ -619,7 +706,7 @@ export default function AddBooking() {
                     onChange={(e) => setServiceNotes(e.target.value)}
                     rows={3}
                     placeholder="Notes for the service provider"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none placeholder:text-gray-500"
                   />
                 </div>
                 <div>
@@ -631,7 +718,7 @@ export default function AddBooking() {
                     onChange={(e) => setCustomerNotes(e.target.value)}
                     rows={3}
                     placeholder="Notes from the customer"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none placeholder:text-gray-500"
                   />
                 </div>
               </div>

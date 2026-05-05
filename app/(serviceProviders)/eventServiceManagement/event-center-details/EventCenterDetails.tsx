@@ -14,6 +14,7 @@ import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import { useDeleteTimeSlotMutation } from "../../../../redux/services/timeslot";
 import Notification from "../../../../components/ui/Notification";
 import Pagination from "@/components/providers/Pagination";
+import CreateBookingModal from "../../../../components/modals/CreateBookingModal";
 
 const LoadingSpinner = () => {
   return (
@@ -40,6 +41,7 @@ export default function EventCenterDetails() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [deleteTimeSlot] = useDeleteTimeSlotMutation();
   const serviceType = "EVENTCENTER" as const;
 
@@ -225,13 +227,22 @@ export default function EventCenterDetails() {
               <h2 className="text-lg font-semibold text-gray-900">
                 Service Details
               </h2>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 bg-[#0047AB] text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Timeslot
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsBookingModalOpen(true)}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Booking
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="inline-flex items-center px-4 py-2 bg-[#0047AB] text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Timeslot
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
@@ -494,6 +505,15 @@ export default function EventCenterDetails() {
           message={error}
           type="error"
           onClose={() => setError(null)}
+        />
+      )}
+      {isBookingModalOpen && (
+        <CreateBookingModal
+          isOpen={isBookingModalOpen}
+          onClose={() => setIsBookingModalOpen(false)}
+          serviceId={id}
+          serviceType="EVENTCENTER"
+          serviceName={eventCenter.description.split(" ")[0] + " Center"}
         />
       )}
     </div>

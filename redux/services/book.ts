@@ -4,11 +4,12 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export interface CreateBookingRequest {
   customerId: string;
   requestQuoteId?: string | null;
-  amountDue?: number;
+  amountDue: number;
   serviceId: string;
   timeslotId: string[];
   serviceType: "EVENTCENTER" | "CATERING";
   subTotal: number;
+  serviceCharge?: number;
   discount: number;
   total: number;
   items: { item: string; amount: number }[];
@@ -39,13 +40,18 @@ export interface CreateBookingResponse {
   id: string;
   userId: string;
   reference: string;
+  serviceProviderId?: string | null;
   bookingId: string;
   subscriptionId?: string | null;
+  serviceType?: string | null;
+  serviceId?: string | null;
+  subscriptionPlanId?: string | null;
   items: { item: string; amount: number }[];
   subTotal: number;
   discount: number;
   total: number;
   amountDue: number;
+  serviceChargeAmount?: number | null;
   currency: string;
   note: string | null;
   billingAddress: {
