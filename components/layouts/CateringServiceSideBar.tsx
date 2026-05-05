@@ -133,6 +133,25 @@ const CateringServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar 
             />
             <span className="font-medium text-sm">Manage Quotes</span>
           </Link>
+          <Link
+            href="/cateringServiceManagement/manage-bookings"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              pathname === "/cateringServiceManagement/manage-bookings"
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Image
+              width={10}
+              height={10}
+              alt="manageBooking"
+              src="/manageBooking.png"
+              className="w-5 h-5"
+              unoptimized
+            />
+            <span className="font-medium text-sm">Manage Bookings</span>
+          </Link>
         </nav>
 
         {/* Support, Settings, and Profile Section */}

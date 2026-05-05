@@ -201,6 +201,26 @@ const AllServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
           </Link>
 
           <Link
+            href="/cateringServiceManagement/manage-bookings"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              isActive("/cateringServiceManagement/manage-bookings")
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Image
+              width={20}
+              height={20}
+              alt="Manage Booking"
+              src="/manageBooking.png"
+              className="w-5 h-5"
+              unoptimized
+            />
+            <span className="font-medium text-sm">Manage Booking</span>
+          </Link>
+
+          <Link
             href="/cateringServiceManagement/manage-quotes"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
               isActive("/cateringServiceManagement/manage-quotes")
