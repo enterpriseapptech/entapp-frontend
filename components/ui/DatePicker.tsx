@@ -1,6 +1,6 @@
 import React, { JSX, useState } from "react";
 import { X, CheckCircle, Calendar, MapPin, FileText } from "lucide-react";
-import { useGetTimeSlotsByServiceProviderQuery } from "@/redux/services/timeslot";
+import { useGetTimeSlotsByServiceProviderQuery, TimeSlot } from "@/redux/services/timeslot";
 import { useCreateBookingMutation } from "@/redux/services/book";
 import type {
   CreateBookingRequest,
@@ -32,15 +32,6 @@ interface BookingData {
   deposit: number;
 }
 
-interface TimeSlot {
-  id: string;
-  serviceId: string;
-  serviceType: "CATERING" | "EVENTCENTERS";
-  bookingId: string | null;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
-}
 interface BookingItem {
   item: string;
   amount: number;

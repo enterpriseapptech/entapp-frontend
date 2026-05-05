@@ -13,6 +13,7 @@ import {
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import { useDeleteTimeSlotMutation } from "../../../../redux/services/timeslot";
 import Notification from "../../../../components/ui/Notification";
+import Pagination from "@/components/providers/Pagination";
 
 const LoadingSpinner = () => (
   <div className="fixed inset-0 bg-gray-50/80 flex items-center justify-center z-50">
@@ -32,6 +33,8 @@ export default function CateringServiceDetails() {
   const [slots, setSlots] = useState([
     { date: "", startTime: "09:00", endTime: "17:00" },
   ]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -56,8 +59,8 @@ export default function CateringServiceDetails() {
   } = useGetTimeSlotsByServiceProviderQuery(
     {
       serviceId: id,
-      limit: 10,
-      offset: 0,
+      limit: itemsPerPage,
+      offset: (currentPage - 1) * itemsPerPage,
     },
     { skip: !id }
   );
@@ -334,6 +337,13 @@ export default function CateringServiceDetails() {
                     ))}
                 </tbody>
               </table>
+            )}
+            {timeSlotsData && timeSlotsData.count > itemsPerPage && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(timeSlotsData.count / itemsPerPage)}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
             )}
           </div>
         </main>

@@ -1,7 +1,7 @@
 "use client";
 import React, { JSX, useState } from "react";
 import { X, CheckCircle, Calendar, MapPin, DollarSign } from "lucide-react";
-import { useGetTimeSlotsByServiceProviderQuery } from "@/redux/services/timeslot";
+import { useGetTimeSlotsByServiceProviderQuery, TimeSlot } from "@/redux/services/timeslot";
 import { useRequestQuoteMutation } from "@/redux/services/quoteApi";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
@@ -15,15 +15,6 @@ interface QuoteRequestProps {
   serviceType: "EVENTCENTER" | "CATERING";
 }
 
-interface TimeSlot {
-  id: string;
-  serviceId: string;
-  serviceType: "CATERING" | "EVENTCENTERS";
-  bookingId: string | null;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
-}
 
 enum SpecialRequirement {
   WHEELCHAIRACCESS = "WHEELCHAIRACCESS",

@@ -3,12 +3,12 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export interface TimeSlot {
   id: string;
   serviceId: string;
-  serviceType: "CATERING" | "EVENTCENTERS";
+  serviceType: "CATERING" | "EVENTCENTER";
   bookingId: string | null;
   startTime: string;
   endTime: string;
   isAvailable: boolean;
-  previousBookings: [];
+  previousBookings: string[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -32,6 +32,7 @@ export interface TimeSlotResponse {
 }
 export const timeslotApi = createApi({
   reducerPath: "timeslotApi",
+  tagTypes: ["TimeSlot"],
   baseQuery: fetchBaseQuery({
     baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
@@ -55,6 +56,7 @@ export const timeslotApi = createApi({
           "Content-Type": "application/json",
         },
       }),
+      invalidatesTags: ["TimeSlot"],
     }),
     getTimeSlotsByServiceProvider: builder.query<
       TimeSlotResponse,
@@ -74,6 +76,7 @@ export const timeslotApi = createApi({
           method: "GET",
         };
       },
+      providesTags: ["TimeSlot"],
     }),
     deleteTimeSlot: builder.mutation<{ message: string }, string>({
       query: (id) => ({
@@ -83,6 +86,7 @@ export const timeslotApi = createApi({
           "Content-Type": "application/json",
         },
       }),
+      invalidatesTags: ["TimeSlot"],
     }),
   }),
 });
