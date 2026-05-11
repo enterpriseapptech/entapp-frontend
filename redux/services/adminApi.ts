@@ -228,6 +228,27 @@ export interface UpdateSubscriptionPlanRequest {
   status?: string;
 }
 
+// ================= APP SETTINGS =================
+export interface AppSettings {
+  id: string;
+  serviceCharge: number;
+  kycMethod: string;
+  notifyOnRequest: boolean;
+  notifyCertifiedOnly: boolean;
+  visibleToCertifiedOnly: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  updatedBy: string;
+}
+
+export interface UpdateAppSettingsRequest {
+  serviceCharge: number;
+  notifyOnRequest: boolean;
+  notifyCertifiedOnly: boolean;
+  visibleToCertifiedOnly: boolean;
+}
+
 export const adminApi = createApi({
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
@@ -243,7 +264,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Country", "State", "Payment", "Invoice", "User", "SubscriptionPlan"],
+  tagTypes: ["Country", "State", "Payment", "Invoice", "User", "SubscriptionPlan", "AppSettings"],
   endpoints: (builder) => ({
     getCountries: builder.query<
       PaginatedCountryResponse,
@@ -408,6 +429,19 @@ export const adminApi = createApi({
       },
       providesTags: ["User"],
     }),
+    // ================= APP SETTINGS =================
+    getAppSettings: builder.query<AppSettings, void>({
+      query: () => "/admin/app-settings",
+      providesTags: ["AppSettings"],
+    }),
+    updateAppSettings: builder.mutation<AppSettings, UpdateAppSettingsRequest>({
+      query: (body) => ({
+        url: "/admin/app-settings",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["AppSettings"],
+    }),
   }),
 });
 
@@ -429,4 +463,6 @@ export const {
   useCreateSubscriptionPlanMutation,
   useUpdateSubscriptionPlanMutation,
   useDeleteSubscriptionPlanMutation,
+  useGetAppSettingsQuery,
+  useUpdateAppSettingsMutation,
 } = adminApi;

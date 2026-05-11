@@ -109,6 +109,15 @@ export interface RefreshTokenResponse {
   access_token: string;
   refresh_token: string;
 }
+
+export interface UpdateUserRequest {
+  status?: string;
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  state?: string;
+  location?: string;
+}
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -180,6 +189,16 @@ export const api = createApi({
         method: "GET",
       }),
     }),
+    updateUser: builder.mutation<
+      UserResponse,
+      { id: string; body: UpdateUserRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/users/${id}`,
+        method: "PATCH",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -192,4 +211,5 @@ export const {
   useChangePasswordMutation,
   useRefreshTokenMutation,
   useGetUserByIdQuery,
+  useUpdateUserMutation,
 } = api;

@@ -1,45 +1,95 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/layouts/Header";
 import Image from "next/image";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
+import {
+  useGetUserByIdQuery,
+  useUpdateUserMutation,
+} from "@/redux/services/authApi";
+import { useGetCountriesQuery, useGetStatesQuery } from "@/redux/services/adminApi";
+import { Loader2 } from "lucide-react";
+import Notification from "@/components/ui/Notification";
 
 export default function Settings() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState("Livia");
-  const [lastName, setLastName] = useState("Rhye");
-  const [email, setEmail] = useState("ayobami@entapp.com");
-  const [phone, setPhone] = useState("+2349182738475");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [language, setLanguage] = useState("English");
   const [timezone, setTimezone] = useState("GMT +02:00");
+  const [country, setCountry] = useState("");
+  const [state, setState] = useState("");
+  const [location, setLocation] = useState("");
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  // Handle image upload
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
+  const userId = typeof window !== "undefined" ? (localStorage.getItem("user_id") || sessionStorage.getItem("user_id")) : null;
+
+  const { data: userData, isLoading: isUserLoading } = useGetUserByIdQuery(userId as string, {
+    skip: !userId,
+  });
+
+  const { data: countriesData } = useGetCountriesQuery({ limit: 100, offset: 0 });
+  const { data: statesData } = useGetStatesQuery({ limit: 100, offset: 0 });
+
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+
+  useEffect(() => {
+    if (userData) {
+      setFirstName(userData.firstName || "");
+      setLastName(userData.lastName || "");
+      setEmail(userData.email || "");
+      setCountry(userData.country || "");
+      setState(userData.state || "");
+      setLocation(userData.location || "");
+    }
+  }, [userData]);
+
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!userId) return;
+
+    try {
+      await updateUser({
+        id: userId,
+        body: {
+          firstName,
+          lastName,
+          country,
+          state,
+          location,
+          status: "ACTIVE", // As per requirement
+        },
+      }).unwrap();
+      setNotification({ message: "Profile updated successfully!", type: "success" });
+    } catch (error) {
+      setNotification({ message: "Failed to update profile.", type: "error" });
     }
   };
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log({
-      firstName,
-      lastName,
-      email,
-      phone,
-      language,
-      timezone,
-      profileImage,
-    });
-    // Add logic to save the updated profile details (e.g., API call)
-  };
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
       {/* Sidebar */}
       <ServiceProviderSideBar
         isOpen={isSidebarOpen}
@@ -53,56 +103,13 @@ export default function Settings() {
 
         {/* Settings Content */}
         <main className="md:p-10 p-4">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="md:text-xl text-md font-bold text-gray-950">
+            <h1 className="md:text-xl text-md font-bold text-gray-950 mb-6">
               Settings
             </h1>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-200 text-sm font-medium">
-                <Image
-                  width={10}
-                  height={10}
-                  alt="import"
-                  src="/import.png"
-                  className="w-5 h-5"
-                  unoptimized
-                />
-                <span>Import</span>
-              </button>
-              <button className="flex items-center gap-3 px-5 py-1.5 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer">
-                <Image
-                  width={10}
-                  height={10}
-                  alt="add"
-                  src="/add.png"
-                  className="w-4 h-4"
-                  unoptimized
-                />
-                <span>Add</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Blue Background Card */}
-          <div className="w-full h-40 bg-[#1E5EFF] rounded-lg mb-4"></div>
 
           {/* Profile Header (Outside the white card) */}
           <div className="flex items-center mb-6 relative">
-            <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center ml-4 absolute -top-14">
-              {profileImage ? (
-                <Image
-                  src={profileImage}
-                  alt="Profile"
-                  width={80}
-                  height={80}
-                  className="w-full h-full rounded-full object-cover border-4 border-white"
-                  unoptimized
-                />
-              ) : (
-                <span className="text-gray-500">No Image</span>
-              )}
-            </div>
-            <div className="ml-30 mt-[-4px]">
+            <div className="ml-4">
               <h2 className="text-md font-bold text-gray-900">
                 {firstName} {lastName}
               </h2>
@@ -124,41 +131,6 @@ export default function Settings() {
               </p>
 
               <form onSubmit={handleSubmit}>
-                {/* Image Upload */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
-                    Images
-                  </label>
-                  <div className="gap-2 flex flex-col border-2 border-dashed border-gray-300 rounded-lg p-6 justify-center items-center">
-                    <label
-                      htmlFor="image-upload"
-                      className="cursor-pointer bg-[#0047AB] text-white px-8 py-2 rounded-lg hover:bg-blue-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Image
-                            src="/upload.png"
-                            alt="upload.png"
-                            width={20}
-                            height={20}
-                            className="w-4 h-4"
-                            unoptimized
-                        />
-                        <span>Upload</span>
-                      </div> 
-                      
-                      <input
-                        id="image-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </label>
-                    <span className="ml-2 text-sm text-gray-500">
-                      Or drag and drop files
-                    </span>
-                  </div>
-                </div>
 
                 {/* First Name and Last Name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -188,32 +160,56 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Email and Phone */}
+                {/* Country and State */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Email
+                      Country
                     </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="text-gray-300 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Email"
-                    />
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="text-gray-900 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Country</option>
+                      {countriesData?.docs?.map((c: any) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
-                      Phone
+                      State
                     </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="text-gray-300 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Phone"
-                    />
+                    <select
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="text-gray-900 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select State</option>
+                      {statesData?.docs?.map((s: any) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                </div>
+
+                {/* Location */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="text-gray-900 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your location"
+                  />
                 </div>
 
                 {/* Regional Settings */}
@@ -260,9 +256,10 @@ export default function Settings() {
                 <div className="mt-6">
                   <button
                     type="submit"
-                    className="bg-[#0047AB] text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                    disabled={isUpdating}
+                    className="bg-[#0047AB] text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
                   >
-                    Save Changes
+                    {isUpdating ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </form>

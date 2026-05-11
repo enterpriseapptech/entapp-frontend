@@ -5,7 +5,7 @@ import {
   X,
   Search,
   // LifeBuoy,
-  // Settings,
+  Settings,
   CreditCard,
   Users,
   MapPin,
@@ -265,6 +265,19 @@ const SideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           >
             <MapPin className="w-5 h-5" />
             <span className="font-medium text-sm">Geography</span>
+          </Link>
+
+          <Link
+            href="/admin/settings"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+              pathname === "/admin/settings"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            }`}
+            onClick={handleLinkClick}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="font-medium text-sm">Settings</span>
           </Link>
         </nav>
 
