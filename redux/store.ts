@@ -7,6 +7,7 @@ import { timeslotApi } from "./services/timeslot";
 import { bookingApi } from "./services/book";
 import { quoteApi } from "./services/quoteApi";
 import { adminApi } from "./services/adminApi";
+import { subscriptionApi } from "./services/subscriptionApi";
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
     [bookingApi.reducerPath]: bookingApi.reducer,
     [quoteApi.reducerPath]: quoteApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
+    [subscriptionApi.reducerPath]: subscriptionApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -26,7 +28,8 @@ export const store = configureStore({
       timeslotApi.middleware,
       bookingApi.middleware,
       quoteApi.middleware,
-      adminApi.middleware
+      adminApi.middleware,
+      subscriptionApi.middleware
     ),
 });
 

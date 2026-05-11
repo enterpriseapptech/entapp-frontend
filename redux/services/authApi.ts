@@ -71,6 +71,8 @@ export interface UserResponse {
   deletedAt: string | null;
   deletedBy: string | null;
   serviceProvider: ServiceProvider | null;
+  catering?: any[];
+  eventCenter?: any[];
 }
 
 export interface VerifyUserRequest {

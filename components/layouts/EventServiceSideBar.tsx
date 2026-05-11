@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, X, Search, Settings, LogOut } from "lucide-react";
+import { BarChart3, X, Search, Settings, LogOut, CreditCard } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -156,6 +156,20 @@ const EventServiceSideBar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) 
 
         {/* Support, Settings, and Profile Section */}
         <div className="mt-auto md:pt-8">
+
+          {/* Subscriptions Button */}
+          <Link
+            href="/eventServiceManagement/subscriptions"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+              pathname === "/eventServiceManagement/subscriptions"
+                ? "bg-[#F2F6FC] text-[#0047AB]"
+                : "text-[#081127] hover:bg-gray-100"
+            } w-full`}
+            onClick={handleLinkClick}
+          >
+            <CreditCard className="w-5 h-5" />
+            <span className="font-medium text-sm">Subscriptions</span>
+          </Link>
 
           {/* Settings Button */}
           <Link
