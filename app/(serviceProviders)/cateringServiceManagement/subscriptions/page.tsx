@@ -6,6 +6,7 @@ import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar"
 import {
   useGetSubscriptionsQuery,
   useCreateSubscriptionMutation,
+  useLazyGetSubscriptionByIdQuery,
 } from "@/redux/services/subscriptionApi";
 import { useGetSubscriptionPlansQuery } from "@/redux/services/adminApi";
 import { useGetUserByIdQuery } from "@/redux/services/authApi";
@@ -13,6 +14,7 @@ import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/event
 import { useGetCateringsByServiceProviderQuery } from "@/redux/services/cateringApi";
 import { Loader2, Plus, CreditCard, Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 import Notification from "@/components/ui/Notification";
+import SubscriptionPaymentModal from "@/components/ui/SubscriptionPaymentModal";
 import Image from "next/image";
 
 export default function SubscriptionsPage() {
@@ -21,6 +23,10 @@ export default function SubscriptionsPage() {
   const [selectedService, setSelectedService] = useState<{ id: string; type: string } | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [activeInvoice, setActiveInvoice] = useState<{ id: string; amount: number } | null>(null);
 
   // Billing address state
   const [billingAddress, setBillingAddress] = useState({
@@ -37,6 +43,7 @@ export default function SubscriptionsPage() {
   const { data: eventCentersData } = useGetEventCentersByServiceProviderQuery({ serviceProviderId: userId as string, limit: 100, offset: 0 }, { skip: !userId });
   const { data: cateringsData } = useGetCateringsByServiceProviderQuery({ serviceProviderId: userId as string, limit: 100, offset: 0 }, { skip: !userId });
   const { data: subscriptionsData, isLoading: isSubsLoading } = useGetSubscriptionsQuery({ limit: 10, offset: 0 });
+  const [getSubscriptionDetails, { isFetching: isFetchingDetails }] = useLazyGetSubscriptionByIdQuery();
   const { data: plansData } = useGetSubscriptionPlansQuery({ limit: 100, offset: 0 });
   const [createSubscription, { isLoading: isCreating }] = useCreateSubscriptionMutation();
 
@@ -45,7 +52,7 @@ export default function SubscriptionsPage() {
     if (!userId || !selectedService || !selectedPlanId) return;
 
     try {
-      await createSubscription({
+      const response = await createSubscription({
         serviceProviderId: userId,
         serviceId: selectedService.id,
         serviceType: selectedService.type,
@@ -55,14 +62,30 @@ export default function SubscriptionsPage() {
         currency: "NGN",
       }).unwrap();
       
-      setNotification({ message: "Subscription initiated successfully!", type: "success" });
-      setIsModalOpen(false);
-      // Reset form
-      setSelectedPlanId("");
-      setSelectedService(null);
+      // Get the invoice from the response
+      const invoice = Array.isArray(response.invoice) ? response.invoice[0] : response.invoice;
+      
+      if (invoice) {
+        setActiveInvoice({
+          id: invoice.id,
+          amount: typeof invoice.amountDue === 'string' ? parseFloat(invoice.amountDue) : invoice.amountDue
+        });
+        setIsModalOpen(false);
+        setIsPaymentModalOpen(true);
+      } else {
+        setNotification({ message: "Subscription created but no invoice found. Please contact support.", type: "error" });
+      }
     } catch (error) {
       setNotification({ message: "Failed to create subscription.", type: "error" });
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setNotification({ message: "Subscription activated successfully!", type: "success" });
+    // Reset form
+    setSelectedPlanId("");
+    setSelectedService(null);
   };
 
   const services = [
@@ -135,15 +158,45 @@ export default function SubscriptionsPage() {
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-6 mt-6 pt-6 border-t border-gray-50">
-                        <div className="text-xs text-gray-400">
-                          <p className="font-medium text-gray-500 uppercase tracking-wider mb-1">Created At</p>
-                          <p>{new Date(sub.createdAt).toLocaleDateString()}</p>
+                      <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-50">
+                        <div className="flex gap-6">
+                          <div className="text-xs text-gray-400">
+                            <p className="font-medium text-gray-500 uppercase tracking-wider mb-1">Created At</p>
+                            <p>{new Date(sub.createdAt).toLocaleDateString()}</p>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            <p className="font-medium text-gray-500 uppercase tracking-wider mb-1">Service Type</p>
+                            <p className="capitalize">{sub.type.replace("_", " ")}</p>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          <p className="font-medium text-gray-500 uppercase tracking-wider mb-1">Service Type</p>
-                          <p className="capitalize">{sub.type.replace("_", " ")}</p>
-                        </div>
+
+                        {sub.status === "INACTIVE" && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                // Fetch full details to get the invoice
+                                const details = await getSubscriptionDetails(sub.id).unwrap();
+                                const inv = Array.isArray(details.invoice) ? details.invoice[0] : details.invoice;
+                                
+                                if (inv) {
+                                  setActiveInvoice({
+                                    id: inv.id,
+                                    amount: typeof inv.amountDue === 'string' ? parseFloat(inv.amountDue) : inv.amountDue
+                                  });
+                                  setIsPaymentModalOpen(true);
+                                } else {
+                                  setNotification({ message: "No invoice found for this subscription. Please contact support.", type: "error" });
+                                }
+                              } catch (err) {
+                                setNotification({ message: "Failed to fetch subscription details.", type: "error" });
+                              }
+                            }}
+                            className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            Complete Payment
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -317,6 +370,20 @@ export default function SubscriptionsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Payment Modal */}
+      {activeInvoice && (
+        <SubscriptionPaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          amount={activeInvoice.amount}
+          invoiceId={activeInvoice.id}
+          userId={userId}
+          userEmail={userData?.email || localStorage.getItem("user_email")}
+          onPaymentSuccess={handlePaymentSuccess}
+          onPaymentError={(err) => setNotification({ message: err, type: "error" })}
+        />
       )}
     </div>
   );

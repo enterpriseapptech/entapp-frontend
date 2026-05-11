@@ -133,5 +133,6 @@ export const subscriptionApi = createApi({
 export const {
   useGetSubscriptionsQuery,
   useGetSubscriptionByIdQuery,
+  useLazyGetSubscriptionByIdQuery,
   useCreateSubscriptionMutation,
 } = subscriptionApi;
