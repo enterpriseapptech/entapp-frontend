@@ -101,8 +101,10 @@ export default function GenerateInvoiceModal({
 
   const handleSubmit = async () => {
     try {
-      const bookingData = {
+        const bookingData = {
         customerId: initialQuote.customerId,
+        requestQuoteId: initialQuote.id,
+        amountDue: formData.total,
         serviceId: initialQuote.serviceId,
         timeslotId: timeslotIds,
         serviceType: initialQuote.serviceType,

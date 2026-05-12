@@ -29,7 +29,6 @@ import CreatePlanModal from "@/components/modals/CreatePlanModal";
 import DeletePlanModal from "@/components/modals/DeletePlanModal";
 import TogglePlanStatusModal from "@/components/modals/TogglePlanStatusModal";
 import SubscriptionDetailsModal from "@/components/modals/SubscriptionDetailsModal";
-import AssignSubscriptionModal from "@/components/modals/AssignSubscriptionModal";
 
 type ViewMode = "cards" | "list";
 type TabType = "plans" | "subscriptions";
@@ -96,8 +95,6 @@ export default function SubscriptionManagement() {
     isOpen: boolean;
     subscription: Subscription | null;
   }>({ isOpen: false, subscription: null });
-
-  const [assignSubscriptionModal, setAssignSubscriptionModal] = useState(false);
 
   // Sample data for subscribed users removed and replaced by API
 
@@ -172,20 +169,6 @@ export default function SubscriptionManagement() {
     }
   };
 
-  // Handler functions for Subscribed Users
-  const handleAssignSubscription = (newSubscription: Subscription) => {
-    // This will likely need an API call in the future
-  };
-
-  const handleChangeSubscription = (
-    updatedSubscription: Partial<Subscription> & { id: string }
-  ) => {
-    // This will likely need an API call in the future
-  };
-
-  const handleToggleSubscriptionStatus = (subscriptionId: string) => {
-    // This will likely need an API call in the future
-  };
 
   // Get available plan names for dropdowns
   const availablePlanNames = subscriptionPlans.map((plan) => plan.plan);
@@ -1017,12 +1000,6 @@ export default function SubscriptionManagement() {
         subscription={subscriptionDetailsModal.subscription}
       />
 
-      <AssignSubscriptionModal
-        isOpen={assignSubscriptionModal}
-        onClose={() => setAssignSubscriptionModal(false)}
-        availablePlans={availablePlanNames}
-        onAssign={handleAssignSubscription}
-      />
 
       {notification && (
         <Notification
