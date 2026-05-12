@@ -193,8 +193,12 @@ export default function HeroWithNavbar({
   const navLinks = [
     { label: "Event Centers", href: "/event-center" },
     { label: "Catering Services", href: "/cateringServices" },
-    { label: "Quotes", href: "/quotes" },
-    { label: "Bookings", href: "/bookings" },
+    ...(isLoggedIn
+      ? [
+          { label: "Quotes", href: "/quotes" },
+          { label: "Bookings", href: "/bookings" },
+        ]
+      : []),
     { label: "About Us", href: "#" },
   ];
 

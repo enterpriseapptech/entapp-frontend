@@ -214,6 +214,30 @@ export interface PaginatedSubscriptionPlanResponse {
   data: SubscriptionPlan[];
 }
 
+// ================= SUBSCRIPTIONS =================
+export interface Subscription {
+  id: string;
+  serviceProviderId: string;
+  serviceId: string;
+  type: string;
+  subscriptionplanId: string;
+  status: string;
+  expiryDate: string;
+  createdAt: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  serviceName: string | null;
+  invoice?: Invoice[];
+  serviceProvider?: User;
+}
+
+export interface PaginatedSubscriptionResponse {
+  count: number;
+  docs: Subscription[];
+}
+
 export interface CreateSubscriptionPlanRequest {
   plan: string;
   amount: number;
@@ -264,7 +288,7 @@ export const adminApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Country", "State", "Payment", "Invoice", "User", "SubscriptionPlan", "AppSettings"],
+  tagTypes: ["Country", "State", "Payment", "Invoice", "User", "SubscriptionPlan", "AppSettings", "Subscription"],
   endpoints: (builder) => ({
     getCountries: builder.query<
       PaginatedCountryResponse,
@@ -429,6 +453,19 @@ export const adminApi = createApi({
       },
       providesTags: ["User"],
     }),
+    // ================= SUBSCRIPTIONS =================
+    getSubscriptions: builder.query<
+      PaginatedSubscriptionResponse,
+      { limit: number; offset: number }
+    >({
+      query: ({ limit, offset }) =>
+        `/subscriptions?limit=${limit}&offset=${offset}`,
+      providesTags: ["Subscription"],
+    }),
+    getSubscriptionById: builder.query<Subscription, string>({
+      query: (id) => `/subscriptions/${id}`,
+      providesTags: (_result, _error, id) => [{ type: "Subscription", id }],
+    }),
     // ================= APP SETTINGS =================
     getAppSettings: builder.query<AppSettings, void>({
       query: () => "/admin/app-settings",
@@ -465,4 +502,6 @@ export const {
   useDeleteSubscriptionPlanMutation,
   useGetAppSettingsQuery,
   useUpdateAppSettingsMutation,
+  useGetSubscriptionsQuery,
+  useGetSubscriptionByIdQuery,
 } = adminApi;

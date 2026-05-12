@@ -14,10 +14,12 @@ import Notification from "@/components/ui/Notification";
 import { useState } from "react";
 import {
   useGetSubscriptionPlansQuery,
+  useGetSubscriptionsQuery,
   useCreateSubscriptionPlanMutation,
   useUpdateSubscriptionPlanMutation,
   useDeleteSubscriptionPlanMutation,
   type SubscriptionPlan,
+  type Subscription,
 } from "@/redux/services/adminApi";
 
 // Import all modals
@@ -27,21 +29,12 @@ import CreatePlanModal from "@/components/modals/CreatePlanModal";
 import DeletePlanModal from "@/components/modals/DeletePlanModal";
 import TogglePlanStatusModal from "@/components/modals/TogglePlanStatusModal";
 import SubscriptionDetailsModal from "@/components/modals/SubscriptionDetailsModal";
-import ChangeSubscriptionPlanModal from "@/components/modals/ChangeSubscriptionPlanModal";
-import ToggleSubscriptionStatusModal from "@/components/modals/ToggleSubscriptionStatusModal";
 import AssignSubscriptionModal from "@/components/modals/AssignSubscriptionModal";
 
 type ViewMode = "cards" | "list";
-type TabType = "plans" | "users";
+type TabType = "plans" | "subscriptions";
 
-interface SubscribedUser {
-  id: number;
-  businessName: string;
-  currentPlan: string;
-  status: string;
-  startDate: string;
-  renewalDate: string;
-}
+// SubscribedUser interface removed
 
 export default function SubscriptionManagement() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -59,8 +52,16 @@ export default function SubscriptionManagement() {
   const [updatePlan] = useUpdateSubscriptionPlanMutation();
   const [deletePlan] = useDeleteSubscriptionPlanMutation();
 
+  const { data: subscriptionsData } = useGetSubscriptionsQuery({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  });
+
   const subscriptionPlans = plansData?.data || [];
   const totalPlansCount = plansData?.count || 0;
+
+  const subscriptions = subscriptionsData?.docs || [];
+  const totalSubscriptionsCount = subscriptionsData?.count || 0;
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -93,63 +94,21 @@ export default function SubscriptionManagement() {
   // Modal states for Subscribed Users
   const [subscriptionDetailsModal, setSubscriptionDetailsModal] = useState<{
     isOpen: boolean;
-    subscription: SubscribedUser | null;
+    subscription: Subscription | null;
   }>({ isOpen: false, subscription: null });
-
-  const [changeSubscriptionModal, setChangeSubscriptionModal] = useState<{
-    isOpen: boolean;
-    subscription: SubscribedUser | null;
-  }>({ isOpen: false, subscription: null });
-
-  const [toggleSubscriptionStatusModal, setToggleSubscriptionStatusModal] =
-    useState<{
-      isOpen: boolean;
-      subscription: SubscribedUser | null;
-    }>({ isOpen: false, subscription: null });
 
   const [assignSubscriptionModal, setAssignSubscriptionModal] = useState(false);
 
-  // Sample data for subscribed users
-  const [subscribedUsers, setSubscribedUsers] = useState<SubscribedUser[]>([
-    {
-      id: 1,
-      businessName: "Grand Ballroom Hall",
-      currentPlan: "Professional Plan",
-      status: "Active",
-      startDate: "2025-01-01",
-      renewalDate: "2025-02-01",
-    },
-    {
-      id: 2,
-      businessName: "Gourmet Delights Catering",
-      currentPlan: "Basic Plan",
-      status: "Active",
-      startDate: "2024-12-15",
-      renewalDate: "2025-01-15",
-    },
-    {
-      id: 3,
-      businessName: "Downtown Event Space",
-      currentPlan: "Professional Plan",
-      status: "Expired",
-      startDate: "2024-11-01",
-      renewalDate: "2024-12-01",
-    },
-  ]);
+  // Sample data for subscribed users removed and replaced by API
 
   // Get current data based on active tab
   const totalPages =
     activeTab === "plans"
       ? Math.ceil(totalPlansCount / itemsPerPage)
-      : Math.ceil(subscribedUsers.length / itemsPerPage);
+      : Math.ceil(totalSubscriptionsCount / itemsPerPage);
 
   const paginatedData =
-    activeTab === "plans"
-      ? subscriptionPlans
-      : subscribedUsers.slice(
-          (currentPage - 1) * itemsPerPage,
-          currentPage * itemsPerPage
-        );
+    activeTab === "plans" ? subscriptionPlans : subscriptions;
 
   // Handler functions for Plans
   const handleCreatePlan = async (
@@ -214,33 +173,18 @@ export default function SubscriptionManagement() {
   };
 
   // Handler functions for Subscribed Users
-  const handleAssignSubscription = (newSubscription: SubscribedUser) => {
-    setSubscribedUsers([...subscribedUsers, newSubscription]);
+  const handleAssignSubscription = (newSubscription: Subscription) => {
+    // This will likely need an API call in the future
   };
 
   const handleChangeSubscription = (
-    updatedSubscription: Partial<SubscribedUser> & { id: number }
+    updatedSubscription: Partial<Subscription> & { id: string }
   ) => {
-    setSubscribedUsers(
-      subscribedUsers.map((user) =>
-        user.id === updatedSubscription.id
-          ? { ...user, ...updatedSubscription }
-          : user
-      )
-    );
+    // This will likely need an API call in the future
   };
 
-  const handleToggleSubscriptionStatus = (subscriptionId: number) => {
-    setSubscribedUsers(
-      subscribedUsers.map((user) =>
-        user.id === subscriptionId
-          ? {
-              ...user,
-              status: user.status === "Active" ? "Expired" : "Active",
-            }
-          : user
-      )
-    );
+  const handleToggleSubscriptionStatus = (subscriptionId: string) => {
+    // This will likely need an API call in the future
   };
 
   // Get available plan names for dropdowns
@@ -311,15 +255,7 @@ export default function SubscriptionManagement() {
               </p>
             </div>
             <div className="flex gap-2">
-              {activeTab === "users" && (
-                <button
-                  onClick={() => setAssignSubscriptionModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0047AB] text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Assign Subscription</span>
-                </button>
-              )}
+              {/* Assign Subscription button removed as per request to remove edit/delete/create-like actions in this view */}
               {/* <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 text-sm font-medium">
                 <svg
                   width="16"
@@ -371,17 +307,17 @@ export default function SubscriptionManagement() {
               </button>
               <button
                 onClick={() => {
-                  setActiveTab("users");
+                  setActiveTab("subscriptions");
                   setCurrentPage(1);
                 }}
                 className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                  activeTab === "users"
+                  activeTab === "subscriptions"
                     ? "text-[#0047AB]"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                Subscribed Users ({subscribedUsers.length})
-                {activeTab === "users" && (
+                Subscriptions ({totalSubscriptionsCount})
+                {activeTab === "subscriptions" && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0047AB]"></div>
                 )}
               </button>
@@ -415,7 +351,7 @@ export default function SubscriptionManagement() {
           </div>
 
           {/* Content based on active tab */}
-          {activeTab === "users" ? (
+          {activeTab === "subscriptions" ? (
             viewMode === "list" ? (
               // Subscribed Users List View
               <div className="rounded-lg border bg-white shadow">
@@ -425,19 +361,19 @@ export default function SubscriptionManagement() {
                     <thead>
                       <tr className="border-b bg-gray-50">
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
-                          Business Name
+                          Service Name
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
-                          Current Plan
+                          Type
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
                           Status
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
-                          Start Date
+                          Created Date
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
-                          Renewal Date
+                          Expiry Date
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-600 whitespace-nowrap">
                           Actions
@@ -445,31 +381,31 @@ export default function SubscriptionManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(paginatedData as SubscribedUser[]).map(
-                        (user, index) => (
+                      {(paginatedData as Subscription[]).map(
+                        (subscription, index) => (
                           <tr key={index} className="border-b hover:bg-gray-50">
                             <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap font-medium">
-                              {user.businessName}
+                              {subscription.serviceName || "N/A"}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                              {user.currentPlan}
+                              {subscription.type}
                             </td>
                             <td className="px-6 py-4 text-sm whitespace-nowrap">
                               <span
                                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                  user.status === "Active"
+                                  subscription.status === "ACTIVE"
                                     ? "bg-green-50 text-green-700"
                                     : "bg-red-50 text-red-700"
                                 }`}
                               >
-                                {user.status}
+                                {subscription.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                              {user.startDate}
+                              {new Date(subscription.createdAt).toLocaleDateString()}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                              {user.renewalDate}
+                              {new Date(subscription.expiryDate).toLocaleDateString()}
                             </td>
                             <td className="px-6 py-4 text-sm whitespace-nowrap">
                               <div className="flex gap-2">
@@ -477,34 +413,12 @@ export default function SubscriptionManagement() {
                                   onClick={() =>
                                     setSubscriptionDetailsModal({
                                       isOpen: true,
-                                      subscription: user,
+                                      subscription: subscription,
                                     })
                                   }
                                   className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
                                 >
                                   <Eye className="w-4 h-4 text-gray-600" />
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    setChangeSubscriptionModal({
-                                      isOpen: true,
-                                      subscription: user,
-                                    })
-                                  }
-                                  className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                                >
-                                  <Edit2 className="w-4 h-4 text-gray-600" />
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    setToggleSubscriptionStatusModal({
-                                      isOpen: true,
-                                      subscription: user,
-                                    })
-                                  }
-                                  className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                                >
-                                  <Power className="w-4 h-4 text-gray-600" />
                                 </button>
                               </div>
                             </td>
@@ -591,44 +505,44 @@ export default function SubscriptionManagement() {
               // Subscribed Users Cards View
               <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {(paginatedData as SubscribedUser[]).map((user) => (
+                  {(paginatedData as Subscription[]).map((subscription) => (
                     <div
-                      key={user.id}
+                      key={subscription.id}
                       className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
                     >
                       {/* Card Header */}
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {user.businessName}
+                            {subscription.serviceName || "N/A"}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            {user.currentPlan}
+                            {subscription.type}
                           </p>
                         </div>
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            user.status === "Active"
+                            subscription.status === "ACTIVE"
                               ? "bg-green-50 text-green-700"
                               : "bg-red-50 text-red-700"
                           }`}
                         >
-                          {user.status}
+                          {subscription.status}
                         </span>
                       </div>
 
                       {/* Subscription Details */}
                       <div className="space-y-3 mb-6">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Start Date:</span>
+                          <span className="text-gray-600">Created Date:</span>
                           <span className="text-gray-900 font-medium">
-                            {user.startDate}
+                            {new Date(subscription.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Renewal Date:</span>
+                          <span className="text-gray-600">Expiry Date:</span>
                           <span className="text-gray-900 font-medium">
-                            {user.renewalDate}
+                            {new Date(subscription.expiryDate).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -639,34 +553,12 @@ export default function SubscriptionManagement() {
                           onClick={() =>
                             setSubscriptionDetailsModal({
                               isOpen: true,
-                              subscription: user,
+                              subscription: subscription,
                             })
                           }
                           className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                         >
                           <Eye className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            setChangeSubscriptionModal({
-                              isOpen: true,
-                              subscription: user,
-                            })
-                          }
-                          className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-                        >
-                          <Edit2 className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            setToggleSubscriptionStatusModal({
-                              isOpen: true,
-                              subscription: user,
-                            })
-                          }
-                          className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-                        >
-                          <Power className="w-5 h-5 text-gray-600" />
                         </button>
                       </div>
                     </div>
@@ -1123,33 +1015,6 @@ export default function SubscriptionManagement() {
           setSubscriptionDetailsModal({ isOpen: false, subscription: null })
         }
         subscription={subscriptionDetailsModal.subscription}
-      />
-
-      <ChangeSubscriptionPlanModal
-        isOpen={changeSubscriptionModal.isOpen}
-        onClose={() =>
-          setChangeSubscriptionModal({ isOpen: false, subscription: null })
-        }
-        subscription={changeSubscriptionModal.subscription}
-        availablePlans={availablePlanNames}
-        onChange={handleChangeSubscription}
-      />
-
-      <ToggleSubscriptionStatusModal
-        isOpen={toggleSubscriptionStatusModal.isOpen}
-        onClose={() =>
-          setToggleSubscriptionStatusModal({
-            isOpen: false,
-            subscription: null,
-          })
-        }
-        subscription={toggleSubscriptionStatusModal.subscription}
-        onToggle={() =>
-          toggleSubscriptionStatusModal.subscription &&
-          handleToggleSubscriptionStatus(
-            toggleSubscriptionStatusModal.subscription.id
-          )
-        }
       />
 
       <AssignSubscriptionModal
