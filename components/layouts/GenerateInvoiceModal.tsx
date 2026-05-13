@@ -173,7 +173,7 @@ export default function GenerateInvoiceModal({
                     onChange={(e) =>
                       handleItemChange(index, "item", e.target.value)
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-400"
                     placeholder="Item description"
                   />
                 </div>
@@ -265,7 +265,7 @@ export default function GenerateInvoiceModal({
                       eventName: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-400"
                   placeholder="Event name"
                 />
               </div>
@@ -282,7 +282,7 @@ export default function GenerateInvoiceModal({
                       eventTheme: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-400"
                   placeholder="Event theme"
                 />
               </div>
@@ -360,7 +360,7 @@ export default function GenerateInvoiceModal({
                 }))
               }
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-400"
               placeholder="Service notes..."
             />
           </div>
@@ -379,7 +379,7 @@ export default function GenerateInvoiceModal({
                 }))
               }
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-400"
               placeholder="Event description..."
             />
           </div>

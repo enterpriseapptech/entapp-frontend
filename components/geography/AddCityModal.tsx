@@ -72,7 +72,7 @@ export default function AddCityModal({
               value={formData.cityName}
               onChange={handleChange}
               placeholder="Los Angeles"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -87,7 +87,7 @@ export default function AddCityModal({
               value={formData.state}
               onChange={handleChange}
               placeholder="California"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -102,7 +102,7 @@ export default function AddCityModal({
               value={formData.status}
               onChange={handleChange}
               placeholder="Active"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>

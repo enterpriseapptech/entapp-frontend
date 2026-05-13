@@ -182,7 +182,7 @@ export default function SignupPage() {
                   id="firstName"
                   {...register("firstName")}
                   type="text"
-                  className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your first name"
                 />
               </div>
@@ -208,7 +208,7 @@ export default function SignupPage() {
                   id="lastName"
                   {...register("lastName")}
                   type="text"
-                  className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your last name"
                 />
               </div>
@@ -234,7 +234,7 @@ export default function SignupPage() {
                   id="email"
                   {...register("email")}
                   type="email"
-                  className="text-gray-500 appearance-none block w-full pl-10 py-2 pr-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="text-gray-500 appearance-none block w-full pl-10 py-2 pr-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Enter your email"
                 />
               </div>
@@ -256,7 +256,7 @@ export default function SignupPage() {
                 <select
                   id="userType"
                   {...register("userType")}
-                  className="text-gray-500 appearance-none block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="text-gray-500 appearance-none block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
                   <option value="" disabled>
                     Select user type
@@ -291,7 +291,7 @@ export default function SignupPage() {
                       id="businessName"
                       {...register("businessName")}
                       type="text"
-                      className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="text-gray-500 appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       placeholder="Enter your business name"
                     />
                     {userType === UserType.SERVICE_PROVIDER &&
@@ -314,7 +314,7 @@ export default function SignupPage() {
                     <select
                       id="serviceType"
                       {...register("serviceType")}
-                      className="text-gray-500 appearance-none block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="text-gray-500 appearance-none block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     >
                       <option value="" disabled>
                         Select service type
@@ -351,7 +351,7 @@ export default function SignupPage() {
                   id="password"
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
-                  className="text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Type your password"
                 />
                 <button
@@ -451,7 +451,7 @@ export default function SignupPage() {
                   id="confirmPassword"
                   {...register("confirmPassword")}
                   type={showConfirmPassword ? "text" : "password"}
-                  className="text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="text-gray-500 appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Re-enter your password"
                 />
                 <button

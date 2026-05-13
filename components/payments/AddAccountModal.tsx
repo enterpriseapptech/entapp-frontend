@@ -74,7 +74,7 @@ export default function AddAccountModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Business Operations Account"
-              className="w-full placeholder:text-gray-400 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full placeholder:text-gray-500 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -89,7 +89,7 @@ export default function AddAccountModal({
                 setFormData({ ...formData, bank: e.target.value })
               }
               placeholder="Bank of America"
-              className="w-full placeholder:text-gray-400 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full placeholder:text-gray-500 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -105,7 +105,7 @@ export default function AddAccountModal({
                   setFormData({ ...formData, accountNumber: e.target.value })
                 }
                 placeholder="****1234"
-                className="w-full placeholder:text-gray-400 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full placeholder:text-gray-500 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -119,7 +119,7 @@ export default function AddAccountModal({
                   setFormData({ ...formData, routingNumber: e.target.value })
                 }
                 placeholder="026009593"
-                className="w-full placeholder:text-gray-400 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full placeholder:text-gray-500 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>

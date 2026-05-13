@@ -59,7 +59,7 @@ export default function AddCountryModal({
               value={formData.name}
               onChange={handleChange}
               placeholder="United States"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -74,7 +74,7 @@ export default function AddCountryModal({
               value={formData.code}
               onChange={handleChange}
               placeholder="US"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -89,7 +89,7 @@ export default function AddCountryModal({
               value={formData.currency}
               onChange={handleChange}
               placeholder="US Dollar"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -105,7 +105,7 @@ export default function AddCountryModal({
                 value={formData.currencyCode}
                 onChange={handleChange}
                 placeholder="USD"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                 required
               />
             </div>
@@ -120,7 +120,7 @@ export default function AddCountryModal({
                 value={formData.currencySymbol}
                 onChange={handleChange}
                 placeholder="$"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                 required
               />
             </div>

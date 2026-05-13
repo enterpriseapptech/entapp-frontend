@@ -67,7 +67,7 @@ export default function AddFeeModal({
         {/* Modal Body */}
         <form
           onSubmit={handleSubmit}
-          className="p-6 space-y-4 placeholder-gray-400 text-gray-400"
+          className="p-6 space-y-4 placeholder-gray-500 text-gray-400"
         >
           {/* Fee Name */}
           <div>

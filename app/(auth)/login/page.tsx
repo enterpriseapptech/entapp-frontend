@@ -355,7 +355,7 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   disabled={isFormDisabled}
-                  className={`text-sm text-gray-500 block w-full pl-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`text-sm text-gray-500 block w-full pl-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
                   placeholder="Enter your email"
                   {...register("email")}
                 />
@@ -380,7 +380,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   disabled={isFormDisabled}
-                  className={`text-sm text-gray-500 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`text-sm text-gray-500 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
                   placeholder="Type your password"
                   {...register("password")}
                 />

@@ -79,7 +79,7 @@ export default function EditFeeModal({
         {/* Modal Body */}
         <form
           onSubmit={handleSubmit}
-          className="p-6 space-y-4 placeholder-gray-400 tex-gray-500"
+          className="p-6 space-y-4 placeholder-gray-500 tex-gray-500"
         >
           {/* Fee Name */}
           <div>
@@ -96,7 +96,7 @@ export default function EditFeeModal({
               value={formData.feeName}
               onChange={handleChange}
               placeholder="KYC Verification Fee"
-              className="w-full placeholder-gray-400 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full placeholder-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               required
             />
           </div>
@@ -114,7 +114,7 @@ export default function EditFeeModal({
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white placeholder-gray-400"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white placeholder-gray-500"
               required
             >
               <option value="">Select type</option>
@@ -145,7 +145,7 @@ export default function EditFeeModal({
                 placeholder="0"
                 step="0.01"
                 min="0"
-                className="w-full placeholder-gray-400 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full placeholder-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 required
               />
             </div>
@@ -161,7 +161,7 @@ export default function EditFeeModal({
                 name="currency"
                 value={formData.currency}
                 onChange={handleChange}
-                className="w-full px-4 placeholder-gray-400 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                className="w-full px-4 placeholder-gray-500 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
                 required
               >
                 <option value="USD">USD</option>
@@ -187,7 +187,7 @@ export default function EditFeeModal({
               onChange={handleChange}
               placeholder="Describe the purpose of this fee..."
               rows={3}
-              className="w-full px-4 placeholder-gray-400 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+              className="w-full px-4 placeholder-gray-500 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               required
             />
           </div>

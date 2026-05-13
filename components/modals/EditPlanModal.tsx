@@ -70,7 +70,7 @@ export default function EditPlanModal({
               onChange={(e) =>
                 setFormData({ ...formData, plan: e.target.value })
               }
-              className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+              className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
               placeholder="Enter plan name"
             />
           </div>
@@ -86,7 +86,7 @@ export default function EditPlanModal({
                 onChange={(e) =>
                   setFormData({ ...formData, timeFrame: e.target.value })
                 }
-                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
                 placeholder="e.g., 30, 365"
               />
             </div>
@@ -100,7 +100,7 @@ export default function EditPlanModal({
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
                 }
-                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-300"
+                className="w-full text-gray-400 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
                 placeholder="49"
               />
             </div>

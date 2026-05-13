@@ -64,7 +64,7 @@ export default function AddStateModal({
               value={formData.name}
               onChange={handleChange}
               placeholder="California"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
@@ -79,7 +79,7 @@ export default function AddStateModal({
               value={formData.code}
               onChange={handleChange}
               placeholder="CA"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
               required
             />
           </div>
