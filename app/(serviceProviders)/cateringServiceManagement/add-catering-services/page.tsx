@@ -375,7 +375,7 @@ export default function AddCatering() {
               Add Catering Service
             </h1>
             <div className="flex gap-2">
-              <Link href="/cateringServiceManagement/catering-dashboard">
+              <Link href="/cateringServiceManagement/manage-catering-services">
                 <button className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100">
                   Cancel
                 </button>
@@ -905,7 +905,7 @@ export default function AddCatering() {
 
             {/* Bottom publish bar */}
             <div className="sticky bottom-0 bg-white border-t border-gray-200 px-8 py-4 flex justify-end gap-3 mt-6">
-              <Link href="/cateringServiceManagement/cateringServiceDashboard">
+              <Link href="/cateringServiceManagement/manage-catering-services">
                 <button
                   type="button"
                   className="cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-sm"

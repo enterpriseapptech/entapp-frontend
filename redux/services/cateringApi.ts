@@ -89,6 +89,7 @@ export interface StateResponse {
 }
 export const cateringApi = createApi({
   reducerPath: "cateringApi",
+  tagTypes: ["Catering"],
   baseQuery: fetchBaseQuery({
     baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
@@ -111,12 +112,17 @@ export const cateringApi = createApi({
         url: `/catering?limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "Catering" as const, id })), { type: "Catering", id: "LIST" }]
+          : [{ type: "Catering", id: "LIST" }],
     }),
     getCateringById: builder.query<Catering, string>({
       query: (id) => ({
         url: `/catering/${id}`,
         method: "GET",
       }),
+      providesTags: (_result, _err, id) => [{ type: "Catering", id }],
     }),
     getCateringsByServiceProvider: builder.query<
       CateringResponse,
@@ -126,6 +132,10 @@ export const cateringApi = createApi({
         url: `/catering?serviceProvider=${serviceProviderId}&limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "Catering" as const, id })), { type: "Catering", id: "LIST" }]
+          : [{ type: "Catering", id: "LIST" }],
     }),
     createCatering: builder.mutation<Catering, CreateCateringRequest>({
       query: (formData) => ({
@@ -136,6 +146,7 @@ export const cateringApi = createApi({
           "Content-Type": "application/json",
         },
       }),
+      invalidatesTags: [{ type: "Catering", id: "LIST" }],
     }),
     uploadCateringImages: builder.mutation<
       Catering,
@@ -153,6 +164,7 @@ export const cateringApi = createApi({
           body: formData,
         };
       },
+      invalidatesTags: (_result, _err, { cateringId }) => [{ type: "Catering", id: cateringId }, { type: "Catering", id: "LIST" }],
     }),
     updateCatering: builder.mutation<
       Catering,
@@ -166,6 +178,7 @@ export const cateringApi = createApi({
           "Content-Type": "application/json",
         },
       }),
+      invalidatesTags: (_result, _err, { id }) => [{ type: "Catering", id }, { type: "Catering", id: "LIST" }],
     }),
     updateCateringWithImages: builder.mutation<
       Catering,
@@ -176,12 +189,14 @@ export const cateringApi = createApi({
         method: "PATCH",
         body: data,
       }),
+      invalidatesTags: (_result, _err, { id }) => [{ type: "Catering", id }, { type: "Catering", id: "LIST" }],
     }),
     deleteCatering: builder.mutation<void, string>({
       query: (id) => ({
         url: `/catering/${id}`,
         method: "DELETE",
       }),
+      invalidatesTags: (_result, _err, id) => [{ type: "Catering", id }, { type: "Catering", id: "LIST" }],
     }),
     getCountries: builder.query<CountryResponse, { limit?: number; offset?: number }>({
       query: ({ limit = 10, offset = 0 }) => ({
@@ -200,6 +215,10 @@ export const cateringApi = createApi({
         url: `/catering?limit=${limit}&offset=${offset}&location=${locationId}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "Catering" as const, id })), { type: "Catering", id: "LIST" }]
+          : [{ type: "Catering", id: "LIST" }],
     }),
     getCateringsByCity: builder.query<
       CateringResponse,
@@ -209,6 +228,10 @@ export const cateringApi = createApi({
         url: `/catering?city=${encodeURIComponent(city)}&limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "Catering" as const, id })), { type: "Catering", id: "LIST" }]
+          : [{ type: "Catering", id: "LIST" }],
     }),
   }),
 });

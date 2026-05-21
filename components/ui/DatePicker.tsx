@@ -1,4 +1,4 @@
-import React, { JSX, useState } from "react";
+import React, { JSX, useState, useEffect } from "react";
 import { X, CheckCircle, Calendar, MapPin, FileText } from "lucide-react";
 import { useGetTimeSlotsByServiceProviderQuery, TimeSlot } from "@/redux/services/timeslot";
 import { useCreateBookingMutation } from "@/redux/services/book";
@@ -134,6 +134,15 @@ const DatePicker: React.FC<DatePickerProps> = ({
         ) ?? []
     )
   ).sort(); // Sort dates chronologically
+
+  // Auto-navigate to the first month that has available dates
+  useEffect(() => {
+    if (availableDates.length > 0) {
+      const first = new Date(availableDates[0] + "T00:00:00");
+      setCurrentMonth(new Date(first.getFullYear(), first.getMonth(), 1));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeSlotsData]);
 
   // Get available time slots for selected date
   const availableTimeSlots = (() => {
@@ -522,61 +531,76 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   <div className="text-gray-600">
                     <h3 className="font-medium mb-3">Available Dates</h3>
 
-                    {/* Calendar-like grid */}
-                    <div className="grid grid-cols-7 gap-2 text-sm">
-                      {(() => {
-                        const start = new Date(
-                          currentMonth.getFullYear(),
-                          currentMonth.getMonth(),
-                          1
-                        );
-                        const end = new Date(
-                          currentMonth.getFullYear(),
-                          currentMonth.getMonth() + 1,
-                          0
-                        );
+                    {/* Day-of-week headers */}
+                    <div className="grid grid-cols-7 gap-1 text-xs text-center text-gray-400 mb-1">
+                      {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+                        <div key={d} className="py-1 font-semibold">{d}</div>
+                      ))}
+                    </div>
 
-                        const days: JSX.Element[] = [];
-                        for (
-                          let d = start;
-                          d <= end;
-                          d.setDate(d.getDate() + 1)
-                        ) {
-                          const isoDate = d.toISOString().split("T")[0];
+                    {/* Calendar grid */}
+                    <div className="grid grid-cols-7 gap-1 text-sm">
+                      {(() => {
+                        const year = currentMonth.getFullYear();
+                        const month = currentMonth.getMonth();
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const cells: JSX.Element[] = [];
+
+                        for (let i = 0; i < firstDay; i++) {
+                          cells.push(<div key={`empty-${i}`} />);
+                        }
+
+                        for (let day = 1; day <= daysInMonth; day++) {
+                          const isoDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                           const isAvailable = availableDates.includes(isoDate);
                           const isSelected = selectedDate === isoDate;
 
-                          days.push(
+                          cells.push(
                             <button
                               key={isoDate}
-                              onClick={() =>
-                                isAvailable && setSelectedDate(isoDate)
-                              }
+                              onClick={() => isAvailable && setSelectedDate(isoDate)}
                               disabled={!isAvailable}
-                              className={`relative p-2 rounded-lg w-10 h-10 flex items-center justify-center
-              ${isSelected ? "bg-blue-600 text-white" : ""}
-              ${
-                !isAvailable
-                  ? "text-gray-300 cursor-not-allowed"
-                  : "hover:bg-blue-50"
-              }
-            `}
+                              className={`relative aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors
+                                ${isSelected ? "bg-blue-600 text-white shadow-md" : ""}
+                                ${isAvailable && !isSelected ? "bg-blue-50 text-blue-700 hover:bg-blue-100 ring-1 ring-blue-200" : ""}
+                                ${!isAvailable ? "text-gray-300 cursor-not-allowed" : ""}
+                              `}
                             >
-                              {d.getDate()}
-                              {/* dot indicator for available days */}
-                              {isAvailable && (
-                                <span
-                                  className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${
-                                    isSelected ? "bg-white" : "bg-blue-600"
-                                  }`}
-                                ></span>
+                              {day}
+                              {isAvailable && !isSelected && (
+                                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
                               )}
                             </button>
                           );
                         }
-                        return days;
+                        return cells;
                       })()}
                     </div>
+
+                    {/* No available dates this month banner */}
+                    {!availableDates.some((d) => {
+                      const [y, m] = d.split("-").map(Number);
+                      return y === currentMonth.getFullYear() && m === currentMonth.getMonth() + 1;
+                    }) && (
+                      <div className="mt-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700">
+                        <span>No available dates this month.</span>
+                        <button
+                          onClick={() => {
+                            const next = availableDates.find(
+                              (d) => new Date(d + "T00:00:00") > new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+                            );
+                            if (next) {
+                              const nd = new Date(next + "T00:00:00");
+                              setCurrentMonth(new Date(nd.getFullYear(), nd.getMonth(), 1));
+                            }
+                          }}
+                          className="ml-3 text-blue-600 font-semibold hover:text-blue-800 underline"
+                        >
+                          Jump to next available →
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Time Slot Selection */}

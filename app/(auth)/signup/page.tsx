@@ -495,32 +495,6 @@ export default function SignupPage() {
             </button>
           </div>
         </form>
-        <div className="mt-4 space-y-3">
-          <button className="py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium cursor-pointer">
-            <img
-              src="https://www.google.com/favicon.ico"
-              alt="Google"
-              className="w-5 h-5 mr-2"
-            />
-            Sign up with Google
-          </button>
-          <button className="py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium cursor-pointer">
-            <img
-              src="https://www.facebook.com/favicon.ico"
-              alt="Facebook"
-              className="w-5 h-5 mr-2"
-            />
-            Sign up with Facebook
-          </button>
-          <button className="py-2 w-full flex items-center justify-center p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition text-gray-600 font-medium cursor-pointer">
-            <img
-              src="https://www.apple.com/favicon.ico"
-              alt="Apple"
-              className="w-5 h-5 mr-2"
-            />
-            Sign up with Apple
-          </button>
-        </div>
         <p className="mt-2 text-center text-sm text-gray-600">
           Don&apos;t have an account?{" "}
           <Link

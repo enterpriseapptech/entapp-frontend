@@ -62,8 +62,9 @@ export default function CreateBookingModal({
     specialRequirements: [],
   });
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   // API Hooks
   const { data: usersData, isLoading: isUsersLoading } = useGetUsersQuery({
@@ -72,15 +73,22 @@ export default function CreateBookingModal({
     userType: "CUSTOMER",
   });
 
+  // Load all timeslots without date filter, then filter client-side by selected date
   const { data: timeSlotsData, isLoading: isTimeSlotsLoading } = useGetTimeSlotsByServiceProviderQuery(
-    {
-      serviceId,
-      date: selectedDate,
-      limit: 100,
-      offset: 0,
-    },
-    { skip: !serviceId || !selectedDate }
+    { serviceId, limit: 100, offset: 0 },
+    { skip: !serviceId }
   );
+
+  const availableDatesSet = new Set(
+    timeSlotsData?.data
+      .filter((s) => s.isAvailable)
+      .map((s) => new Date(s.startTime).toISOString().split("T")[0]) ?? []
+  );
+
+  const filteredTimeSlots = timeSlotsData?.data.filter((s) => {
+    const slotDate = new Date(s.startTime).toISOString().split("T")[0];
+    return s.isAvailable && (!selectedDate || slotDate === selectedDate);
+  }) ?? [];
 
   const { data: eventDetails } = useGetEventCenterByIdQuery(serviceId, { skip: !serviceId || serviceType !== "EVENTCENTER" });
   const { data: cateringDetails } = useGetCateringByIdQuery(serviceId, { skip: !serviceId || serviceType !== "CATERING" });
@@ -193,10 +201,13 @@ export default function CreateBookingModal({
     }
   };
 
-  const filteredCustomers = usersData?.docs.filter(user => 
-    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = usersData?.docs.filter((user) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(q) ||
+      user.email.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
@@ -234,9 +245,16 @@ export default function CreateBookingModal({
                     placeholder="Search customer by name or email..."
                     className="w-full border border-gray-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setIsSearching(true);
+                      if (!e.target.value) handleInputChange("customerId", "");
+                    }}
+                    onFocus={() => {
+                      if (!formData.customerId) setIsSearching(true);
+                    }}
                   />
-                  {searchTerm && (
+                  {isSearching && searchTerm && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto">
                       {isUsersLoading ? (
                         <div className="p-4 text-center text-gray-500 flex items-center justify-center gap-2">
@@ -250,6 +268,7 @@ export default function CreateBookingModal({
                             onClick={() => {
                               handleInputChange("customerId", u.id);
                               setSearchTerm(`${u.firstName} ${u.lastName} (${u.email})`);
+                              setIsSearching(false);
                             }}
                           >
                             <p className="font-medium text-gray-900">{u.firstName} {u.lastName}</p>
@@ -275,23 +294,39 @@ export default function CreateBookingModal({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">Select Date</label>
+                  <label className="text-sm font-semibold text-gray-700">
+                    Filter by Date <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
                   <input
                     type="date"
                     className="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setFormData((prev) => ({ ...prev, timeslotId: [] }));
+                    }}
                   />
+                  {availableDatesSet.size > 0 && (
+                    <p className="text-xs text-gray-500">
+                      Slots available on:{" "}
+                      {[...availableDatesSet].sort().map((d) =>
+                        new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                      ).join(", ")}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-semibold text-gray-700">Available Timeslots</label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Available Timeslots
+                  {selectedDate && <span className="ml-2 text-gray-400 font-normal text-xs">for {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>}
+                </label>
                 {isTimeSlotsLoading ? (
                   <div className="flex items-center gap-2 text-gray-500"><Loader2 className="animate-spin h-4 w-4" /> Loading slots...</div>
-                ) : timeSlotsData?.data.length ? (
+                ) : filteredTimeSlots.length ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {timeSlotsData.data.filter(s => s.isAvailable).map(slot => (
+                    {filteredTimeSlots.map(slot => (
                       <button
                         key={slot.id}
                         type="button"
@@ -302,13 +337,27 @@ export default function CreateBookingModal({
                             : "border-gray-100 hover:border-gray-200 text-gray-600"
                         }`}
                       >
-                        {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                        {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span className="block text-xs text-gray-400 mb-0.5">
+                          {new Date(slot.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                        {new Date(slot.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
+                        {new Date(slot.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-4 bg-orange-50 text-orange-700 rounded-xl text-sm border border-orange-100 italic">No available timeslots for this date.</div>
+                  <div className="p-4 bg-orange-50 text-orange-700 rounded-xl text-sm border border-orange-100">
+                    {selectedDate ? "No available timeslots for this date." : "No available timeslots for this service."}
+                    {selectedDate && availableDatesSet.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDate("")}
+                        className="ml-2 underline font-semibold hover:text-orange-900"
+                      >
+                        Clear date filter
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
