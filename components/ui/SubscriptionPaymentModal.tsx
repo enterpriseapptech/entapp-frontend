@@ -91,7 +91,11 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({
       const response = await initiatePayment(payload).unwrap();
 
       if (response.includes("https://") || response.includes("http://")) {
-        // Redirect to Paystack
+        // Store payment context before leaving the page
+        sessionStorage.setItem(
+          "pendingPayment",
+          JSON.stringify({ invoiceId, amount, source: "subscription" })
+        );
         window.location.href = response;
       } else if (selectedPaymentMethod === PaymentMethod.STRIPE) {
         if (response.startsWith("pi_") && response.includes("_secret_")) {

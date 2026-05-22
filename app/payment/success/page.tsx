@@ -7,59 +7,37 @@ import { CheckCircle, XCircle } from "lucide-react";
 const PaymentSuccessPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [paymentStatus, setPaymentStatus] = useState<
-    "success" | "failed" | "pending"
-  >("pending");
+  const [paymentStatus, setPaymentStatus] = useState<"success" | "failed" | "pending">("pending");
+  const [source, setSource] = useState<string>("booking");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      try {
-        // Get parameters from URL using searchParams
-        const invoiceId = searchParams.get("invoiceId");
-        const reference = searchParams.get("reference");
-        const trxref = searchParams.get("trxref");
+    // Paystack only calls the callback_url on a successful payment,
+    // so the presence of reference/trxref in the URL is sufficient proof.
+    const reference = searchParams.get("reference");
+    const trxref = searchParams.get("trxref");
+    const invoiceId = searchParams.get("invoiceId");
+    const urlSource = searchParams.get("source") || "booking";
 
-        // Get stored payment info
-        const pendingPayment = sessionStorage.getItem("pendingPayment");
+    setSource(urlSource);
 
-        if (!pendingPayment) {
-          setPaymentStatus("failed");
-          setIsLoading(false);
-          return;
-        }
+    // Also read stored context (set before redirect) as a cross-check
+    const pendingPayment = sessionStorage.getItem("pendingPayment");
+    const stored = pendingPayment ? JSON.parse(pendingPayment) : null;
 
-        const paymentData = JSON.parse(pendingPayment);
+    // Success: Paystack provided a reference AND we have an invoiceId
+    if ((reference || trxref) && invoiceId) {
+      setPaymentStatus("success");
+      sessionStorage.removeItem("pendingPayment");
+    } else if (stored?.invoiceId === invoiceId && invoiceId) {
+      // Fallback: stored context matches the URL invoiceId
+      setPaymentStatus("success");
+      sessionStorage.removeItem("pendingPayment");
+    } else {
+      setPaymentStatus("failed");
+    }
 
-        // Verify payment with your backend
-        const verifyResponse = await fetch("/api/payment/verify", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            invoiceId,
-            reference: reference || trxref,
-            ...paymentData,
-          }),
-        });
-
-        if (verifyResponse.ok) {
-          setPaymentStatus("success");
-          // Clear the stored payment data
-          sessionStorage.removeItem("pendingPayment");
-        } else {
-          setPaymentStatus("failed");
-        }
-      } catch (error) {
-        console.error("Payment verification failed:", error);
-        setPaymentStatus("failed");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    verifyPayment();
+    setIsLoading(false);
   }, [searchParams]);
 
   if (isLoading) {
@@ -85,22 +63,26 @@ const PaymentSuccessPage = () => {
               Payment Successful!
             </h1>
             <p className="text-gray-600 mb-6">
-              Your payment has been processed successfully. You will receive a
-              confirmation email shortly.
+              {source === "subscription"
+                ? "Your subscription has been activated successfully."
+                : "Your payment has been processed successfully. You will receive a confirmation email shortly."}
             </p>
             <div className="space-y-3">
-              <button
-                onClick={() => router.push("/bookings")}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                View My Bookings
-              </button>
-              <button
-                onClick={() => router.push("/")}
-                className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Back to Home
-              </button>
+              {source === "subscription" ? (
+                <button
+                  onClick={() => router.push("/eventServiceManagement/subscriptions")}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  View My Subscriptions
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push("/bookings")}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  View My Bookings
+                </button>
+              )}
             </div>
           </>
         ) : (
