@@ -90,6 +90,7 @@ export interface StateResponse {
 }
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
+  tagTypes: ["EventCenter"],
   baseQuery: fetchBaseQuery({
     baseUrl: "https://dev.banquetpay.com",
     prepareHeaders: (headers) => {
@@ -112,12 +113,17 @@ export const eventsApi = createApi({
         url: `/event-centers?limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "EventCenter" as const, id })), { type: "EventCenter", id: "LIST" }]
+          : [{ type: "EventCenter", id: "LIST" }],
     }),
     getEventCenterById: builder.query<EventCenter, string>({
       query: (id) => ({
         url: `/event-centers/${id}`,
         method: "GET",
       }),
+      providesTags: (_result, _err, id) => [{ type: "EventCenter", id }],
     }),
     getEventCentersByServiceProvider: builder.query<
       EventCentersResponse,
@@ -131,6 +137,16 @@ export const eventsApi = createApi({
         url: `/event-centers?serviceProvider=${serviceProviderId}&limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      transformResponse: (response: EventCentersResponse) => ({
+        ...response,
+        data: [...response.data].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+      }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "EventCenter" as const, id })), { type: "EventCenter", id: "LIST" }]
+          : [{ type: "EventCenter", id: "LIST" }],
     }),
     createEventCenter: builder.mutation<EventCenter, CreateEventCenterRequest>({
       query: (formData) => ({
@@ -141,6 +157,7 @@ export const eventsApi = createApi({
           "Content-Type": "application/json",
         },
       }),
+      invalidatesTags: [{ type: "EventCenter", id: "LIST" }],
     }),
     uploadEventCenterImages: builder.mutation<
       EventCenter,
@@ -158,6 +175,7 @@ export const eventsApi = createApi({
           body: formData,
         };
       },
+      invalidatesTags: (_result, _err, { eventCenterId }) => [{ type: "EventCenter", id: eventCenterId }, { type: "EventCenter", id: "LIST" }],
     }),
     updateEventCenter: builder.mutation<
       EventCenter,
@@ -171,6 +189,7 @@ export const eventsApi = createApi({
           "Content-Type": "application/json",
         },
       }),
+      invalidatesTags: (_result, _err, { id }) => [{ type: "EventCenter", id }, { type: "EventCenter", id: "LIST" }],
     }),
     updateEventCenterWithImages: builder.mutation<
       EventCenter,
@@ -181,12 +200,14 @@ export const eventsApi = createApi({
         method: "PATCH",
         body: data,
       }),
+      invalidatesTags: (_result, _err, { id }) => [{ type: "EventCenter", id }, { type: "EventCenter", id: "LIST" }],
     }),
     deleteEventCenter: builder.mutation<void, string>({
       query: (id) => ({
         url: `/event-centers/${id}`,
         method: "DELETE",
       }),
+      invalidatesTags: (_result, _err, id) => [{ type: "EventCenter", id }, { type: "EventCenter", id: "LIST" }],
     }),
     getCountries: builder.query<CountryResponse, { limit?: number; offset?: number }>({
       query: ({ limit = 10, offset = 0 }) => ({
@@ -205,6 +226,10 @@ export const eventsApi = createApi({
         url: `/event-centers?limit=${limit}&offset=${offset}&location=${locationId}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "EventCenter" as const, id })), { type: "EventCenter", id: "LIST" }]
+          : [{ type: "EventCenter", id: "LIST" }],
     }),
     getEventCentersByCity: builder.query<
       EventCentersResponse,
@@ -214,6 +239,10 @@ export const eventsApi = createApi({
         url: `/event-centers?city=${encodeURIComponent(city)}&limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      providesTags: (result) =>
+        result
+          ? [...result.data.map(({ id }) => ({ type: "EventCenter" as const, id })), { type: "EventCenter", id: "LIST" }]
+          : [{ type: "EventCenter", id: "LIST" }],
     }),
   }),
 });

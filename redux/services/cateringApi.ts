@@ -132,6 +132,12 @@ export const cateringApi = createApi({
         url: `/catering?serviceProvider=${serviceProviderId}&limit=${limit}&offset=${offset}`,
         method: "GET",
       }),
+      transformResponse: (response: CateringResponse) => ({
+        ...response,
+        data: [...response.data].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+      }),
       providesTags: (result) =>
         result
           ? [...result.data.map(({ id }) => ({ type: "Catering" as const, id })), { type: "Catering", id: "LIST" }]
