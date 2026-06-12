@@ -1,4 +1,5 @@
-import Button from "@/components/ui/button";
+"use client";
+import Link from "next/link";
 
 export default function PlanNextEvent() {
   return (
@@ -11,10 +12,18 @@ export default function PlanNextEvent() {
           Sign up today to explore venues, book catering, and make your event unforgettable.
         </p>
         <div className="flex justify-center gap-4">
-          <Button className="bg-white text-[#081127] hover:bg-gray-100">Sign up</Button>
-          <Button className="bg-transparent border border-white hover:bg-white hover:text-[#081127]">
+          <Link
+            href="/signup"
+            className="px-4 py-2 bg-white text-[#081127] hover:bg-gray-100 rounded-md font-medium text-sm"
+          >
+            Sign up
+          </Link>
+          <Link
+            href="/login"
+            className="px-4 py-2 bg-transparent border border-white hover:bg-white hover:text-[#081127] text-white rounded-md font-medium text-sm transition-colors"
+          >
             Login
-          </Button>
+          </Link>
         </div>
       </div>
     </section>

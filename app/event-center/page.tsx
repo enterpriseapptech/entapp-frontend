@@ -131,12 +131,9 @@ export default function EventCenters() {
         center.sittingCapacity >= capacityRange[0] &&
         center.sittingCapacity <= capacityRange[1];
 
-      const discountedPrice =
-        center.pricingPerSlot * (1 - (center.discountPercentage ?? 0) / 100);
-      const depositAmount = discountedPrice * (center.depositPercentage / 100);
-
       const matchesPrice =
-        depositAmount >= priceRange[0] && depositAmount <= priceRange[1];
+        center.pricingPerSlot >= priceRange[0] &&
+        center.pricingPerSlot <= priceRange[1];
 
       const matchesLocation =
         location === "Nigeria" ||
@@ -168,7 +165,7 @@ export default function EventCenters() {
         discountPercentage: center.discountPercentage,
         depositPercentage: center.depositPercentage,
         price: `₦${depositAmount.toLocaleString()}`,
-        eventType: center.eventTypes[0] || "General Event",
+        eventTypes: center.eventTypes,
         capacity: center.sittingCapacity,
         rating: center.rating,
       };
@@ -547,6 +544,8 @@ export default function EventCenters() {
                       pricingPerSlot={center.pricingPerSlot}
                       discountPercentage={center.discountPercentage}
                       depositPercentage={center.depositPercentage}
+                      eventTypes={center.eventTypes}
+                      sittingCapacity={center.capacity}
                     />
                   </Link>
                 ))}

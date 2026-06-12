@@ -1,7 +1,5 @@
 "use client";
 import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CateringResponse, useGetCateringsQuery } from "@/redux/services/cateringApi";
 import CardSkeleton from "@/components/ui/card-skeleton";
@@ -14,16 +12,10 @@ interface CateringServicesProps {
 export default function CateringServices({
   heading = "Boosting Company Culture, One Meal at a Time",
 }: CateringServicesProps) {
-  const router = useRouter();
-
   const { data, isLoading, error } = useGetCateringsQuery({
     limit: 3,
     offset: 0,
   });
-
-  const handleOnclick = () => {
-    router.push("/cateringServices/allPost");
-  };
 
   const loadingSkeletons = (
     <div className="grid grid-cols-1 sm:md:grid-cols-3 gap-4">
@@ -76,12 +68,12 @@ export default function CateringServices({
               Showcasing top-rated catering services
             </p>
           </div>
-          <Button
-            className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base cursor-pointer md:mt-0 mt-4"
-            onClick={handleOnclick}
+          <Link
+            href="/cateringServices/allPost"
+            className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-base bg-[#0047AB] hover:bg-blue-700 text-white rounded-md font-medium md:mt-0 mt-4"
           >
-            View all posts
-          </Button>
+            View all services
+          </Link>
         </div>
 
         {isLoading ? (

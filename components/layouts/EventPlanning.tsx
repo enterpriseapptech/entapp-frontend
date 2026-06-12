@@ -23,7 +23,7 @@ export default function EventPlanning() {
             title="Explore Our Extensive Event Center Listings"
             description="Find the perfect venue with detailed filters and high-quality images."
             linkText="Browse"
-            linkHref="/venues"
+            linkHref="/event-center"
           />
           <FeatureCard
             imageSrc="/streamLine.png"

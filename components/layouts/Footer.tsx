@@ -1,8 +1,11 @@
+"use client";
 import Image from "next/image";
-import Button from "@/components/ui/button";
+import Link from "next/link";
 import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
 
 export default function Footer() {
+  const year = new Date().getFullYear();
+
   return (
     <footer className="py-10 bg-white">
       <div className="max-w-8xl mx-auto px-20">
@@ -20,9 +23,9 @@ export default function Footer() {
                 placeholder="Enter your email"
                 className="w-[800px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 text-sm"
               />
-              <Button className="bg-[#0047AB] hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+              <button className="bg-[#0047AB] hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                 Subscribe
-              </Button>
+              </button>
             </div>
             <p className="text-gray-500 text-xs">
               By subscribing you agree with our{" "}
@@ -35,9 +38,9 @@ export default function Footer() {
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Links</h3>
             <ul className="text-gray-600 flex gap-12 font-semibold text-xs">
               <div className="space-y-4">
-                <li><a href="#" className="hover:text-blue-600">Event Centers</a></li>
-                <li><a href="#" className="hover:text-blue-600">Catering Services</a></li>
-                <li><a href="#" className="hover:text-blue-600">Booking Management</a></li>
+                <li><Link href="/event-center" className="hover:text-blue-600">Event Centers</Link></li>
+                <li><Link href="/cateringServices/allPost" className="hover:text-blue-600">Catering Services</Link></li>
+                <li><Link href="/bookings" className="hover:text-blue-600">Booking Management</Link></li>
                 <li><a href="#" className="hover:text-blue-600">User Support</a></li>
                 <li><a href="#" className="hover:text-blue-600">FAQs</a></li>
               </div>
@@ -79,7 +82,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 border-t border-gray-200 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-500 text-sm">© 2024 Entapp. All rights reserved.</p>
+          <p className="text-gray-500 text-sm">© {year} Entapp. All rights reserved.</p>
           <div className="flex gap-4 text-gray-600 text-sm">
             <a href="#" className="hover:text-blue-600 underline">Privacy Policy</a>
             <a href="#" className="hover:text-blue-600 underline">Terms of Service</a>

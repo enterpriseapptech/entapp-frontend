@@ -22,6 +22,7 @@ import Notification from "../../../components/ui/Notification";
 // Token storage with expiration
 const TOKEN_EXPIRY_DAYS = 7;
 const TOKEN_EXPIRY_MS = TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours for non-remember-me
 
 const storeTokens = (
   accessToken: string,
@@ -29,18 +30,17 @@ const storeTokens = (
   userId: string,
   rememberMe: boolean
 ) => {
-  if (rememberMe) {
-    const expiry = Date.now() + TOKEN_EXPIRY_MS;
-    localStorage.setItem("access_token", accessToken);
-    localStorage.setItem("refresh_token", refreshToken);
-    localStorage.setItem("token_expiry", expiry.toString());
-    localStorage.setItem("user_id", userId);
-  } else {
-    // Session storage for non-persistent login
-    sessionStorage.setItem("access_token", accessToken);
-    sessionStorage.setItem("refresh_token", refreshToken);
-    sessionStorage.setItem("user_id", userId);
-  }
+  // Always use localStorage so tokens persist across new tabs.
+  // rememberMe controls the expiry: 7 days vs 24 hours.
+  const expiry = Date.now() + (rememberMe ? TOKEN_EXPIRY_MS : SESSION_EXPIRY_MS);
+  localStorage.setItem("access_token", accessToken);
+  localStorage.setItem("refresh_token", refreshToken);
+  localStorage.setItem("token_expiry", expiry.toString());
+  localStorage.setItem("user_id", userId);
+  // Clear any stale sessionStorage entries
+  sessionStorage.removeItem("access_token");
+  sessionStorage.removeItem("refresh_token");
+  sessionStorage.removeItem("user_id");
 };
 
 const clearTokens = () => {

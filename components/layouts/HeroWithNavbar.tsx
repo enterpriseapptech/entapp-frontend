@@ -5,7 +5,11 @@ import { useState, useEffect } from "react";
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useGetUserByIdQuery } from "@/redux/services/authApi";
+import {
+  useGetUserByIdQuery,
+  UserType,
+  ServiceType,
+} from "@/redux/services/authApi";
 import {
   useGetCountriesQuery,
   useGetStatesQuery,
@@ -73,10 +77,14 @@ export default function HeroWithNavbar({
 
   // Fetch countries and states
   const { data: countriesData } = useGetCountriesQuery({ limit: 250 });
-  const { data: statesData, refetch: refetchStates } = useGetStatesQuery(
-    { limit: 250 },
-    { skip: !selectedCountry }
-  );
+  const { data: statesData } = useGetStatesQuery({ limit: 500 });
+
+  // Filter states client-side by selected country
+  const filteredStates = selectedCountry
+    ? (statesData?.docs ?? []).filter(
+        (state: State) => state.countryId === selectedCountry
+      )
+    : [];
 
   // Get user data when userId is available
   const {
@@ -92,14 +100,13 @@ export default function HeroWithNavbar({
     checkAuthStatus();
   }, []);
 
-  // Refetch states when country changes
+  // Reset state selection when country changes
   useEffect(() => {
     if (selectedCountry) {
-      refetchStates();
       setSelectedState("");
       setSelectedStateId("");
     }
-  }, [selectedCountry, refetchStates]);
+  }, [selectedCountry]);
 
   const checkAuthStatus = () => {
     const accessToken =
@@ -165,7 +172,7 @@ export default function HeroWithNavbar({
   };
 
   const handleStateSelect = (stateId: string) => {
-    const selectedStateData = statesData?.docs.find(
+    const selectedStateData = filteredStates.find(
       (state: State) => state.id === stateId
     );
     setSelectedState(selectedStateData?.name || "");
@@ -177,7 +184,7 @@ export default function HeroWithNavbar({
       const selectedCountryData = countriesData?.docs.find(
         (country: Country) => country.id === selectedCountry
       );
-      const selectedStateData = statesData?.docs.find(
+      const selectedStateData = filteredStates.find(
         (state: State) => state.id === selectedStateId
       );
 
@@ -192,7 +199,7 @@ export default function HeroWithNavbar({
 
   const navLinks = [
     { label: "Event Centers", href: "/event-center" },
-    { label: "Catering Services", href: "/cateringServices" },
+    { label: "Catering Services", href: "/cateringServices/allPost" },
     ...(isLoggedIn
       ? [
           { label: "Quotes", href: "/quotes" },
@@ -204,6 +211,20 @@ export default function HeroWithNavbar({
 
   // Get user's first name for display
   const userName = user ? `${user.firstName}` : "";
+
+  // Dashboard link for service providers and admins
+  const getDashboardLink = (): string | null => {
+    if (!user) return null;
+    if (user.userType === UserType.ADMIN) return "/admin";
+    if (user.userType === UserType.SERVICE_PROVIDER) {
+      const serviceType = user.serviceProvider?.serviceType;
+      if (serviceType === ServiceType.CATERING)
+        return "/cateringServiceManagement/cateringServiceDashboard";
+      return "/eventServiceManagement/eventServiceDashboard";
+    }
+    return null;
+  };
+  const dashboardLink = getDashboardLink();
 
   // Show loading skeleton until auth check is complete
   if (isCheckingAuth) {
@@ -333,6 +354,15 @@ export default function HeroWithNavbar({
                     )}
                   </div>
 
+                  {dashboardLink && (
+                    <Link
+                      href={dashboardLink}
+                      className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white text-sm font-medium cursor-pointer"
+                    >
+                      Go to Dashboard
+                    </Link>
+                  )}
+
                   <button
                     onClick={handleLogout}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white cursor-pointer"
@@ -424,6 +454,16 @@ export default function HeroWithNavbar({
                           <span>Welcome, {userName}!</span>
                         )}
                       </div>
+
+                      {dashboardLink && (
+                        <Link
+                          href={dashboardLink}
+                          onClick={() => setOpenMobileMenu(false)}
+                          className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white text-center text-sm font-medium cursor-pointer"
+                        >
+                          Go to Dashboard
+                        </Link>
+                      )}
 
                       <button
                         onClick={handleLogout}
@@ -525,7 +565,7 @@ export default function HeroWithNavbar({
                     onClick={toggleLocationDropdown}
                   >
                     <option value="">Select State</option>
-                    {statesData?.docs.map((state: State) => (
+                    {filteredStates.map((state: State) => (
                       <option key={state.id} value={state.id}>
                         {state.name}
                       </option>

@@ -6,7 +6,11 @@ import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { useGetUserByIdQuery } from "@/redux/services/authApi";
+import {
+  useGetUserByIdQuery,
+  UserType,
+  ServiceType,
+} from "@/redux/services/authApi";
 
 export default function Navbar() {
   const [isScrolling, setIsScrolling] = useState(false);
@@ -79,7 +83,7 @@ export default function Navbar() {
 
   const navLinks = [
     { label: "Event Centers", href: "/event-center" },
-    { label: "Catering Services", href: "/cateringServices" },
+    { label: "Catering Services", href: "/cateringServices/allPost" },
     ...(isLoggedIn
       ? [
           { label: "Quotes", href: "/quotes" },
@@ -91,6 +95,20 @@ export default function Navbar() {
 
   // Get user's first name for display
   const userName = user ? `${user.firstName}` : "";
+
+  // Dashboard link for service providers and admins
+  const getDashboardLink = (): string | null => {
+    if (!user) return null;
+    if (user.userType === UserType.ADMIN) return "/admin";
+    if (user.userType === UserType.SERVICE_PROVIDER) {
+      const serviceType = user.serviceProvider?.serviceType;
+      if (serviceType === ServiceType.CATERING)
+        return "/cateringServiceManagement/cateringServiceDashboard";
+      return "/eventServiceManagement/eventServiceDashboard";
+    }
+    return null;
+  };
+  const dashboardLink = getDashboardLink();
 
   // Show loading skeleton until auth check is complete
   if (isCheckingAuth) {
@@ -184,6 +202,15 @@ export default function Navbar() {
                 )}
               </div>
 
+              {dashboardLink && (
+                <Link
+                  href={dashboardLink}
+                  className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white text-sm font-medium cursor-pointer"
+                >
+                  Go to Dashboard
+                </Link>
+              )}
+
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white cursor-pointer"
@@ -264,7 +291,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-4 mt-5">
               {isLoggedIn ? (
                 <>
-                  <div className="px-2 py-2 text-sm text-gray-700 border-b text-gray-800">
+                  <div className="px-2 py-2 text-sm text-gray-800 border-b">
                     {isLoadingUser ? (
                       <span className="animate-pulse"></span>
                     ) : userError ? (
@@ -273,6 +300,16 @@ export default function Navbar() {
                       <span>Welcome, {userName}!</span>
                     )}
                   </div>
+
+                  {dashboardLink && (
+                    <Link
+                      href={dashboardLink}
+                      onClick={() => setOpenMobileMenu(false)}
+                      className="px-4 py-2 bg-[#0047AB] hover:bg-blue-700 rounded-md text-white text-center text-sm font-medium cursor-pointer"
+                    >
+                      Go to Dashboard
+                    </Link>
+                  )}
 
                   <button
                     onClick={handleLogout}
