@@ -18,6 +18,7 @@ import {
   UserResponse,
 } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
+import { getApiError } from "../../../hooks/getApiError";
 
 // Token storage with expiration
 const TOKEN_EXPIRY_DAYS = 7;
@@ -292,7 +293,10 @@ export default function LoginPage() {
           setIsNavigating(false);
         }
       } else {
-        setNotification({ message: "Invalid credentials", type: "error" });
+        setNotification({
+          message: getApiError(error, "Invalid credentials"),
+          type: "error",
+        });
         setIsNavigating(false);
       }
     }
@@ -425,7 +429,9 @@ export default function LoginPage() {
           </div>
 
           {loginError && !notification && (
-            <p className="text-sm text-red-500 text-center">Invalid credentials</p>
+            <p className="text-sm text-red-500 text-center">
+              {getApiError(loginError, "Invalid credentials")}
+            </p>
           )}
 
           <div className="w-full">

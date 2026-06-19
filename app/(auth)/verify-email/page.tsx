@@ -5,12 +5,13 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVerifyUserMutation, useResendVerificationMutation } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
+import { getApiError } from "../../../hooks/getApiError";
 
 export default function VerifyEmailPage() {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [verifyUser, { isLoading: isVerifying, error: verifyError }] = useVerifyUserMutation();
-  const [resendVerification, { isLoading: isResending, error: resendError }] = useResendVerificationMutation();
+  const [verifyUser, { isLoading: isVerifying }] = useVerifyUserMutation();
+  const [resendVerification, { isLoading: isResending }] = useResendVerificationMutation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
@@ -68,8 +69,11 @@ export default function VerifyEmailPage() {
           router.push("/login");
         }, 1000);
       }
-    } catch {
-      setNotification({ message: "Invalid code", type: "error" });
+    } catch (err) {
+      setNotification({
+        message: getApiError(err, "Invalid or expired code. Please try again."),
+        type: "error",
+      });
     }
   };
 
@@ -83,9 +87,12 @@ export default function VerifyEmailPage() {
     try {
       await resendVerification({ id: userId }).unwrap();
       setNotification({ message: "A code has been sent to your email", type: "success" });
-      setCode(["", "", "", "", "", ""]); 
-    } catch {
-      setNotification({ message: "Failed to resend code. Please try again.", type: "error" });
+      setCode(["", "", "", "", "", ""]);
+    } catch (err) {
+      setNotification({
+        message: getApiError(err, "Failed to resend code. Please try again."),
+        type: "error",
+      });
     }
   };
 
@@ -142,10 +149,6 @@ export default function VerifyEmailPage() {
               </div>
             </div>
           </div>
-
-          {(verifyError || resendError) && !notification && (
-            <p className="text-sm text-red-500 text-center">Invalid code</p>
-          )}
 
           <div className="w-full flex justify-center">
             <div className="md:w-[70%] w-full space-y-3">

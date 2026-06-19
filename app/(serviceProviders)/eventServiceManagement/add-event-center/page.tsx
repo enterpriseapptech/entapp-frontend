@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
+import { getApiError } from "@/hooks/getApiError";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useCreateEventCenterMutation,
@@ -285,14 +286,7 @@ export default function AddEventCenter() {
     } catch (err: unknown) {
       console.error("Submission Error:", err);
 
-      if (err && typeof err === "object" && "data" in err) {
-        const e = err as { data?: { message?: string } };
-        setError(
-          e.data?.message || "Failed to create event center. Please try again."
-        );
-      } else {
-        setError("Failed to create event center. Please try again.");
-      }
+      setError(getApiError(err, "Failed to create event center. Please try again."));
     }
   };
 

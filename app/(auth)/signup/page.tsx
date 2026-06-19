@@ -16,6 +16,7 @@ import {
   CreateServiceProviderRequest,
 } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
+import { getApiError } from "../../../hooks/getApiError";
 
 const schema = z
   .discriminatedUnion("userType", [
@@ -77,7 +78,7 @@ export default function SignupPage() {
     message: string;
     type: "success" | "error";
   } | null>(null);
-  const [createUser, { isLoading, error }] = useCreateUserMutation();
+  const [createUser, { isLoading }] = useCreateUserMutation();
   const router = useRouter();
 
   const {
@@ -124,9 +125,9 @@ export default function SignupPage() {
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
         setTimeout(() => {}, 1000);
       }
-    } catch {
+    } catch (err) {
       setNotification({
-        message: "Failed to create account. Please try again.",
+        message: getApiError(err, "Failed to create account. Please try again."),
         type: "error",
       });
     }
@@ -476,12 +477,6 @@ export default function SignupPage() {
               )}
             </div>
           </div>
-
-          {error && !notification && (
-            <p className="text-sm text-red-500 text-center">
-              Failed to create account. Please try again.
-            </p>
-          )}
 
           <div>
             <button

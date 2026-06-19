@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
+import { getApiError } from "@/hooks/getApiError";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useCreateCateringMutation,
@@ -329,12 +330,10 @@ export default function AddCatering() {
           sessionStorage.removeItem("user_id");
           router.push("/login");
         } else {
-          setError("Failed to create catering service. Please try again.");
-          console.error(err);
+          setError(getApiError(err, "Failed to create catering service. Please try again."));
         }
       } else {
-        setError("An unexpected error occurred. Please try again.");
-        console.error(err);
+        setError(getApiError(err, "An unexpected error occurred. Please try again."));
       }
     }
   };

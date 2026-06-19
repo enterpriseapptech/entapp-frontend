@@ -10,6 +10,7 @@ import { useGetEventCentersByServiceProviderQuery } from "../../../../redux/serv
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import { useDeleteEventCenterMutation } from "../../../../redux/services/eventsApi";
 import Notification from "../../../../components/ui/Notification";
+import { getApiError } from "@/hooks/getApiError";
 
 type FilterType =
   | "location"
@@ -117,10 +118,10 @@ export default function ManageEventCenter() {
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch {
+    } catch (err) {
       setNotification({
         show: true,
-        message: "Failed to delete event center",
+        message: getApiError(err, "Failed to delete event center"),
         type: "error",
       });
     } finally {

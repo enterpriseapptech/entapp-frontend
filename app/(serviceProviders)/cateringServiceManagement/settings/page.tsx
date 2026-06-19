@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import Header from "@/components/layouts/Header";
-import Image from "next/image";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useGetUserByIdQuery,
@@ -10,13 +9,13 @@ import {
 import { useGetCountriesQuery, useGetStatesQuery } from "@/redux/services/adminApi";
 import { Loader2 } from "lucide-react";
 import Notification from "@/components/ui/Notification";
+import { getApiError } from "@/hooks/getApiError";
 
 export default function Settings() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [language, setLanguage] = useState("English");
   const [timezone, setTimezone] = useState("GMT +02:00");
   const [country, setCountry] = useState("");
@@ -69,7 +68,7 @@ export default function Settings() {
       }).unwrap();
       setNotification({ message: "Profile updated successfully!", type: "success" });
     } catch (error) {
-      setNotification({ message: "Failed to update profile.", type: "error" });
+      setNotification({ message: getApiError(error, "Failed to update profile."), type: "error" });
     }
   };
 
@@ -172,7 +171,7 @@ export default function Settings() {
                       className="text-gray-900 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select Country</option>
-                      {countriesData?.docs?.map((c: any) => (
+                      {countriesData?.docs?.map((c: { id: string; name: string }) => (
                         <option key={c.id} value={c.name}>
                           {c.name}
                         </option>
@@ -189,7 +188,7 @@ export default function Settings() {
                       className="text-gray-900 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select State</option>
-                      {statesData?.docs?.map((s: any) => (
+                      {statesData?.docs?.map((s: { id: string; name: string }) => (
                         <option key={s.id} value={s.name}>
                           {s.name}
                         </option>

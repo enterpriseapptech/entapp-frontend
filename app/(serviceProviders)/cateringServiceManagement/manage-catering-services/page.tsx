@@ -9,6 +9,7 @@ import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar"
 import { useGetCateringsByServiceProviderQuery, useDeleteCateringMutation } from "../../../../redux/services/cateringApi";
 import { useGetUserByIdQuery } from "../../../../redux/services/authApi";
 import Notification from "../../../../components/ui/Notification";
+import { getApiError } from "@/hooks/getApiError";
 
 type FilterType =
   | "location"
@@ -111,10 +112,10 @@ export default function ManageCatering() {
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch {
+    } catch (err) {
       setNotification({
         show: true,
-        message: "Failed to delete catering service",
+        message: getApiError(err, "Failed to delete catering service"),
         type: "error",
       });
     } finally {

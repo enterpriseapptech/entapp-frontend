@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Header from "@/components/layouts/Header";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
@@ -14,8 +14,8 @@ import { useGetEventCentersByServiceProviderQuery } from "@/redux/services/event
 import { useGetCateringsByServiceProviderQuery } from "@/redux/services/cateringApi";
 import { Loader2, Plus, CreditCard, Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 import Notification from "@/components/ui/Notification";
+import { getApiError } from "@/hooks/getApiError";
 import SubscriptionPaymentModal from "@/components/ui/SubscriptionPaymentModal";
-import Image from "next/image";
 
 export default function SubscriptionsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function SubscriptionsPage() {
   const { data: eventCentersData } = useGetEventCentersByServiceProviderQuery({ serviceProviderId: userId as string, limit: 100, offset: 0 }, { skip: !userId });
   const { data: cateringsData } = useGetCateringsByServiceProviderQuery({ serviceProviderId: userId as string, limit: 100, offset: 0 }, { skip: !userId });
   const { data: subscriptionsData, isLoading: isSubsLoading } = useGetSubscriptionsQuery({ limit: 10, offset: 0 });
-  const [getSubscriptionDetails, { isFetching: isFetchingDetails }] = useLazyGetSubscriptionByIdQuery();
+  const [getSubscriptionDetails] = useLazyGetSubscriptionByIdQuery();
   const { data: plansData } = useGetSubscriptionPlansQuery({ limit: 100, offset: 0 });
   const [createSubscription, { isLoading: isCreating }] = useCreateSubscriptionMutation();
 
@@ -76,7 +76,7 @@ export default function SubscriptionsPage() {
         setNotification({ message: "Subscription created but no invoice found. Please contact support.", type: "error" });
       }
     } catch (error) {
-      setNotification({ message: "Failed to create subscription.", type: "error" });
+      setNotification({ message: getApiError(error, "Failed to create subscription."), type: "error" });
     }
   };
 
@@ -89,8 +89,8 @@ export default function SubscriptionsPage() {
   };
 
   const services = [
-    ...(eventCentersData?.data?.map((ec: any) => ({ id: ec.id, name: ec.name, type: "EVENTCENTER" })) || []),
-    ...(cateringsData?.data?.map((cs: any) => ({ id: cs.id, name: cs.name, type: "CATERING" })) || []),
+    ...(eventCentersData?.data?.map((ec: { id: string; name: string }) => ({ id: ec.id, name: ec.name, type: "EVENTCENTER" })) || []),
+    ...(cateringsData?.data?.map((cs: { id: string; name: string }) => ({ id: cs.id, name: cs.name, type: "CATERING" })) || []),
   ];
 
   return (
@@ -188,7 +188,7 @@ export default function SubscriptionsPage() {
                                   setNotification({ message: "No invoice found for this subscription. Please contact support.", type: "error" });
                                 }
                               } catch (err) {
-                                setNotification({ message: "Failed to fetch subscription details.", type: "error" });
+                                setNotification({ message: getApiError(err, "Failed to fetch subscription details."), type: "error" });
                               }
                             }}
                             className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
@@ -207,7 +207,7 @@ export default function SubscriptionsPage() {
                     <AlertCircle className="w-8 h-8 text-gray-300" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">No active subscriptions</h3>
-                  <p className="text-gray-500 mb-6">You haven't subscribed any of your services to a plan yet.</p>
+                  <p className="text-gray-500 mb-6">You haven&apos;t subscribed any of your services to a plan yet.</p>
                   <button
                     onClick={() => setIsModalOpen(true)}
                     className="text-[#0047AB] font-medium hover:underline"

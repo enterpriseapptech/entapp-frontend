@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useChangePasswordMutation } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
+import { getApiError } from "../../../hooks/getApiError";
 
 const schema = z.object({
   password: z
@@ -73,8 +74,11 @@ export default function ResetPasswordPage() {
         router.push('/login');
         setIsSubmitting(false);
       }, 2000);
-    } catch {
-      setNotification({ message: "Failed to reset password. Please try again.", type: "error" });
+    } catch (err) {
+      setNotification({
+        message: getApiError(err, "Failed to reset password. Please try again."),
+        type: "error",
+      });
       setIsSubmitting(false);
     }
   };

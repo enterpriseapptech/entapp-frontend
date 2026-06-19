@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForgotPasswordMutation } from "../../../redux/services/authApi";
 import Notification from "../../../components/ui/Notification";
+import { getApiError } from "../../../hooks/getApiError";
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -42,9 +43,8 @@ export default function ForgotPasswordPage() {
       setNotification({ message, type: "success" });
       setTimeout(() => setIsSubmitting(false), 1000);
     } catch (error) {
-      console.error("Forgot password error:", error);
       setNotification({
-        message: "Failed to send reset email. Please try again.",
+        message: getApiError(error, "Failed to send reset email. Please try again."),
         type: "error",
       });
       setIsSubmitting(false);

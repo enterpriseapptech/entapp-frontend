@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
+import { getApiError } from "@/hooks/getApiError";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useGetCateringByIdQuery,
@@ -346,15 +347,13 @@ export default function EditCateringService() {
         router.push("/cateringServiceManagement/manage-catering-services");
       }, 2000);
     } catch (err) {
-      const errorMessage =
-        (err as { status?: number })?.status === 401
-          ? "You are not authorized. Please log in again."
-          : "Failed to update catering service. Please try again.";
-      setError(errorMessage);
       if ((err as { status?: number })?.status === 401) {
+        setError("You are not authorized. Please log in again.");
         localStorage.clear();
         sessionStorage.clear();
         router.push("/login");
+      } else {
+        setError(getApiError(err, "Failed to update catering service. Please try again."));
       }
     }
   };

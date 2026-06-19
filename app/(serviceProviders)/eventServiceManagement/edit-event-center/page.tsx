@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import Header from "@/components/layouts/Header";
+import { getApiError } from "@/hooks/getApiError";
 import ServiceProviderSideBar from "@/components/layouts/ServiceProviderSideBar";
 import {
   useGetEventCenterByIdQuery,
@@ -334,12 +335,10 @@ export default function EditEventCenter() {
           sessionStorage.removeItem("user_id");
           router.push("/login");
         } else {
-          setError("Failed to update event center. Please try again.");
-          console.error(err);
+          setError(getApiError(err, "Failed to update event center. Please try again."));
         }
       } else {
-        setError("An unexpected error occurred. Please try again.");
-        console.error(err);
+        setError(getApiError(err, "An unexpected error occurred. Please try again."));
       }
     }
   };

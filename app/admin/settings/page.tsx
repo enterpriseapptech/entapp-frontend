@@ -20,6 +20,7 @@ import {
   useUpdateAppSettingsMutation,
 } from "@/redux/services/adminApi";
 import Notification from "@/components/ui/Notification";
+import { getApiError } from "@/hooks/getApiError";
 
 export default function SettingsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -105,7 +106,7 @@ export default function SettingsPage() {
       }).unwrap();
       setNotification({ message: "Profile updated successfully!", type: "success" });
     } catch (error) {
-      setNotification({ message: "Failed to update profile.", type: "error" });
+      setNotification({ message: getApiError(error, "Failed to update profile."), type: "error" });
     }
   };
 
@@ -120,7 +121,7 @@ export default function SettingsPage() {
       }).unwrap();
       setNotification({ message: "App settings updated successfully!", type: "success" });
     } catch (error) {
-      setNotification({ message: "Failed to update app settings.", type: "error" });
+      setNotification({ message: getApiError(error, "Failed to update app settings."), type: "error" });
     }
   };
 
@@ -306,7 +307,7 @@ export default function SettingsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   >
                     <option value="">Select Country</option>
-                    {countriesData?.docs?.map((c: any) => (
+                    {countriesData?.docs?.map((c: { id: string; name: string }) => (
                       <option key={c.id} value={c.name}>
                         {c.name}
                       </option>
@@ -324,7 +325,7 @@ export default function SettingsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   >
                     <option value="">Select State</option>
-                    {statesData?.docs?.map((s: any) => (
+                    {statesData?.docs?.map((s: { id: string; name: string }) => (
                       <option key={s.id} value={s.name}>
                         {s.name}
                       </option>

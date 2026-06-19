@@ -6,11 +6,11 @@ import {
   Trash2,
   Grid3x3,
   List,
-  UserPlus,
 } from "lucide-react";
 import SideBar from "@/components/layouts/SideBar";
 import Header from "@/components/layouts/Header";
 import Notification from "@/components/ui/Notification";
+import { getApiError } from "@/hooks/getApiError";
 import { useState } from "react";
 import {
   useGetSubscriptionPlansQuery,
@@ -118,8 +118,7 @@ export default function SubscriptionManagement() {
         type: "success",
       });
     } catch (e) {
-      console.error(e);
-      setNotification({ message: "Failed to create plan", type: "error" });
+      setNotification({ message: getApiError(e, "Failed to create plan"), type: "error" });
     }
   };
 
@@ -134,8 +133,7 @@ export default function SubscriptionManagement() {
         type: "success",
       });
     } catch (e) {
-      console.error(e);
-      setNotification({ message: "Failed to update plan", type: "error" });
+      setNotification({ message: getApiError(e, "Failed to update plan"), type: "error" });
     }
   };
 
@@ -147,8 +145,7 @@ export default function SubscriptionManagement() {
         type: "success",
       });
     } catch (e) {
-      console.error(e);
-      setNotification({ message: "Failed to delete plan", type: "error" });
+      setNotification({ message: getApiError(e, "Failed to delete plan"), type: "error" });
     }
   };
 
@@ -161,17 +158,13 @@ export default function SubscriptionManagement() {
         type: "success",
       });
     } catch (e) {
-      console.error(e);
       setNotification({
-        message: "Failed to update plan status",
+        message: getApiError(e, "Failed to update plan status"),
         type: "error",
       });
     }
   };
 
-
-  // Get available plan names for dropdowns
-  const availablePlanNames = subscriptionPlans.map((plan) => plan.plan);
 
   // Generate page numbers with ellipsis
   const getPageNumbers = () => {
